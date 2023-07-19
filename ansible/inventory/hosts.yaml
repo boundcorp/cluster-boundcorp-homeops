@@ -1,0 +1,19 @@
+---
+kubernetes:
+  children:
+    master:
+      hosts:
+        enterprise:
+          ansible_user: setup
+          ansible_host: 10.20.30.111
+    worker:
+      hosts:
+        vega:
+          ansible_user: setup
+          ansible_host: 10.20.30.112
+        ziti:
+          ansible_user: setup
+          ansible_host: 10.20.30.113
+        nova:
+          ansible_user: setup
+          ansible_host: 10.20.30.114
