@@ -6,14 +6,18 @@ kubernetes:
         enterprise:
           ansible_user: setup
           ansible_host: 10.20.30.111
+          rook_devices: ['/dev/sdb']
     worker:
       hosts:
         vega:
           ansible_user: setup
           ansible_host: 10.20.30.112
+          rook_devices: ['/dev/sdb', '/dev/sdc']
         ziti:
           ansible_user: setup
           ansible_host: 10.20.30.113
+          rook_devices: ['/dev/sda', '/dev/sdc']
         nova:
           ansible_user: setup
           ansible_host: 10.20.30.114
+          rook_devices: ['/dev/nvme0n1']

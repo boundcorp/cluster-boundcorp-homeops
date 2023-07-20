@@ -66,6 +66,14 @@ tasks:
     env:
       ANSIBLE_CONFIG: "{{.ANSIBLE_DIR}}/ansible.cfg"
 
+  nuke-rook-ceph:
+    desc: Uninstall Kubernetes on the nodes
+    dir: "{{.ANSIBLE_DIR}}"
+    interactive: true
+    cmd: ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yaml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-nuke-rook-ceph.yaml
+    env:
+      ANSIBLE_CONFIG: "{{.ANSIBLE_DIR}}/ansible.cfg"
+
   ping:
     desc: Ping all the hosts
     dir: "{{.ANSIBLE_DIR}}"
