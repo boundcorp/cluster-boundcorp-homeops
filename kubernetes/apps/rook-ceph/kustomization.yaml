@@ -8,5 +8,5 @@ resources:
   - ./dashboard
   - ./rook-direct-mount
   - ./snapshot-controller
-  #- ./cephobjectstore.yaml
-  #- ./volume-snapshot-class.yaml
+  - ./cephobjectstore.yaml
+  - ./volume-snapshot-class.yaml
