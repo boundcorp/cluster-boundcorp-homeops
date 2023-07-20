@@ -74,6 +74,14 @@ tasks:
     env:
       ANSIBLE_CONFIG: "{{.ANSIBLE_DIR}}/ansible.cfg"
 
+  kubeconfig_to_home:
+    desc: Uninstall Kubernetes on the nodes
+    dir: "{{.ANSIBLE_DIR}}"
+    interactive: true
+    cmd: cat "{{.K8S_AUTH_KUBECONFIG}}" | sed 's/default/home/' | tee $HOME/.kube/clusters/home
+    env:
+      ANSIBLE_CONFIG: "{{.ANSIBLE_DIR}}/ansible.cfg"
+
   ping:
     desc: Ping all the hosts
     dir: "{{.ANSIBLE_DIR}}"
