@@ -9,4 +9,4 @@ resources:
   - ./rook-direct-mount
   #- ./snapshot-controller
   - ./cephobjectstore.yaml
-  - ./volume-snapshot-class.yaml
+  #- ./volume-snapshot-class.yaml
