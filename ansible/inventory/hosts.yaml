@@ -6,18 +6,29 @@ kubernetes:
         enterprise:
           ansible_user: setup
           ansible_host: 10.20.30.111
-          rook_devices: ['/dev/sdb']
+          rook_devices: []
     worker:
       hosts:
         vega:
           ansible_user: setup
           ansible_host: 10.20.30.112
-          rook_devices: ['/dev/sdb', '/dev/sdc']
+          rook_devices: [
+            '/dev/sdb', # 4tb.A.1
+            '/dev/sdc', # 4tb.A.2
+            '/dev/sdd', # 1TB  2.5"
+            '/dev/nvme0n1', # WD Black
+          ]
         ziti:
           ansible_user: setup
           ansible_host: 10.20.30.113
-          rook_devices: ['/dev/sda', '/dev/sdc']
+          rook_devices: [
+            '/dev/sdb', # 500gb internal ssd
+            '/dev/sdc', # 4tb.A.3
+          ]
         nova:
           ansible_user: setup
           ansible_host: 10.20.30.114
-          rook_devices: ['/dev/nvme0n1']
+          rook_devices: [
+            '/dev/sda', # 4tb.B.1
+            '/dev/sdb', # 4tb.B.2
+          ]
