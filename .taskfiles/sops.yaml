@@ -1,0 +1,22 @@
+---
+version: "3"
+
+vars:
+  ROOT: '{{.ROOT | default "./"}}'
+  FN: '{{.FN | default "."}}'
+
+tasks:
+  unlock:
+    desc: Decrypt the sops files
+    cmds:
+      - find {{.ROOT}} -name "*.sops.*" | grep -v "/\." | grep -v "bootstrap/" | xargs -r grep -lw -e '^sops:' | grep {{.FN}} | xargs -rt -n1 sops --decrypt --in-place
+
+  lock:
+    desc: Encrypt the sops files
+    cmds:
+      - find {{.ROOT}} -name "*.sops.*" | grep -v "/\." | grep -v "bootstrap/" | xargs -r grep -Lw -e '^sops:' | grep {{.FN}} | xargs -rt -n1 sops --encrypt --in-place
+
+  install_secret:
+    desc: Create the secret from SOPS_AGE_KEY_FILE
+    cmds:
+      - cat $SOPS_AGE_KEY_FILE | kubectl -n flux-system create secret generic sops-age --from-file=age.agekey=/dev/stdin

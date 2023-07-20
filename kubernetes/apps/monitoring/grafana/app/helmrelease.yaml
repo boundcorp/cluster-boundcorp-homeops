@@ -37,7 +37,7 @@ spec:
       existingSecret: grafana-admin-secret
     env:
       GF_EXPLORE_ENABLED: true
-      GF_SERVER_ROOT_URL: "https://grafana.${SECRET_DOMAIN}"
+      GF_SERVER_ROOT_URL: "https://grafana.${SECRET_PUBLIC_DOMAIN}"
     grafana.ini:
       analytics:
         check_for_updates: false
@@ -89,7 +89,7 @@ spec:
       annotations:
         hajimari.io/icon: simple-icons:grafana
       hosts:
-        - &host "grafana.${SECRET_DOMAIN}"
+        - &host "grafana.${SECRET_PUBLIC_DOMAIN}"
       tls:
         - hosts:
             - *host
