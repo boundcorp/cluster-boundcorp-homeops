@@ -30,6 +30,7 @@ spec:
       createPrometheusRules: true
     ingress:
       dashboard:
+        ingressClassName: nginx
         annotations:
           hajimari.io/enable: "true"
           hajimari.io/group: "monitoring"
