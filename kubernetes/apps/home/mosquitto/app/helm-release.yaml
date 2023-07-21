@@ -25,17 +25,21 @@ spec:
       TZ: "${TIMEZONE}"
     service:
       main:
+        type: LoadBalancer
+        annotations:
+          io.cilium/lb-ipam-ips: ${SVC_MOSQUITTO_ADDR}
+        externalTrafficPolicy: Cluster
         ports:
           http:
-            port: 1883
-      socket:
-        enabled: true
-        ports:
-          socket:
+            enabled: false
+          mqtt:
             enabled: true
-            port: 9001
-            protocol: TCP
-            targetPort: 9001
+            port: 1883
+    podSecurityContext:
+      runAsUser: 568
+      runAsGroup: 568
+      fsGroup: 568
+      fsGroupChangePolicy: OnRootMismatch
     auth:
       enabled: true
     podAnnotations:
