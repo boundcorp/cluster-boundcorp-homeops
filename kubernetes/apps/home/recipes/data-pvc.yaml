@@ -8,11 +8,11 @@ metadata:
     app: recipes
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 10Gi
-  storageClassName: cephfs-hdd
+  storageClassName: ceph-block-nvme-norepl
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -23,8 +23,8 @@ metadata:
     app: recipes
 spec:
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 10Gi
-  storageClassName: cephfs-hdd
+  storageClassName: ceph-block-nvme-norepl

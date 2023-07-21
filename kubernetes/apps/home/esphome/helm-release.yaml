@@ -12,7 +12,7 @@ spec:
       version:
       sourceRef:
         kind: HelmRepository
-        name: k8s-at-home-charts
+        name: bjw-s
         namespace: flux-system
       interval: 5m
   install:
