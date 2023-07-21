@@ -29,9 +29,9 @@ spec:
     volumeSnapshotClassName: csi-rbdplugin-snapclass
     storageClassName: ceph-block-nvme-norepl
     moverSecurityContext:
-      runAsUser: 1001
-      runAsGroup: 1001
-      fsGroup: 1001
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
     retain:
       daily: 7
       monthly: 6
