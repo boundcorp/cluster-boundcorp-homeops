@@ -109,7 +109,6 @@ spec:
         storageClass:
           enabled: true
           name: ceph-block-nvme-norepl
-          isDefault: true
           reclaimPolicy: Delete
           allowVolumeExpansion: true
           parameters:

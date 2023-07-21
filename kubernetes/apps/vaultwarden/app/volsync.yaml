@@ -27,7 +27,7 @@ spec:
     repository: vaultwarden-restic-target
     cacheCapacity: 10Gi
     volumeSnapshotClassName: csi-rbdplugin-snapclass
-    storageClassName: cephfs-hdd
+    storageClassName: ceph-block-nvme-norepl
     retain:
       daily: 7
       monthly: 6
