@@ -40,6 +40,9 @@ spec:
         tls:
           - hosts:
               - *host
+    configOverride: |
+      [global]
+      osd_class_update_on_start = false
     cephClusterSpec:
       placement:
         all:
