@@ -19,7 +19,9 @@ spec:
     createNamespace: true
   values:
     image:
-      tag: "2022.10"
+      # https://hub.docker.com/r/esphome/esphome
+      repository: docker.io/esphome/esphome
+      tag: latest
     env:
       TZ: "${TIMEZONE}"
     service:
