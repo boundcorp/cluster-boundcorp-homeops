@@ -44,7 +44,7 @@ spec:
               storageClassName: ceph-block-nvme-norepl
               resources:
                 requests:
-                  storage: 1Gi
+                  storage: 8Gi
       config:
         global:
           resolve_timeout: 5m
@@ -208,4 +208,4 @@ spec:
               storageClassName: ceph-block-nvme-norepl
               resources:
                 requests:
-                  storage: 10Gi
+                  storage: 25Gi
