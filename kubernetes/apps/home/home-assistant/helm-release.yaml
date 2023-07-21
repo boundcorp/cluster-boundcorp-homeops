@@ -39,7 +39,7 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: "nginx-public"
+        ingressClassName: "nginx"
         annotations:
           external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_PRIVATE_DOMAIN}"
           hajimari.io/enable: "true"
