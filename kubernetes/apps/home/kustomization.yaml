@@ -2,11 +2,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - mosquitto
-  - frigate
-  - home-assistant
-  - esphome
-  - recipes
+  - ./namespace.yaml
+  - ./mosquitto
+  - ./frigate
+  - ./home-assistant
+  - ./esphome
+  - ./recipes
 
-  #- zigbee2mqtt
-  - zwavejs2mqtt
+  #- ./zigbee2mqtt
+  - ./zwavejs2mqtt
