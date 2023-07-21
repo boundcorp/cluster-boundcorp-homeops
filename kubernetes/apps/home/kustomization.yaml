@@ -5,8 +5,8 @@ resources:
   - ./namespace.yaml
   - ./mosquitto/ks.yaml
   - ./recipes/ks.yaml
+  - ./home-assistant/ks.yaml
   - ./frigate
-  - ./home-assistant
   - ./esphome
 
   #- ./zigbee2mqtt
