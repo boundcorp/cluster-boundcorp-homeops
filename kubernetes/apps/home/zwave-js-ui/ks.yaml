@@ -2,7 +2,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps-zwave-js-ui
+  name: cluster-apps-home-zwave-js-ui
   namespace: flux-system
 spec:
   path: ./kubernetes/apps/home/zwave-js-ui/app
