@@ -1,0 +1,12 @@
+# yamllint disable
+apiVersion: v1
+kind: Secret
+metadata:
+    name: home-assistant
+    namespace: home
+stringData:
+    HASS_ELEVATION: "1400"
+    HASS_LATITUDE: "39.5296329"
+    HASS_LONGITUDE: "-119.8138027"
+    HASS_MQTT_PASSWORD: GSPGmG8za+Y4RQlVF+i
+    HASS_MQTT_USERNAME: YNI2W3UZ

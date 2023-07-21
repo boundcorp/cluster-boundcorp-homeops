@@ -1,0 +1,158 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: &app frigate
+  namespace: home
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: frigate
+      version: 8.2.2
+      sourceRef:
+        kind: HelmRepository
+        name: k8s-at-home-charts
+        namespace: flux-system
+      interval: 5m
+  install:
+    createNamespace: true
+  dependsOn:
+    - name: mosquitto
+      namespace: home
+  values:
+    image:
+      repository: docker.io/blakeblackshear/frigate
+      tag: 0.11.1
+    env:
+      TZ: "${TIMEZONE}"
+      LIBVA_DRIVER_NAME: i965
+    ingress:
+      main:
+        enabled: true
+        ingressClassName: "nginx-private"
+        annotations:
+          hajimari.io/enable: "true"
+          hajimari.io/group: "home"
+          hajimari.io/icon: "cctv"
+        hosts:
+          - host: &host "frigate.${SECRET_PRIVATE_DOMAIN}"
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - *host
+    securityContext:
+      privileged: true
+    persistence:
+      data:
+        enabled: true
+        existingClaim: frigate-config-v1
+        mountPath: /data
+      media:
+        enabled: true
+        existingClaim: frigate-media-v1
+        mountPath: /media
+      usb:
+        enabled: true
+        type: hostPath
+        hostPath: /dev/bus/usb
+      cache:
+        enabled: true
+        type: emptyDir
+        medium: Memory
+        sizeLimit: 2Gi
+        mountPath: /dev/shm
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - vega
+    podAnnotations:
+      configmap.reloader.stakater.com/reload: "frigate-config"
+      backup.velero.io/backup-volumes-excludes: "media,usb,cache"
+    configmap:
+      config:
+        enabled: true
+        data:
+          config.yml: |
+            mqtt:
+              host: mosquitto
+              topic_prefix: frigate
+              user: "${SECRET_MQTT_USERNAME}"
+              password: "${SECRET_MQTT_PASSWORD}"
+
+            database:
+              path: /data/frigate.db
+
+            # Global objects configuration
+            objects:
+              track:
+                - person
+                - dog
+                - cat
+                - bird
+              filters:
+                bird:
+                  mask:
+                    - 0,286,0,0,1280,0,1280,403,1188,378
+                person:
+                  min_area: 2500
+                  max_area: 100000
+                  threshold: 0.7
+
+            detectors:
+              coral:
+                type: edgetpu
+                device: usb
+
+            # Global ffmpeg configuration
+            ffmpeg:
+              hwaccel_args:
+                - -hwaccel
+                - vaapi
+                - -hwaccel_device
+                - /dev/dri/renderD128
+                - -hwaccel_output_format
+                - yuv420p
+              output_args:
+                record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c:v copy -c:a aac
+
+            rtmp:
+              enabled: true
+
+            snapshots:
+              enabled: true
+              timestamp: false
+              bounding_box: true
+              retain:
+                default: 10
+
+            record:
+              enabled: true
+              retain:
+                days: 2
+                mode: motion
+              events:
+                retain:
+                  default: 7
+                  mode: active_objects
+
+
+            # Cameras
+            cameras:
+              # --
+              frigate_backyard:
+                ffmpeg:
+                  inputs:
+                  - path: "rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/"
+                    roles:
+                      - rtmp
+                      - record
+                      # - detect
+              # --

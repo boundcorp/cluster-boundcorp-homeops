@@ -1,0 +1,13 @@
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: restore-ctrl-frigate
+  namespace: home
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: frigate-restic-target
+    destinationPVC: frigate-config-v1
+    copyMethod: Direct

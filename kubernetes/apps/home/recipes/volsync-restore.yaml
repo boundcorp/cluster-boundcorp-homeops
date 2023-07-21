@@ -1,0 +1,39 @@
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: restore-ctrl-recipes-postgresql
+  namespace: home
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: recipes-postgresql-restic-target
+    destinationPVC: recipes-data-recipes-postgresql-0
+    copyMethod: Direct
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: restore-ctrl-recipes-media
+  namespace: home
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: recipes-media-restic-target
+    destinationPVC: recipes-media
+    copyMethod: Direct
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: restore-ctrl-recipes-static
+  namespace: home
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: recipes-static-restic-target
+    destinationPVC: recipes-static
+    copyMethod: Direct

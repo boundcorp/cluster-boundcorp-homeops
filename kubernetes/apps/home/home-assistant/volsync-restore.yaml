@@ -1,0 +1,13 @@
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationDestination
+metadata:
+  name: restore-ctrl-home-assistant
+  namespace: home
+spec:
+  trigger:
+    manual: restore-once
+  restic:
+    repository: home-assistant-restic-target
+    destinationPVC: home-assistant-config-v1
+    copyMethod: Direct
