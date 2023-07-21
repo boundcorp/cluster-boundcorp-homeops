@@ -4,10 +4,10 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./mosquitto/ks.yaml
+  - ./recipes/ks.yaml
   - ./frigate
   - ./home-assistant
   - ./esphome
-  - ./recipes
 
   #- ./zigbee2mqtt
   - ./zwavejs2mqtt
