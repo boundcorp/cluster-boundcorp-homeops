@@ -197,11 +197,6 @@ spec:
         enableAdminAPI: true
         walCompression: true
         retentionSize: 20GB
-        thanos:
-          image: quay.io/thanos/thanos:v0.31.0
-          objectStorageConfig:
-            name: thanos-objstore-secret
-            key: objstore.yml
         storageSpec:
           volumeClaimTemplate:
             spec:
