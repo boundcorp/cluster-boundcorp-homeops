@@ -28,6 +28,10 @@ spec:
     cacheCapacity: 10Gi
     volumeSnapshotClassName: csi-rbdplugin-snapclass
     storageClassName: ceph-block-nvme-norepl
+    moverSecurityContext:
+      runAsUser: 568
+      runAsGroup: 568
+      fsGroup: 568
     retain:
       daily: 7
       monthly: 6
