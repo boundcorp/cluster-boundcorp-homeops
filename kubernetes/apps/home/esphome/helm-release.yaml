@@ -22,8 +22,11 @@ spec:
       tag: "2022.10"
     env:
       TZ: "${TIMEZONE}"
-    hostNetwork: true
-    dnsPolicy: ClusterFirstWithHostNet
+    service:
+      main:
+        ports:
+          http:
+            port: 6052
     ingress:
       main:
         enabled: true
