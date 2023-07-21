@@ -3,9 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-production
-    kubernetes.io/ingress.class: nginx-public
-    external-dns.alpha.kubernetes.io/target: "ipv4.${SECRET_PUBLIC_DOMAIN}"
+    external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_PUBLIC_DOMAIN}"
     external-dns/is-public: "true"
     hajimari.io/enable: "true"
     hajimari.io/group: "home"
@@ -13,7 +11,7 @@ metadata:
   name: recipes
   namespace: home
 spec:
-  ingressClassName: "nginx-public"
+  ingressClassName: "nginx"
   rules:
     - host: recipes.${SECRET_PUBLIC_DOMAIN}
       http:
@@ -42,4 +40,3 @@ spec:
   tls:
     - hosts:
         - recipes.${SECRET_PUBLIC_DOMAIN}
-      secretName: recipes-tls
