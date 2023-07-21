@@ -86,7 +86,7 @@ spec:
         storageClass:
           enabled: true
           name: ceph-block-hdd
-          isDefault: true
+          isDefault: false
           reclaimPolicy: Delete
           allowVolumeExpansion: true
           parameters:
@@ -109,6 +109,7 @@ spec:
         storageClass:
           enabled: true
           name: ceph-block-nvme-norepl
+          isDefault: true
           reclaimPolicy: Delete
           allowVolumeExpansion: true
           parameters:
