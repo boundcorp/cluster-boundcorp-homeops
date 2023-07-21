@@ -9,7 +9,10 @@ spec:
     manual: restore-once
   restic:
     repository: recipes-postgresql-restic-target
-    destinationPVC: recipes-data-recipes-postgresql-0
+    accessModes:
+      - ReadWriteOnce
+    capacity: 10Gi
+    storageClassName: ceph-block-nvme-norepl
     copyMethod: Direct
 ---
 apiVersion: volsync.backube/v1alpha1
@@ -22,7 +25,10 @@ spec:
     manual: restore-once
   restic:
     repository: recipes-media-restic-target
-    destinationPVC: recipes-media
+    accessModes:
+      - ReadWriteOnce
+    capacity: 10Gi
+    storageClassName: ceph-block-nvme-norepl
     copyMethod: Direct
 ---
 apiVersion: volsync.backube/v1alpha1
@@ -35,5 +41,32 @@ spec:
     manual: restore-once
   restic:
     repository: recipes-static-restic-target
-    destinationPVC: recipes-static
+    accessModes:
+      - ReadWriteOnce
+    capacity: 10Gi
+    storageClassName: ceph-block-nvme-norepl
     copyMethod: Direct
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: restore-ctrl-recipes
+  namespace: home
+spec:
+  containers:
+    - name: mount-restore
+      image: ubuntu
+      command: [ "/bin/bash", "-c", "while true; do sleep 30; done" ]
+      volumeMounts:
+        - name: restore-ctrl-recipes-postgresql
+          mountPath: /restore/psql
+        - name: local-recipes-postgresql
+          mountPath: /local/psql
+  volumes:
+    - name: restore-ctrl-recipes-postgresql
+      persistentVolumeClaim:
+        claimName: restore-ctrl-recipes-postgresql
+    - name: local-recipes-postgresql
+      persistentVolumeClaim:
+        claimName: recipes-data-recipes-postgresql-0
