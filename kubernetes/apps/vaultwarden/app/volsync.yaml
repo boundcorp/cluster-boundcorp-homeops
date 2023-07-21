@@ -20,13 +20,13 @@ metadata:
 spec:
   sourcePVC: vaultwarden-data
   trigger:
-    schedule: "0 7 * * *"
+    manual: false
   restic:
     copyMethod: Snapshot
     pruneIntervalDays: 7
     repository: vaultwarden-restic-target
     cacheCapacity: 10Gi
-    volumeSnapshotClassName: csi-cephfsplugin-snapclass
+    volumeSnapshotClassName: csi-rbdplugin-snapclass
     storageClassName: cephfs-hdd
     retain:
       daily: 7
