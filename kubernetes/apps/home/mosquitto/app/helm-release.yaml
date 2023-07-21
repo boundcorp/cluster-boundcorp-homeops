@@ -23,6 +23,13 @@ spec:
       tag: v2.0.14
     env:
       TZ: "${TIMEZONE}"
+    probes:
+      liveness:
+        enabled: false
+      readiness:
+        enabled: false
+      startup:
+        enabled: false
     service:
       main:
         type: LoadBalancer
