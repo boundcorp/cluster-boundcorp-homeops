@@ -94,6 +94,7 @@ spec:
         pathType: Prefix
         ingressClassName: "nginx"
         annotations:
+          hajimari.io/appName: AlertManager
           hajimari.io/enable: "true"
           hajimari.io/group: "monitoring"
         hosts:
