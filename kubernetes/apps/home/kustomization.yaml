@@ -6,7 +6,7 @@ resources:
   - ./mosquitto/ks.yaml
   - ./recipes/ks.yaml
   - ./home-assistant/ks.yaml
-  - ./frigate
+  - ./frigate/ks.yaml
   - ./esphome
 
   #- ./zigbee2mqtt
