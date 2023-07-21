@@ -16,6 +16,7 @@ resources:
   - ./k8s-gateway.yaml
   - ./kubernetes-dashboard.yaml
   - ./metrics-server.yaml
+  - ./node-feature-discovery.yaml
   - ./prometheus-community.yaml
   - ./rook-ceph-charts.yaml
   - ./stakater.yaml
