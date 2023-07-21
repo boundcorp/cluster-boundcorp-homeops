@@ -1,53 +1,4 @@
 ---
-apiVersion: volsync.backube/v1alpha1
-kind: ReplicationDestination
-metadata:
-  name: restore-ctrl-recipes-postgresql
-  namespace: home
-spec:
-  trigger:
-    manual: restore-once
-  restic:
-    repository: recipes-postgresql-restic-target
-    accessModes:
-      - ReadWriteOnce
-    capacity: 10Gi
-    storageClassName: ceph-block-nvme-norepl
-    copyMethod: Direct
----
-apiVersion: volsync.backube/v1alpha1
-kind: ReplicationDestination
-metadata:
-  name: restore-ctrl-recipes-media
-  namespace: home
-spec:
-  trigger:
-    manual: restore-once
-  restic:
-    repository: recipes-media-restic-target
-    accessModes:
-      - ReadWriteOnce
-    capacity: 10Gi
-    storageClassName: ceph-block-nvme-norepl
-    copyMethod: Direct
----
-apiVersion: volsync.backube/v1alpha1
-kind: ReplicationDestination
-metadata:
-  name: restore-ctrl-recipes-static
-  namespace: home
-spec:
-  trigger:
-    manual: restore-once
-  restic:
-    repository: recipes-static-restic-target
-    accessModes:
-      - ReadWriteOnce
-    capacity: 10Gi
-    storageClassName: ceph-block-nvme-norepl
-    copyMethod: Direct
-
----
 apiVersion: v1
 kind: Pod
 metadata:
@@ -59,14 +10,19 @@ spec:
       image: ubuntu
       command: [ "/bin/bash", "-c", "while true; do sleep 30; done" ]
       volumeMounts:
-        - name: restore-ctrl-recipes-postgresql
-          mountPath: /restore/psql
-        - name: local-recipes-postgresql
-          mountPath: /local/psql
+        - name: local-recipes-media
+          mountPath: /local/media
+        - name: local-recipes-static
+          mountPath: /local/static
+        - name: local-esphome
+          mountPath: /local/esphome
   volumes:
-    - name: restore-ctrl-recipes-postgresql
+    - name: local-recipes-media
       persistentVolumeClaim:
-        claimName: restore-ctrl-recipes-postgresql
-    - name: local-recipes-postgresql
+        claimName: recipes-media
+    - name: local-recipes-static
       persistentVolumeClaim:
-        claimName: recipes-data-recipes-postgresql-0
+        claimName: recipes-static
+    - name: local-esphome
+      persistentVolumeClaim:
+        claimName: esphome-config-v1
