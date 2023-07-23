@@ -27,6 +27,9 @@ spec:
     env:
       TZ: "${TIMEZONE}"
       LIBVA_DRIVER_NAME: i965
+      SECRET_MQTT_USERNAME: "${SECRET_MQTT_USERNAME}"
+      SECRET_MQTT_PASSWORD: "${SECRET_MQTT_PASSWORD}"
+      SECRET_FRIGATE_CAMERA_AUTH: "${SECRET_FRIGATE_CAMERA_AUTH}"
     service:
       main:
         ports:
