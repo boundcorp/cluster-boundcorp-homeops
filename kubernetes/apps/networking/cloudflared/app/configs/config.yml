@@ -11,7 +11,7 @@ ingress:
   - hostname: "*.boundcorp.net"
     service: https://ingress-nginx-controller.networking.svc.cluster.local:443
     originRequest:
-      originServerName: "ingress.home.boundorp.net"
+      originServerName: "ingress.home.boundcorp.net"
   - hostname: "*.home.boundcorp.net"
     service: https://ingress-nginx-controller.networking.svc.cluster.local:443
     originRequest:
