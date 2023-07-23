@@ -4,7 +4,7 @@
   connection: local
   vars_files:
     - defaults/main.yaml
-    - vars/config.yaml
+    - vars/config.yml
     - vars/addons.yaml
   tasks:
     - name: Get absolute path to this Git repository # noqa: command-instead-of-module

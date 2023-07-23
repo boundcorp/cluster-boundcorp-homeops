@@ -25,18 +25,18 @@ tasks:
     dir: "{{.BOOTSTRAP_DIR}}"
     cmds:
       - cp -n vars/addons.sample.yaml vars/addons.yaml
-      - cp -n vars/config.sample.yaml vars/config.yaml
+      - cp -n vars/config.sample.yaml vars/config.yml
       - cmd: echo "=== Configuration files copied ==="
         silent: true
       - cmd: echo "Proceed with updating the configuration files..."
         silent: true
-      - cmd: echo "{{.BOOTSTRAP_DIR}}/vars/config.yaml"
+      - cmd: echo "{{.BOOTSTRAP_DIR}}/vars/config.yml"
         silent: true
       - cmd: echo "{{.BOOTSTRAP_DIR}}/vars/addons.yaml"
         silent: true
     status:
       - test -f "{{.BOOTSTRAP_DIR}}/vars/addons.yaml"
-      - test -f "{{.BOOTSTRAP_DIR}}/vars/config.yaml"
+      - test -f "{{.BOOTSTRAP_DIR}}/vars/config.yml"
 
   configure:
     desc: Configure repository from Ansible vars

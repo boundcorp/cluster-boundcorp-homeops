@@ -47,7 +47,7 @@ spec:
     args:
       - tunnel
       - --config
-      - /etc/cloudflared/config/config.yaml
+      - /etc/cloudflared/config/config.yml
       - run
       - "$(TUNNEL_ID)"
     service:
@@ -84,8 +84,8 @@ spec:
         enabled: true
         type: configMap
         name: cloudflared-configmap
-        subPath: config.yaml
-        mountPath: /etc/cloudflared/config/config.yaml
+        subPath: config.yml
+        mountPath: /etc/cloudflared/config/config.yml
         readOnly: true
       creds:
         enabled: true
