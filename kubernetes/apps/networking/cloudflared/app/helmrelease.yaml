@@ -32,8 +32,8 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     image:
-      repository: docker.io/cloudflare/cloudflared
-      tag: 2023.7.1
+      repository: ubuntu
+      tag: latest
     env:
       NO_AUTOUPDATE: "true"
       TUNNEL_CRED_FILE: /etc/cloudflared/creds/credentials.json
