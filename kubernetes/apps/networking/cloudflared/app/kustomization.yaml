@@ -9,7 +9,7 @@ resources:
 configMapGenerator:
   - name: cloudflared-configmap
     files:
-      - ./configs/config.yaml
+      - configs/config.yml
 generatorOptions:
   disableNameSuffixHash: true
 configurations:
