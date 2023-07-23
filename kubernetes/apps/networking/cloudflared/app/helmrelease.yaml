@@ -46,8 +46,8 @@ spec:
             key: TUNNEL_ID
     args:
       - tunnel
-      - --config
-      - /etc/cloudflared/config/config.yml
+      #- --config
+      #- /etc/cloudflared/config/config.yml
       - run
       - "$(TUNNEL_ID)"
     service:
