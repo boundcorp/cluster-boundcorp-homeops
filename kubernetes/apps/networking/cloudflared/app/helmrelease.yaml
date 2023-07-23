@@ -44,12 +44,14 @@ spec:
           secretKeyRef:
             name: cloudflared-secret
             key: TUNNEL_ID
+    command: "['/bin/sh', '-c']"
     args:
-      - tunnel
+      - "while true; do sleep 30; done;"
+      #- tunnel
       #- --config
       #- /etc/cloudflared/config/config.yml
-      - run
-      - "$(TUNNEL_ID)"
+      #- run
+      #- "$(TUNNEL_ID)"
     service:
       main:
         ports:
