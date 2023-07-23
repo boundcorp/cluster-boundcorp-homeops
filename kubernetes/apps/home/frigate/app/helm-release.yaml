@@ -69,6 +69,13 @@ spec:
     securityContext:
       privileged: true
     persistence:
+      config-file:
+        enabled: true
+        type: configMap
+        name: frigate-configmap
+        subPath: config.yml
+        mountPath: /config/config.yml
+        readOnly: true
       data:
         enabled: true
         existingClaim: frigate-config-v1
@@ -121,11 +128,8 @@ spec:
                 - cat
                 - bird
               filters:
-                bird:
-                  mask:
-                    - 0,286,0,0,1280,0,1280,403,1188,378
                 person:
-                  min_area: 2500
+                  min_area: 5000
                   max_area: 100000
                   threshold: 0.7
 
@@ -136,13 +140,8 @@ spec:
 
             # Global ffmpeg configuration
             ffmpeg:
-              hwaccel_args:
-                - -hwaccel
-                - vaapi
-                - -hwaccel_device
-                - /dev/dri/renderD128
-                - -hwaccel_output_format
-                - yuv420p
+              global_args: ["-hide_banner", "-loglevel", "warning"]
+              hwaccel_args: ["-hwaccel", "vaapi", "-hwaccel_device", "/dev/dri/renderD128", "-hwaccel_output_format", "yuv420p"]
               output_args:
                 record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c:v copy -c:a aac
 
@@ -154,18 +153,23 @@ spec:
               timestamp: false
               bounding_box: true
               retain:
-                default: 10
+                default: 30
 
             record:
               enabled: true
               retain:
-                days: 2
-                mode: motion
+                days: 7
+                mode: all
               events:
                 retain:
-                  default: 7
+                  default: 30
                   mode: active_objects
 
+            go2rtc:
+              streams:
+                frigate_backyard_hq: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/
+                # TODO change me
+                frigate_backyard_lq: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/
 
             # Cameras
             cameras:
@@ -173,9 +177,14 @@ spec:
               frigate_backyard:
                 ffmpeg:
                   inputs:
-                  - path: "rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/"
+                  - path: rtsp://localhost:8553/frigate_backyard_hq
                     roles:
                       - rtmp
                       - record
-                      # - detect
-              # --
+                  - path: rtsp://localhost:8553/frigate_backyard_lq
+                    roles:
+                      - detect
+                detect:
+                  width: 1024
+                  height: 576
+                  fps: 10

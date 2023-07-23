@@ -77,6 +77,13 @@ spec:
     securityContext:
       privileged: true
     persistence:
+      config-file:
+        enabled: true
+        type: configMap
+        name: frigate-configmap
+        subPath: config.yml
+        mountPath: /config/config.yml
+        readOnly: true
       config:
         enabled: true
         existingClaim: zwave-js-ui-config-v1
