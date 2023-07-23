@@ -10,5 +10,5 @@ configMapGenerator:
   - name: cloudflared-configmap
     files:
       - ./configs/config.yaml
-generatorOptions:
-  disableNameSuffixHash: true
+configurations:
+  - ./patches/kustomizeconfig.yaml
