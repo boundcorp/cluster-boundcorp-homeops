@@ -1,8 +1,8 @@
 mqtt:
   host: mosquitto
   topic_prefix: frigate
-  user: "${SECRET_MQTT_USERNAME}"
-  password: "${SECRET_MQTT_PASSWORD}"
+  user: "${FRIGATE_MQTT_USERNAME}"
+  password: "${FRIGATE_MQTT_PASSWORD}"
 
 database:
   path: /data/frigate.db
@@ -54,9 +54,9 @@ record:
 
 go2rtc:
   streams:
-    frigate_backyard_hq: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/
+    frigate_backyard_hq: rtsp://${FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/
     # TODO change me
-    frigate_backyard_lq: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/
+    frigate_backyard_lq: rtsp://${FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/
 
 # Cameras
 cameras:
