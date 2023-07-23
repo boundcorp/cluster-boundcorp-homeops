@@ -85,7 +85,7 @@ spec:
         type: configMap
         name: cloudflared-configmap
         subPath: config.yml
-        mountPath: /etc/cloudflared/config/config.yml
+        mountPath: /etc/cloudflared/config/config.yml-tmp
         readOnly: true
       creds:
         enabled: true
