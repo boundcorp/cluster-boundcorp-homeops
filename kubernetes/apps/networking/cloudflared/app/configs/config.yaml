@@ -4,16 +4,16 @@ originRequest:
 
 # https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configuration/ingress
 ingress:
-  - hostname: "${SECRET_PUBLIC_DOMAIN}"
+  - hostname: "boundcorp.net"
     service: https://ingress-nginx-controller.networking.svc.cluster.local:443
     originRequest:
-      originServerName: "ingress.${SECRET_PRIVATE_DOMAIN}"
-  - hostname: "*.${SECRET_PUBLIC_DOMAIN}"
+      originServerName: "ingress.home.boundcorp.net"
+  - hostname: "*.boundcorp.net"
     service: https://ingress-nginx-controller.networking.svc.cluster.local:443
     originRequest:
-      originServerName: "ingress.${SECRET_PRIVATE_DOMAIN}"
-  - hostname: "*.${SECRET_PRIVATE_DOMAIN}"
+      originServerName: "ingress.home.boundorp.net"
+  - hostname: "*.home.boundcorp.net"
     service: https://ingress-nginx-controller.networking.svc.cluster.local:443
     originRequest:
-      originServerName: "ingress.${SECRET_PRIVATE_DOMAIN}"
+      originServerName: "ingress.home.boundcorp.net"
   - service: http_status:404
