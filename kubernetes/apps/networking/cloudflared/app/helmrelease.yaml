@@ -44,8 +44,7 @@ spec:
           secretKeyRef:
             name: cloudflared-secret
             key: TUNNEL_ID
-    command: ["/bin/bash", "-c"]
-    args: ["while", "true;", "do", "sleep", "30;", "done;"]
+    command: ["sleep", "3600"]
       #- tunnel
       #- --config
       #- /etc/cloudflared/config/config.yml
