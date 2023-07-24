@@ -95,7 +95,7 @@ spec:
         mountPath: /dev/ttyUSB8
         hostPathType: CharDevice
     nodeSelector:
-      feature.node.kubernetes.io/usb-ff_10c4_8a2a.present: "true"
+      feature.node.kubernetes.io/usb-ff_10c4_ea60.present: "true"
     resources:
       requests:
         cpu: 10m
