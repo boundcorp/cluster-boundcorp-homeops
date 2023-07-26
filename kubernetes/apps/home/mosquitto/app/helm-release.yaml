@@ -21,6 +21,7 @@ spec:
     image:
       repository: ghcr.io/k8s-at-home/eclipse-mosquitto
       tag: v2.0.14
+    command: ["mosquitto", "-c", "/configinc/mqtt.conf"]
     env:
       TZ: "${TIMEZONE}"
     probes:
@@ -34,6 +35,7 @@ spec:
       main:
         type: LoadBalancer
         annotations:
+          external-dns.alpha.kubernetes.io/hostname: mqtt.${SECRET_PRIVATE_DOMAIN}
           io.cilium/lb-ipam-ips: ${SVC_MOSQUITTO_ADDR}
         externalTrafficPolicy: Cluster
         ports:

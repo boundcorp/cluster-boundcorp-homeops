@@ -1,0 +1,9 @@
+#!/bin/bash
+
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd "${scriptDir}/.." || exit 1
+set -e
+
+if [[ "$1" != ".sops.yaml" ]] ; then
+  sops --encrypt $1
+fi
