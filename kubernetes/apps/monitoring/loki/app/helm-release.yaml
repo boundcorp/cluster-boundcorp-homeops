@@ -18,12 +18,11 @@ spec:
   maxHistory: 3
   install:
     createNamespace: true
-    crds: CreateReplace
+    crds:
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
-    crds: CreateReplace
     remediation:
       retries: 3
   uninstall:
@@ -115,7 +114,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       ingress:
         enabled: true
-        ingressClassName: "nginx-private"
+        ingressClassName: "nginx"
         annotations:
           hajimari.io/enable: "false"
         hosts:
@@ -139,7 +138,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       persistence:
         size: 10Gi
-        storageClass: ceph-block
+        storageClass: ceph-block-hdd
     read:
       replicas: 3
       affinity: |
