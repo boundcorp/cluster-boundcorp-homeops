@@ -166,7 +166,7 @@ spec:
           emptyDir: {}
       persistence:
         size: 10Gi
-        storageClass: ceph-block
+        storageClass: ceph-block-hdd
     monitoring:
       serviceMonitor:
         enabled: false
