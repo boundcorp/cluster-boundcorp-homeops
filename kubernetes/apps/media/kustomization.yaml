@@ -6,3 +6,4 @@ resources:
   - ./megamedia-pvc.yaml
   - ./sabnzbd/ks.yaml
   - ./radarr/ks.yaml
+  - ./sonarr/ks.yaml

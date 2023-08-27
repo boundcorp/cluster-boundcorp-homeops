@@ -66,6 +66,7 @@ spec:
         enabled: true
         mountPath: /media
         existingClaimName: megamedia-data
+        accessMode: ReadWriteMany
     resources:
       requests:
         cpu: 10m
