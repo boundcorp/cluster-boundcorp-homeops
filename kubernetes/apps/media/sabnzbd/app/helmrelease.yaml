@@ -68,8 +68,7 @@ spec:
       media:
         enabled: true
         mountPath: /media
-        storageClass: ceph-block-hdd
-        accessMode: "ReadWriteOnce"
+        existingClaim: mediamega-data
     resources:
       requests:
         cpu: 10m
