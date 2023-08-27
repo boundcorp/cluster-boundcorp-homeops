@@ -39,7 +39,7 @@ spec:
         annotations:
           external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_PRIVATE_DOMAIN}"
         hosts:
-          - host: &host "plex.${SECRET_PRIVATE_DOMAIN}"
+          - host: &host "plex.${SECRET_PUBLIC_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
