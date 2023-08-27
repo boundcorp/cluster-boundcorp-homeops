@@ -69,6 +69,7 @@ spec:
         enabled: true
         mountPath: /media
         storageClass: ceph-block-hdd
+        accessMode: "ReadWriteOnce"
     resources:
       requests:
         cpu: 10m
