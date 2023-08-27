@@ -5,3 +5,4 @@ resources:
   - ./namespace.yaml
   - ./megamedia-pvc.yaml
   - ./sabnzbd/ks.yaml
+  - ./radarr/ks.yaml
