@@ -38,7 +38,7 @@ spec:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: recipes-postgresql-restic-target
+  name: recipes-media-restic-target
   namespace: home
 stringData:
   RESTIC_REPOSITORY: 's3:${SECRET_VOLSYNC_REPOSITORY}/recipes-media'
