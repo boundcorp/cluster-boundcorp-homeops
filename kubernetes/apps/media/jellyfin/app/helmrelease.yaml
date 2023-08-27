@@ -63,7 +63,6 @@ spec:
     persistence:
       config:
         enabled: true
-        existingClaim: jellyfin-config
       transcode:
         enabled: true
         type: emptyDir
