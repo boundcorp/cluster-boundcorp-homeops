@@ -65,7 +65,7 @@ spec:
       media:
         enabled: true
         mountPath: /media
-        existingClaim: megamedia-data
+        existingClaim: mediamega-data
     resources:
       requests:
         cpu: 10m
