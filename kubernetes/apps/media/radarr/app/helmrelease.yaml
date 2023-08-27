@@ -30,7 +30,7 @@ spec:
       tag: 4.7.5.7809@sha256:f2044d2e8bd2e8d24e8a79f051404be80400f450a94b4c481cbc93cfeffbe745
     env:
       RADARR__INSTANCE_NAME: Radarr
-      RADARR__APPLICATION_URL: &host "https://{{ .Release.Name }}.${SECRET_PRIVATE_DOMAIN}"
+      RADARR__APPLICATION_URL: "https://{{ .Release.Name }}.${SECRET_PRIVATE_DOMAIN}"
       RADARR__LOG_LEVEL: info
     envFrom:
       - secretRef:
@@ -47,7 +47,7 @@ spec:
         annotations:
           hajimari.io/icon: mdi:filmstrip
         hosts:
-          - host: *host
+          - host: &host "{{ .Release.Name }}.${SECRET_PRIVATE_DOMAIN}"
             paths:
               - path: /
                 pathType: Prefix
