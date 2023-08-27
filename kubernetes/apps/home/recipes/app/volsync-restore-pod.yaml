@@ -10,19 +10,19 @@ spec:
       image: ubuntu
       command: [ "/bin/bash", "-c", "while true; do sleep 30; done" ]
       volumeMounts:
+        - name: ctrl-recipes-media
+          mountPath: /ctrl/media
         - name: local-recipes-media
           mountPath: /local/media
         - name: local-recipes-static
           mountPath: /local/static
-        - name: local-esphome
-          mountPath: /local/esphome
   volumes:
+    - name: ctrl-recipes-media
+      persistentVolumeClaim:
+        claimName: recipes-media-restore-ctrl
     - name: local-recipes-media
       persistentVolumeClaim:
         claimName: recipes-media
     - name: local-recipes-static
       persistentVolumeClaim:
         claimName: recipes-static
-    - name: local-esphome
-      persistentVolumeClaim:
-        claimName: esphome-config-v1

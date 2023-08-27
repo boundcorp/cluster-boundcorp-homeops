@@ -1,4 +1,15 @@
 ---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: recipes-media-restore-ctrl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+---
 # yaml-language-server: $schema=https://kubernetes-schemas.devbu.io/external-secrets.io/externalsecret_v1beta1.json
 apiVersion: v1
 kind: Secret
@@ -17,12 +28,8 @@ metadata:
   name: restore-media
 spec:
   trigger:
-    manual: true
-  targetPVC: recipes-media-restore
+    manual: "true"
   restic:
-    copyMethod: Snapshot
-    pruneIntervalDays: 7
+    destinationPVC: recipes-media-restore-ctrl
+    copyMethod: Direct
     repository: recipes-media-restic-ctrl
-    cacheCapacity: 10Gi
-    volumeSnapshotClassName: csi-rbdplugin-snapclass
-    storageClassName: ceph-block-nvme-norepl
