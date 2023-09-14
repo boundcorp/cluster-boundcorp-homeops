@@ -37,3 +37,11 @@ spec:
           usb:
             deviceClassWhitelist: ["02", "03", "0e", "ef", "fe", "ff"]
             deviceLabelFields: ["class", "vendor", "device"]
+          custom:
+            ### GPUs ###
+            # `lspci | grep VGA`
+            - name: "intel-gpu"
+              matchOn:
+                - pciId:
+                    vendor: [ "8086" ]
+                    device: [ "5912" ]
