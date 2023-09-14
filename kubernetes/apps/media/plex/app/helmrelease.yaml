@@ -34,7 +34,7 @@ spec:
           io.cilium/lb-ipam-ips: "${SVC_PLEX_ADDR}"
         ports:
           http:
-            port: 32400
+            port: &port 32400
           # Plex DLNA Server
           # https://support.plex.tv/articles/200350536-dlna/
           dnla-tcp:
@@ -63,6 +63,18 @@ spec:
             enabled: true
             port: 32414
             protocol: UDP
+    probes:
+      liveness:
+        enabled: true
+        custom: true
+        spec:
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 1
+          failureThreshold: 3
+          httpGet:
+            path: /identity
+            port: *port
     ingress:
       main:
         enabled: true
