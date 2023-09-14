@@ -23,7 +23,7 @@ spec:
 
     image:
       repository: docker.io/plexinc/pms-docker
-      tag: public
+      tag: plexpass
     env:
       ADVERTISE_IP: "https://plex.${SECRET_PUBLIC_DOMAIN},http://${SVC_PLEX_ADDR}:32400"
       ALLOWED_NETWORKS: "10.1.1.0/24,10.1.2.0/24,10.42.0.0/16,10.43.0.0/16"
