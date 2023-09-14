@@ -28,10 +28,41 @@ spec:
     service:
       main:
         enabled: true
+        type: LoadBalancer
+        externalTrafficPolicy: Cluster
+        annotations:
+          io.cilium/lb-ipam-ips: "${SVC_PLEX_ADDR}"
         ports:
           http:
             port: 32400
-
+          # Plex DLNA Server
+          # https://support.plex.tv/articles/200350536-dlna/
+          dnla-tcp:
+            enabled: true
+            port: 32469
+            protocol: TCP
+          dnla-udp:
+            enabled: true
+            port: 1900
+            protocol: UDP
+          # GDM Network discovery
+          # https://support.plex.tv/articles/200430283-network/
+          gdm-1-udp:
+            enabled: true
+            port: 32410
+            protocol: UDP
+          gdm-2-udp:
+            enabled: true
+            port: 32412
+            protocol: UDP
+          gdm-3-udp:
+            enabled: true
+            port: 32413
+            protocol: UDP
+          gdm-4-udp:
+            enabled: true
+            port: 32414
+            protocol: UDP
     ingress:
       main:
         enabled: true
@@ -48,11 +79,15 @@ spec:
               - *host
 
     persistence:
-      nfs-nas-media:
+      media:
         enabled: true
         existingClaim: mediamega-data
-        mountPath: /data
+        mountPath: /data/library
         readOnly: false
+
+      config:
+        enabled: true
+        mountPath: /config
 
       transcode:
         enabled: true
@@ -72,11 +107,24 @@ spec:
       requests:
         cpu: 500m
         memory: 2000Mi
+        gpu.intel.com/i915: 1
+
       limits:
         memory: 5000Mi
+        gpu.intel.com/i915: 1
 
     volumeClaimTemplates:
       - name: config
         mountPath: /config
         accessMode: ReadWriteOnce
         size: 50Gi
+
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: feature.node.kubernetes.io/custom-intel-gpu
+                  operator: In
+                  values:
+                    - "true"
