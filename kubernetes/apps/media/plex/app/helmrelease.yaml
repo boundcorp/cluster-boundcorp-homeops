@@ -24,6 +24,12 @@ spec:
     image:
       repository: ghcr.io/onedr0p/plex
       tag: 1.32.5.7349-8f4248874@sha256:805ad80226d54f03c21efe84979558e7c3d0b07f345b9c929ff11de8cc216151
+    env:
+      ADVERTISE_IP: "https://plex.${SECRET_PUBLIC_DOMAIN},http://${SVC_PLEX_ADDR}:32400"
+      ALLOWED_NETWORKS: "10.1.1.0/24,10.1.2.0/24,10.42.0.0/16,10.43.0.0/16"
+      PLEX_UID: 568
+      PLEX_GID: 568
+      TZ: "${TIMEZONE}"
 
     service:
       main:
