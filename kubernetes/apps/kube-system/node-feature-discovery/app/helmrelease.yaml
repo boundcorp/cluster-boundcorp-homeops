@@ -44,4 +44,3 @@ spec:
               matchOn:
                 - pciId:
                     vendor: [ "8086" ]
-                    device: [ "5912" ]
