@@ -30,7 +30,7 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: "nginx-private"
+        ingressClassName: "nginx"
         annotations:
           hajimari.io/enable: "true"
           hajimari.io/group: "business"
