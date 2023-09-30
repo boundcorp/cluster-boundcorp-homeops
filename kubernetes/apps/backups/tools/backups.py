@@ -15,7 +15,7 @@ logger = logging.getLogger("backups")
 coloredlogs.install(level='DEBUG', logger=logger)
 
 BACKUPS_PATH = '/backups'
-CURRENT_DIRECTORY = os.path.join(BACKUPS_PATH, "current/")
+CURRENT_DIRECTORY = os.path.join(BACKUPS_PATH, "Sync/")
 
 target_remotes = [r for r in os.environ.get("TARGET_REMOTES", "").split(",") if r]
 target_remotes = ["gdrive-boundcorp-leeward:",
