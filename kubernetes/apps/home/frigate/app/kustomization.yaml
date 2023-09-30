@@ -7,6 +7,10 @@ resources:
   - media-pvc.yaml
   - helm-release.yaml
   - volsync.yaml
+configMapGenerator:
+  - name: frigate-config
+    files:
+      - config.yml=./config/config.yml
 generatorOptions:
   disableNameSuffixHash: true
   annotations:
