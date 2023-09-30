@@ -75,7 +75,7 @@ spec:
       config-file:
         enabled: true
         type: configMap
-        name: frigate-configmap
+        name: frigate-config
         subPath: config.yml
         mountPath: /config/config.yml
         readOnly: true
