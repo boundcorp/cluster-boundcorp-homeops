@@ -52,38 +52,17 @@ record:
       default: 30
       mode: active_objects
 
-go2rtc:
-  streams:
-    #frigate_backyard_hq: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/
-    #frigate_backyard_lq: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.151/Streaming/Channels/101/
-    frigate_doorbell_hq: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.161/cam/realmonitor?channel=1&subtype=0
-    frigate_doorbell_lq: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.161/cam/realmonitor?channel=1&subtype=1
 
 # Cameras
 cameras:
-  # --
-  frigate_backyard:
-    ffmpeg:
-      inputs:
-        - path: rtsp://localhost:8553/frigate_backyard_hq
-          roles:
-            - rtmp
-            - record
-        - path: rtsp://localhost:8553/frigate_backyard_lq
-          roles:
-            - detect
-    detect:
-      width: 1024
-      height: 576
-      fps: 10
   frigate_doorbell:
     ffmpeg:
       inputs:
-        - path: rtsp://localhost:8553/frigate_doorbell_hq
+        - path: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.161:554/cam/realmonitor?channel=1&subtype=0
           roles:
             - rtmp
             - record
-        - path: rtsp://localhost:8553/frigate_doorbell_lq
+        - path: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.161:554/cam/realmonitor?channel=1&subtype=1
           roles:
             - detect
     detect:
