@@ -32,9 +32,6 @@ ffmpeg:
   output_args:
     record: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c:v copy -c:a aac
 
-rtmp:
-  enabled: true
-
 snapshots:
   enabled: true
   timestamp: false
@@ -60,7 +57,6 @@ cameras:
       inputs:
         - path: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.161:554/cam/realmonitor?channel=1&subtype=0
           roles:
-            - rtmp
             - record
         - path: rtsp://${SECRET_FRIGATE_CAMERA_AUTH}@10.20.30.161:554/cam/realmonitor?channel=1&subtype=1
           roles:
