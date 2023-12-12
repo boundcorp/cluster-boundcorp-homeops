@@ -49,7 +49,7 @@ spec:
                   key: postgresql-postgres-password
             - name: POSTGRES_DB
               value: recipes
-          image: docker.io/bitnami/postgresql:11.5.0-debian-9-r60
+          image: bitnami/postgresql:14
           imagePullPolicy: IfNotPresent
           livenessProbe:
             exec:
