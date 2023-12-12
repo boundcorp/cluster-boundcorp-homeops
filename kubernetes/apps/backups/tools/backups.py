@@ -136,7 +136,7 @@ class Backups(object):
         }, indent=2))
 
     def remote_status(self, remote):
-        local = self.destination(remote)
+        local = self.remote_local_folder(remote)
         if not os.path.exists(local):
             return {
                 "remote": remote,
@@ -152,13 +152,16 @@ class Backups(object):
             "large": [(k, sizeof_fmt(v)) for k, v in large_files(local, local)]
         }
 
-    def destination(self, remote) -> Path:
+    def remote_local_folder(self, remote) -> Path:
         location, path = remote.split(":")
         return Path(os.path.join(CURRENT_DIRECTORY, "remotes", location + (path and f"-{path}" or "")))
 
-    def sync(self, dryrun=False):
+    def sync(self):
+        self.sync_remotes()
+
+    def sync_remotes(self):
         for remote in self.remotes:
-            destination = self.destination(remote)
+            destination = self.remote_local_folder(remote)
             logger.info("Syncing %s -> %s", remote, destination)
             subprocess.check_output([
                 "rclone", "sync", remote, destination

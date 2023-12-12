@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: backups-toolbox-pod
+  name: toolbox-pod
   namespace: backups
 spec:
   containers:
@@ -20,7 +20,8 @@ spec:
         - name: syncthing-config
           mountPath: /config/syncthing
         - name: rclone-config
-          mountPath: /config/rclone
+          subPath: rclone.conf
+          mountPath: /root/.config/rclone/rclone.conf
           readOnly: true
   volumes:
     - name: leeward-backups
