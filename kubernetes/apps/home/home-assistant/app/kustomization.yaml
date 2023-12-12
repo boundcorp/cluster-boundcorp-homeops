@@ -7,3 +7,4 @@ resources:
   - home-assistant.sops.yaml
   - helm-release.yaml
   - volsync.yaml
+  - wyoming-whisper.yaml
