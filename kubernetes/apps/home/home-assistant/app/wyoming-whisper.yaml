@@ -31,6 +31,7 @@ spec:
     persistence:
       data:
         enabled: true
+        accessMode: ReadWriteOnce
     resources:
       requests:
         cpu: 100m
