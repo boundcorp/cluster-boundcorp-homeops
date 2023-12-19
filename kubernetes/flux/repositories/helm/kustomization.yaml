@@ -8,6 +8,7 @@ resources:
   - ./cilium.yaml
   - ./coredns.yaml
   - ./csi-driver-nfs.yaml
+  - ./ethereum-helm-charts.yaml
   - ./external-dns.yaml
   - ./grafana.yaml
   - ./hajimari.yaml
@@ -20,5 +21,6 @@ resources:
   - ./prometheus-community.yaml
   - ./rook-ceph-charts.yaml
   - ./stakater.yaml
+  - ./tailscale-relay.yaml
   - ./vector.yaml
   - ./weave-gitops.yaml

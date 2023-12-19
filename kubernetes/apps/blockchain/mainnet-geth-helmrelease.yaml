@@ -1,0 +1,53 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mainnet-geth
+  namespace: blockchain
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: geth
+      version: v1.0.7
+      sourceRef:
+        kind: HelmRepository
+        name: ethereum-helm-charts
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    replicas: 1
+
+    persistence:
+      enabled: true
+      existingClaim: mainnet-geth
+
+    extraArgs:
+      - --mainnet
+      - --syncmode=snap
+      - --txlookuplimit=0
+      - --graphql
+      - --graphql.vhosts=*
+      - --http.api=eth,net,web3,debug,txpool
+      - --txpool.globalslots=50000
+      - --txpool.globalqueue=50000
+      - --maxpeers=1000
+      - --cache=128000
+
+    resources:
+      requests:
+        cpu: 2000m
+        memory: 8Gi
+      limits:
+        cpu: 6000m
+        memory: 12Gi

@@ -1,35 +1,59 @@
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: toolbox-pod
   namespace: backups
 spec:
-  containers:
-    - name: container
-      image: ubuntu:latest
-      imagePullPolicy: IfNotPresent
-      command: ["/bin/bash", "-c", "--"]
-      args: ["while true; do sleep 30; done;"]
-      env:
-        - name: TZ
-          value: "${TIMEZONE}"
-      volumeMounts:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: toolbox-pod
+  template:
+    metadata:
+      labels:
+        app: toolbox-pod
+    spec:
+      containers:
+        - name: container
+          image: ubuntu:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-c", "--"]
+          args: ["while true; do sleep 30; done;"]
+          env:
+            - name: TZ
+              value: "${TIMEZONE}"
+          volumeMounts:
+            - name: leeward-backups
+              mountPath: /backups
+            - name: syncthing-config
+              mountPath: /config/syncthing
+            - name: rclone-config
+              subPath: rclone.conf
+              mountPath: /root/.config/rclone/rclone.conf
+              readOnly: true
+      volumes:
         - name: leeward-backups
-          mountPath: /backups
-        - name: syncthing-config
-          mountPath: /config/syncthing
+          persistentVolumeClaim:
+            claimName: leeward-backups
         - name: rclone-config
-          subPath: rclone.conf
-          mountPath: /root/.config/rclone/rclone.conf
-          readOnly: true
-  volumes:
-    - name: leeward-backups
-      persistentVolumeClaim:
-        claimName: leeward-backups
-    - name: rclone-config
-      secret:
-        secretName: rclone-config
-    - name: syncthing-config
-      persistentVolumeClaim:
-        claimName: syncthing-config
+          secret:
+            secretName: rclone-config
+        - name: syncthing-config
+          persistentVolumeClaim:
+            claimName: syncthing-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: toolbox-pod
+  namespace: backups
+spec:
+  selector:
+    app: toolbox-pod
+  ports:
+    - port: 22
+      targetPort: 22
+      protocol: TCP
+      name: ssh
