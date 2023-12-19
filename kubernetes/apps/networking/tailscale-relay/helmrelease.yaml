@@ -27,7 +27,7 @@ spec:
     keepHistory: false
   values:
     config:
-      authKey: "${TAILSCALE_AUTH_KEY}"
+      authKey: "${SECRET_TAILSCALE_AUTH_KEY}"
       variables:
         TAILSCALE_ADVERTISE_ROUTES: "${TAILSCALE_ADVERTISE_ROUTES}"
         TAILSCALE_HOSTNAME: "tailscale-relay-${CLUSTER_NAME}"
