@@ -3,16 +3,29 @@ scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "${scriptDir}/.." || exit 1
 set -e
 
+function warn() {
+  echo "$*" 1>&2
+}
+
+function info() {
+  if [[ -n "$SOPS_GIT_VERBOSE" ]] ; then
+    echo "$*" 1>&2
+  fi
+}
+
 if [[ "$1" != ".sops.yaml" ]] ; then
-  if [[ -z "$(grep encrypted_regex $1)" ]] ; then
+  if [[ -z "$(grep '^sops:' $1)" ]] ; then
 	  if [[ -z "$(grep data: $1)" && -z "$(grep stringData: $1)" ]] ; then
-		  echo "NO DATA TO ENCRYPT: $1" 1>&2
+		  warn "NO DATA TO ENCRYPT: $1"
 	  else
-		  echo "ENCRYPT: $1" 1>&2
+		  info "ENCRYPT: $1" 1>&2
 		  sops --encrypt "$1"
 	  fi
   else
-	  echo "ALREADY ENCRYPTED: $1" 1>&2
+	  info "ALREADY ENCRYPTED: $1" 1>&2
 	  cat $1
   fi
+else
+  info "SKIP: $1" 1>&2
+  cat $1
 fi

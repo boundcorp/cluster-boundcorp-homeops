@@ -32,3 +32,20 @@ kubernetes:
             '/dev/sda', # 4tb.B.1
             '/dev/sdb', # 4tb.B.2
           ]
+        iota:
+          ansible_user: setup
+          ansible_host: 10.20.30.115
+          rook_devices: [
+            '/dev/sda', # Bay 1
+            '/dev/sdb', # Bay 2
+            '/dev/sdc', # Bay 3
+            '/dev/sdd', # Bay 4
+            '/dev/sde', # Bay 5
+            '/dev/sdf', # Bay 6
+            '/dev/sdg', # Bay 7
+            '/dev/sdh', # Bay 8
+            '/dev/sdi', # Bay 9
+            '/dev/sdj', # Bay 10
+            '/dev/sdk', # Bay 11
+            '/dev/sdl', # Bay 12
+          ]

@@ -2,14 +2,14 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: mainnet-geth
+  name: mainnet-prysm
   namespace: blockchain
 spec:
   interval: 30m
   chart:
     spec:
-      chart: geth
-      version: v1.0.7
+      chart: prysm
+      version: v1.1.1
       sourceRef:
         kind: HelmRepository
         name: ethereum-helm-charts
@@ -26,28 +26,14 @@ spec:
   uninstall:
     keepHistory: false
   values:
-    replicas: 1
-
-    persistence:
-      enabled: true
-      existingClaim: mainnet-geth
-
+    mode: "beacon"
     extraArgs:
       - --mainnet
-      - --syncmode=snap
-      - --txlookuplimit=0
-      - --graphql
-      - --graphql.vhosts=*
-      - --http.api=eth,net,web3,debug,txpool
-      - --txpool.globalslots=50000
-      - --txpool.globalqueue=50000
-      - --maxpeers=1000
-      - --cache=128000
+      - --execution-endpoint=http://mainnet-geth:8551
+      - --checkpoint-sync-url=https://sync-mainnet.beaconcha.in
+      - --genesis-beacon-api-url=https://sync-mainnet.beaconcha.in
 
     resources:
-      requests:
-        cpu: 2000m
-        memory: 8Gi
       limits:
-        cpu: 6000m
-        memory: 12Gi
+        cpu: 2000m
+        memory: 4Gi

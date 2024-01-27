@@ -102,9 +102,9 @@ spec:
       - name: ceph-block-nvme-norepl
         spec:
           failureDomain: host
-          deviceClass: ssd
+          deviceClass: hdd
           replicated:
-            size: 1
+            size: 3
             requireSafeReplicaSize: false
         storageClass:
           enabled: true
