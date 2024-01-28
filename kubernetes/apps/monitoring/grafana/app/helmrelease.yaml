@@ -96,6 +96,6 @@ spec:
             - *host
     persistence:
       enabled: true
-      storageClassName: ceph-block-nvme-norepl
+      storageClassName: ceph-block-hdd
     testFramework:
       enabled: false

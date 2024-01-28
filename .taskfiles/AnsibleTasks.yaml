@@ -67,10 +67,18 @@ tasks:
       ANSIBLE_CONFIG: "{{.ANSIBLE_DIR}}/ansible.cfg"
 
   nuke-rook-ceph:
-    desc: Uninstall Kubernetes on the nodes
+    desc: Wipe rook-ceph disks on the nodes
     dir: "{{.ANSIBLE_DIR}}"
     interactive: true
     cmd: ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yaml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-nuke-rook-ceph.yaml
+    env:
+      ANSIBLE_CONFIG: "{{.ANSIBLE_DIR}}/ansible.cfg"
+
+  list-rook-ceph:
+    desc: List rook-ceph disks on the nodes
+    dir: "{{.ANSIBLE_DIR}}"
+    interactive: true
+    cmd: ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yaml {{.ANSIBLE_PLAYBOOK_DIR}}/cluster-list-rook-ceph.yaml
     env:
       ANSIBLE_CONFIG: "{{.ANSIBLE_DIR}}/ansible.cfg"
 

@@ -1,0 +1,17 @@
+---
+- hosts:
+    - worker
+    - master
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+  tasks:
+    - name: List disks
+      block:
+        - name: List the drives
+          ansible.builtin.shell: "lsblk {{item}}"
+          with_items: "{{ rook_devices | default([]) }}"
+          register: disks
+
+        - debug: msg="{{ item.stdout_lines | join("\n") }}"
+          with_items: "{{ disks['results'] }}"

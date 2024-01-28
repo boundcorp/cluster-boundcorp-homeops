@@ -64,6 +64,7 @@ spec:
     persistence:
       config:
         enabled: true
+        storageClass: ceph-block-hdd
         size: 20Gi
       transcode:
         enabled: true
