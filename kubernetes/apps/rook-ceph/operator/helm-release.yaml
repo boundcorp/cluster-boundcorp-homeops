@@ -34,7 +34,3 @@ spec:
       enableCephfsSnapshotter: true
     monitoring:
       enabled: true
-    resources:
-      requests:
-        cpu: 1000m
-        memory: 2000Mi

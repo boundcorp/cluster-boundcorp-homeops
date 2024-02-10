@@ -5,4 +5,3 @@ resources:
   - namespace.yaml
   - data-pvc.yaml
   #- helm-release.yaml
-  #- volsync.yaml
