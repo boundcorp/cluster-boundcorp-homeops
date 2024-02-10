@@ -10,4 +10,4 @@ spec:
   resources:
     requests:
       storage: 100Mi
-  storageClassName: ceph-block-nvme-norepl
+  storageClassName: ceph-block-hdd
