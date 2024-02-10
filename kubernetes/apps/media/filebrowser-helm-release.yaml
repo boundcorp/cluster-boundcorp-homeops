@@ -39,7 +39,8 @@ spec:
     service:
       main:
         ports:
-          http: 8080
+          http:
+            port: 8080
     persistence:
       srv:
         enabled: true
