@@ -60,9 +60,9 @@ spec:
 
             # Parameters
 
-            OUTPUT_FILE="/srv/\${1:-junk}"
+            OUTPUT_FILE="/srv/$${1:-junk}"
             BLOCK_SIZE="1G"
-            COUNT="\${2:-1024}" # Default 1TB, given BLOCK_SIZE of 1G
+            COUNT="$${2:-1024}" # Default 1TB, given BLOCK_SIZE of 1G
 
             # Create and write to the file, measuring write speed
             echo "Starting disk write speed test..."
