@@ -4,8 +4,8 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./operator
-  - ./cluster
-  - ./dashboard
+  #- ./cluster
+  #- ./dashboard
   #- ./rook-direct-mount
   #- ./snapshot-controller
   #- ./cephobjectstore.yaml
