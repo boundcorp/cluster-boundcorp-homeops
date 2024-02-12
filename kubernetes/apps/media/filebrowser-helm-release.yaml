@@ -69,8 +69,7 @@ spec:
             for i in $(seq 1 $COUNT); do
                 DEST=$${OUTPUT_FILE}_$${i}
                 echo "$(date) - Writing block $i of $$COUNT to $$DEST"
-                time dd if=/dev/zero of=$$DEST bs=$$BLOCK_SIZE count=1 conv=fsync
-                echo "Block $i written."
+                dd if=/dev/zero of=$$DEST bs=$$BLOCK_SIZE count=1 conv=fsync
             done
 
             echo "Disk write speed test completed."
