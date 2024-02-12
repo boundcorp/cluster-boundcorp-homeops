@@ -68,7 +68,7 @@ spec:
             echo "Starting disk write speed test..."
             for i in $(seq 1 $COUNT); do
                 DEST=$${OUTPUT_FILE}_$${i}
-                echo "Writing block $i of $$COUNT to $$DEST"
+                echo "$(date) - Writing block $i of $$COUNT to $$DEST"
                 time dd if=/dev/zero of=$$DEST bs=$$BLOCK_SIZE count=1 conv=fsync
                 echo "Block $i written."
             done
