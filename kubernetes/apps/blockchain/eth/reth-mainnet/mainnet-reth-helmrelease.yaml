@@ -1,0 +1,38 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mainnet-reth
+  namespace: blockchain
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: reth
+      version: 0.0.13
+      sourceRef:
+        kind: HelmRepository
+        name: ethereum-helm-charts
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    replicas: 1
+
+    persistence:
+      enabled: true
+      existingClaim: mainnet-reth
+
+    resources:
+      limits:
+        cpu: 4000m
+        memory: 16Gi
