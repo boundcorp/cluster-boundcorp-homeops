@@ -26,15 +26,9 @@ spec:
     keepHistory: false
   values:
     env:
-              JELLYFIN_CACHE_DIR: /cache
-              JELLYFIN_CONFIG_DIR: /config/config
-              JELLYFIN_DATA_DIR: /config
-              JELLYFIN_FFMPEG: /usr/lib/jellyfin-ffmpeg/ffmpeg
-              JELLYFIN_LOG_DIR: /config/log
-              JELLYFIN_WEB_DIR: /usr/share/jellyfin-web
     image:
-      repository: ghcr.io/vaskozl/jellyfin-server
-      tag: 10.8.13@sha256:cb3330ef098055d53cefdb2fb26dc42aa66a593c4f4622825701c875f60d9b17
+      repository: jellyfin/jellyfin
+      tag: latest
     service:
       main:
         type: LoadBalancer
@@ -73,6 +67,7 @@ spec:
         enabled: true
         storageClass: ceph-block-hdd
         size: 20Gi
+        mountPath: /jellyfin
       transcode:
         enabled: true
         type: emptyDir
