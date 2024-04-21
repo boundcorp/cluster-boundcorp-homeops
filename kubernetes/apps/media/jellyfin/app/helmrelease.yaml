@@ -70,7 +70,7 @@ spec:
                 memory: 4Gi
         pod:
           nodeSelector:
-            intel.feature.node.kubernetes.io/gpu: "true"
+            feature.node.kubernetes.io/custom-intel-gpu: "true"
           securityContext:
             runAsUser: 568
             runAsGroup: 568
