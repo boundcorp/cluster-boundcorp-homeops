@@ -26,7 +26,8 @@ spec:
     keepHistory: false
   values:
     image:
-      repository: jellyfin/jellyfin
+      repository: ghcr.io/vaskozl/jellyfin-server
+      tag: 10.8.13@sha256:cb3330ef098055d53cefdb2fb26dc42aa66a593c4f4622825701c875f60d9b17
     service:
       main:
         type: LoadBalancer
