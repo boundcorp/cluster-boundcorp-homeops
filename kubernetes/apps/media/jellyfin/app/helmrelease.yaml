@@ -1,98 +1,123 @@
----
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: jellyfin
-  namespace: media
 spec:
-  interval: 10m
+  interval: 30m
   chart:
     spec:
       chart: app-template
-      version: 1.5.1
+      version: 3.1.0
       sourceRef:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
-  maxHistory: 3
   install:
     remediation:
       retries: 3
   upgrade:
     cleanupOnFail: true
     remediation:
+      strategy: rollback
       retries: 3
-  uninstall:
-    keepHistory: false
+  dependsOn:
+    - name: rook-ceph-cluster
+      namespace: rook-ceph
   values:
-    env:
-    image:
-      repository: jellyfin/jellyfin
-      tag: latest
+    controllers:
+      jellyfin:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: jellyfin/jellyfin
+              tag: 10.8.13-1
+              pullPolicy: IfNotPresent
+            env:
+              DOTNET_SYSTEM_IO_DISABLEFILELOCKING: "true"
+              JELLYFIN_FFmpeg__probesize: 50000000
+              JELLYFIN_FFmpeg__analyzeduration: 50000000
+              JELLYFIN_PublishedServerUrl: &host https://{{ .Release.Name }}.${SECRET_PUBLIC_DOMAIN}
+              TZ: America/Los_Angeles
+            probes:
+              liveness: &probes
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: &port 8096
+                  initialDelaySeconds: 0
+                  periodSeconds: 10
+                  timeoutSeconds: 1
+                  failureThreshold: 3
+              readiness: *probes
+              startup:
+                enabled: false
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                gpu.intel.com/i915: 1
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                gpu.intel.com/i915: 1
+                memory: 4Gi
+        pod:
+          nodeSelector:
+            intel.feature.node.kubernetes.io/gpu: "true"
+          securityContext:
+            runAsUser: 568
+            runAsGroup: 568
+            runAsNonRoot: true
+            fsGroup: 568
+            fsGroupChangePolicy: OnRootMismatch
+            supplementalGroups: [44, 10000]
     service:
-      main:
+      app:
+        controller: jellyfin
         type: LoadBalancer
         externalIPs:
           - ${SVC_JELLYFIN_ADDR}
         externalTrafficPolicy: Local
         ports:
           http:
-            port: &port 8096
+            port: &port "8096"
     ingress:
       main:
         enabled: true
+        className: external
         annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-production
           external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_PRIVATE_DOMAIN}"
           external-dns.home.arpa/enabled: "true"
           cert-manager.home.arpa/enabled: "true"
         hosts:
-          - host: &host jellyfin.${SECRET_PUBLIC_DOMAIN}
+          - host: &host "{{ .Release.Name }}.${SECRET_PUBLIC_DOMAIN}"
             paths:
               - path: /
-                pathType: Prefix
+                service:
+                  identifier: app
+                  port: http
         tls:
-          - hosts:
-              - *host
-            secretName: jellyfin-tls
-    podSecurityContext:
-      runAsUser: 568
-      runAsGroup: 568
-      fsGroup: 568
-      fsGroupChangePolicy: OnRootMismatch
-      supplementalGroups:
-        - 44  # video
-        - 109  # render
+          - hosts: [*host]
+            secretName: "{{ .Release.Name }}-tls"
     persistence:
       config:
         enabled: true
         storageClass: ceph-block-hdd
         size: 20Gi
-        mountPath: /jellyfin
+        accessMode: ReadWriteOnce
+      tmp:
+        type: emptyDir
       transcode:
-        enabled: true
         type: emptyDir
       media:
         enabled: true
         existingClaim: mediamega-data
         mountPath: /media
-    probes:
-      liveness: &probes
-        enabled: true
-        custom: true
-        spec:
-          httpGet:
-            path: /health
-            port: *port
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-      readiness: *probes
-      startup:
-        enabled: false
-    resources:
-      requests:
-        cpu: 1
-        memory: 1Gi
-      limits:
-        memory: 3Gi
+
