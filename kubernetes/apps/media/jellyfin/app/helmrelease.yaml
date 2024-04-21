@@ -120,5 +120,4 @@ spec:
       media:
         enabled: true
         existingClaim: mediamega-data
-        mountPath: /media
 
