@@ -7,6 +7,6 @@ resources:
   - ./cluster
   - ./dashboard
   - ./rook-direct-mount
-  #- ./snapshot-controller
-  #- ./cephobjectstore.yaml
-  #- ./volume-snapshot-class.yaml
+  - ./snapshot-controller
+  - ./cephobjectstore.yaml
+  - ./volume-snapshot-class.yaml
