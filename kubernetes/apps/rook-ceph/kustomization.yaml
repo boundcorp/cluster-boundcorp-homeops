@@ -5,7 +5,7 @@ resources:
   - ./namespace.yaml
   - ./operator
   - ./cluster
-  #- ./dashboard
+  - ./dashboard
   #- ./rook-direct-mount
   #- ./snapshot-controller
   #- ./cephobjectstore.yaml
