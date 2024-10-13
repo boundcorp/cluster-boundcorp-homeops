@@ -11,3 +11,4 @@ resources:
   - ./external-snapshotter/ks.yaml
   - ./node-feature-discovery/ks.yaml
   - ./intel-gpu-plugin/ks.yaml
+  - ./nfs-provisioner/ks.yaml
