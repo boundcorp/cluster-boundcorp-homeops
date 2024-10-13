@@ -7,7 +7,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-block-hdd
+  storageClassName: nfs-nova-nvme
   resources:
     requests:
       storage: 1Ti

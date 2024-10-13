@@ -44,7 +44,7 @@ spec:
       data:
         enabled: true
         accessMode: ReadWriteOnce
-        storageClass: ceph-block-hdd
+        storageClass: nfs-nova-nvme
         size: 1Gi
     resources:
       requests:

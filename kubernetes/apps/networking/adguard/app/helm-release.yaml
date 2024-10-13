@@ -31,4 +31,4 @@ spec:
     persistence:
       config:
         enabled: true
-        storageClass: ceph-block
+        storageClass: nfs-nova-nvme

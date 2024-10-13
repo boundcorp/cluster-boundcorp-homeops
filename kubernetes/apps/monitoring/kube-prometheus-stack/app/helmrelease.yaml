@@ -41,7 +41,7 @@ spec:
         storage:
           volumeClaimTemplate:
             spec:
-              storageClassName: ceph-block-hdd
+              storageClassName: nfs-nova-nvme
               resources:
                 requests:
                   storage: 8Gi
@@ -200,7 +200,7 @@ spec:
         storageSpec:
           volumeClaimTemplate:
             spec:
-              storageClassName: ceph-block-hdd
+              storageClassName: nfs-nova-nvme
               resources:
                 requests:
                   storage: 25Gi

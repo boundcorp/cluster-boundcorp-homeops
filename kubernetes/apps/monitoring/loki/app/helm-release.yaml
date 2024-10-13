@@ -138,7 +138,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       persistence:
         size: 10Gi
-        storageClass: ceph-block-hdd
+        storageClass: nfs-nova-nvme
     read:
       replicas: 3
       affinity: |
@@ -166,7 +166,7 @@ spec:
           emptyDir: {}
       persistence:
         size: 10Gi
-        storageClass: ceph-block-hdd
+        storageClass: nfs-nova-nvme
     monitoring:
       serviceMonitor:
         enabled: false

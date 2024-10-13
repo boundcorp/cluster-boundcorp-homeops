@@ -132,4 +132,4 @@ spec:
           requests:
             storage: 2Gi
         volumeMode: Filesystem
-        storageClassName: ceph-block-hdd
+        storageClassName: nfs-nova-nvme
