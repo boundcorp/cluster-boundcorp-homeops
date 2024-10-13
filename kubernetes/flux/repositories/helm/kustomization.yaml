@@ -19,7 +19,6 @@ resources:
   - ./metrics-server.yaml
   - ./node-feature-discovery.yaml
   - ./prometheus-community.yaml
-  - ./csi-driver-nfs.yaml
   - ./rook-ceph-charts.yaml
   - ./stakater.yaml
   - ./tailscale-relay.yaml
