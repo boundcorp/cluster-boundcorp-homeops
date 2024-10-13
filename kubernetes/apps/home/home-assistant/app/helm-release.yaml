@@ -65,13 +65,13 @@ spec:
       runAsGroup: 568
       fsGroup: 568
       fsGroupChangePolicy: OnRootMismatch
+    globalMounts:
+      - path: /.config
+        type: emptyDir
     persistence:
       config:
         enabled: true
         existingClaim: home-assistant-config-v1
-      .config:
-        enabled: true
-        type: emptyDir
     podAnnotations:
       secret.reloader.stakater.com/reload: "home-assistant"
     addons:
