@@ -11,7 +11,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: recipes
+      app: recipes-postgresql
   serviceName: recipes-postgresql
   updateStrategy:
     type: RollingUpdate
