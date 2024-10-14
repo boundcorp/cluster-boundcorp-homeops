@@ -18,7 +18,7 @@ spec:
   template:
     metadata:
       labels:
-        app: recipes
+        app: recipes-postgresql
         tier: database
       name: recipes-postgresql
     spec:
