@@ -89,6 +89,27 @@ spec:
           volumeMounts:
             - mountPath: /bitnami/postgresql
               name: recipes-data
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - |
+              mkdir -p /bitnami/postgresql/data
+              chmod 700 /bitnami/postgresql/data
+              find /bitnami/postgresql -mindepth 0 -maxdepth 1 -not -name ".snapshot" -not -name "lost+found" | \
+                xargs chown -R 1001:1001
+          image: docker.io/bitnami/minideb:stretch
+          imagePullPolicy: Always
+          name: init-chmod-data
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - mountPath: /bitnami/postgresql
+              name: recipes-data
       dnsPolicy: ClusterFirst
       restartPolicy: Always
       securityContext:
