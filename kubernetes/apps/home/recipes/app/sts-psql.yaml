@@ -17,8 +17,6 @@ spec:
     type: RollingUpdate
   template:
     metadata:
-      annotations:
-        backup.velero.io/backup-volumes: recipes-data
       labels:
         app: recipes
         tier: database
