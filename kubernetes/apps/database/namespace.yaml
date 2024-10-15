@@ -5,3 +5,4 @@ metadata:
   name: database
   annotations:
     kustomize.toolkit.fluxcd.io/prune: disabled
+---
