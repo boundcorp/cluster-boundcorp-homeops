@@ -6,6 +6,7 @@ resources:
   - ./bjw-s.yaml
   - ./backube.yaml
   - ./cloudnative-pg.yaml
+  - ./crunchydata.yaml
   - ./cilium.yaml
   - ./coredns.yaml
   - ./csi-driver-nfs.yaml
