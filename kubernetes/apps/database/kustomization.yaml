@@ -6,4 +6,6 @@ resources:
   # Pre Flux-Kustomizations
   - ./namespace.yaml
   # Flux-Kustomizations
-  - ./cloudnative-pg/ks.yaml
+  - ./crunchy/secret.sops.yaml
+  - ./crunchy/helmrelease.yaml
+  - ./crunchy/cluster.yaml
