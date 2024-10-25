@@ -104,7 +104,7 @@ spec:
       config:
         enabled: true
         mountPath: /config
-        storageClass: ceph-block-hdd
+        storageClass: nfs-nova-nvme
 
       transcode:
         enabled: true
