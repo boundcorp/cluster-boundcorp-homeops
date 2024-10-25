@@ -28,89 +28,7 @@ spec:
       restartPolicy: Always
       serviceAccount: recipes
       serviceAccountName: recipes
-      initContainers:
-        - name: init-chmod-data
-          env:
-            - name: SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: recipes
-                  key: secret-key
-            - name: DB_ENGINE
-              value: django.db.backends.postgresql_psycopg2
-            - name: POSTGRES_HOST
-              value: recipes-postgresql
-            - name: POSTGRES_PORT
-              value: "5432"
-            - name: POSTGRES_USER
-              value: postgres
-            - name: POSTGRES_DB
-              value: recipes
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: recipes
-                  key: postgresql-postgres-password
-          image: vabene1111/recipes
-          imagePullPolicy: Always
-          resources:
-            requests:
-              cpu: 250m
-              memory: 64Mi
-          command:
-            - sh
-            - -c
-            - |
-              set -e
-              source venv/bin/activate
-              echo "Updating database"
-              python manage.py migrate
-              python manage.py collectstatic_js_reverse
-              python manage.py collectstatic --noinput
-              echo "Setting media file attributes"
-              #chown -R 65534:65534 /opt/recipes/mediafiles
-              find /opt/recipes/mediafiles -type d | xargs -r chmod 755
-              find /opt/recipes/mediafiles -type f | xargs -r chmod 644
-              echo "Done"
-          securityContext:
-            runAsUser: 0
-          volumeMounts:
-            - mountPath: /opt/recipes/mediafiles
-              name: media
-              # mount as subPath due to lost+found on ext4 pvc
-              subPath: files
-            - mountPath: /opt/recipes/staticfiles
-              name: static
-              # mount as subPath due to lost+found on ext4 pvc
-              subPath: files
       containers:
-        - name: recipes-nginx
-          image: nginx:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 80
-              protocol: TCP
-              name: http
-            - containerPort: 8080
-              protocol: TCP
-              name: gunicorn
-          resources:
-            requests:
-              cpu: 250m
-              memory: 64Mi
-          volumeMounts:
-            - mountPath: /media
-              name: media
-              # mount as subPath due to lost+found on ext4 pvc
-              subPath: files
-            - mountPath: /static
-              name: static
-              # mount as subPath due to lost+found on ext4 pvc
-              subPath: files
-            - name: nginx-config
-              mountPath: /etc/nginx/nginx.conf
-              subPath: nginx-config
-              readOnly: true
         - name: recipes
           image: vabene1111/recipes
           imagePullPolicy: IfNotPresent
@@ -142,7 +60,7 @@ spec:
             requests:
               cpu: 250m
               memory: 64Mi
-          volumeMounts:
+          volumeMounts: &volume-mounts
             - mountPath: /opt/recipes/mediafiles
               name: media
               # mount as subPath due to lost+found on ext4 pvc
@@ -151,35 +69,99 @@ spec:
               name: static
               # mount as subPath due to lost+found on ext4 pvc
               subPath: files
-          env:
+          env: &django-env
             - name: DEBUG
               value: "0"
             - name: ALLOWED_HOSTS
               value: '*'
+            - name: DB_ENGINE
+              value: django.db.backends.postgresql_psycopg2
             - name: SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: recipes
                   key: secret-key
-            - name: GUNICORN_MEDIA
-              value: "0"
-            - name: DB_ENGINE
-              value: django.db.backends.postgresql_psycopg2
             - name: POSTGRES_HOST
-              value: recipes-postgresql
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-recipes
+                  key: host
             - name: POSTGRES_PORT
-              value: "5432"
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-recipes
+                  key: pgbouncer-port
             - name: POSTGRES_USER
-              value: postgres
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-recipes
+                  key: user
             - name: POSTGRES_DB
-              value: recipes
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-recipes
+                  key: dbname
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: recipes
-                  key: postgresql-postgres-password
+                  name: postgres-pguser-recipes
+                  key: password
           securityContext:
             runAsUser: 65534
+        - name: recipes-nginx
+          image: nginx:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              protocol: TCP
+              name: http
+            - containerPort: 8080
+              protocol: TCP
+              name: gunicorn
+          resources:
+            requests:
+              cpu: 250m
+              memory: 64Mi
+          volumeMounts:
+            - mountPath: /media
+              name: media
+              # mount as subPath due to lost+found on ext4 pvc
+              subPath: files
+            - mountPath: /static
+              name: static
+              # mount as subPath due to lost+found on ext4 pvc
+              subPath: files
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx-config
+              readOnly: true
+      initContainers:
+        - name: init-chmod-data
+          env: *django-env
+          image: vabene1111/recipes
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 250m
+              memory: 64Mi
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              source venv/bin/activate
+              echo "Updating database"
+              python manage.py migrate
+              python manage.py collectstatic_js_reverse
+              python manage.py collectstatic --noinput
+              echo "Setting media file attributes"
+              #chown -R 65534:65534 /opt/recipes/mediafiles
+              find /opt/recipes/mediafiles -type d | xargs -r chmod 755
+              find /opt/recipes/mediafiles -type f | xargs -r chmod 644
+              echo "Done"
+          securityContext:
+            runAsUser: 0
+          volumeMounts: *volume-mounts
       volumes:
         - name: media
           persistentVolumeClaim:

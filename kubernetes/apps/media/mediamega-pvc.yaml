@@ -9,5 +9,5 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: 10Ti
-  storageClassName: cephfs-hdd
+      storage: 1Ti
+  storageClassName: nfs-nova-nvme
