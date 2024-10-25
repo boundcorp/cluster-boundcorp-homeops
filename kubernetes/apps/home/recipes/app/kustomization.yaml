@@ -6,8 +6,6 @@ resources:
   - secrets.sops.yaml
   - serviceaccount.yaml
   - data-pvc.yaml
-  - sts-psql.yaml
-  - svc-psql.yaml
   - deployment.yaml
   - service.yaml
   - ingress.yaml
