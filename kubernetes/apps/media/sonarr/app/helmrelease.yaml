@@ -32,6 +32,22 @@ spec:
       SONARR__INSTANCE_NAME: Sonarr
       SONARR__APPLICATION_URL: "https://{{ .Release.Name }}.${SECRET_PRIVATE_DOMAIN}"
       SONARR__LOG_LEVEL: info
+      SONARR__DATABASE_USER:
+        valueFrom:
+          secretKeyRef:
+            name: postgres-pguser-sonarr
+            key: user
+      SONARR__DATABASE_PASSWORD:
+        valueFrom:
+          secretKeyRef:
+            name: postgres-pguser-sonarr
+            key: password
+      SONARR__DATABASE_HOST:
+        valueFrom:
+          secretKeyRef:
+            name: postgres-pguser-sonarr
+            key: host
+
     service:
       main:
         ports:
