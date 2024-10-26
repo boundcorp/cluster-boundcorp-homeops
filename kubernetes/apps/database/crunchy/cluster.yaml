@@ -63,6 +63,11 @@ spec:
         - recipes
       password:
         type: AlphaNumeric
+    - name: sonarr
+      databases:
+        - sonarr
+      password:
+        type: AlphaNumeric
 
   backups:
     pgbackrest:
