@@ -10,4 +10,4 @@ spec:
   resources:
     requests:
       storage: 2Ti
-  storageClassName: cephfs-hdd
+  storageClassName: nfs-iota-hdd-slush
