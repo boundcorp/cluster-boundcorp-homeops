@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./mediamega-pvc.yaml
+  - ./slushmedia-pvc.yaml
   - ./filebrowser-helm-release.yaml
   - ./sabnzbd/ks.yaml
   - ./radarr/ks.yaml
