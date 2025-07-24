@@ -116,4 +116,4 @@ spec:
         type: emptyDir
       media:
         enabled: true
-        existingClaim: mediamega-data
+        existingClaim: slushmedia-data
