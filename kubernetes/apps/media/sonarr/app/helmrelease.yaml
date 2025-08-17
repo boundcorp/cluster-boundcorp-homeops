@@ -82,7 +82,7 @@ spec:
       media:
         enabled: true
         mountPath: /media
-        existingClaim: mediamega-data
+        existingClaim: slushmedia-data
     resources:
       requests:
         cpu: 10m

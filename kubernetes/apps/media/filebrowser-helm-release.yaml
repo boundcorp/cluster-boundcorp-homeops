@@ -41,7 +41,7 @@ spec:
     persistence:
       srv:
         enabled: true
-        existingClaim: mediamega-data
+        existingClaim: slushmedia-data
       config:
         enabled: true
         type: configMap
