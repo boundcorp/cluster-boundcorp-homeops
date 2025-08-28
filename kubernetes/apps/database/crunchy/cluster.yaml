@@ -68,14 +68,14 @@ spec:
         - sonarr
       password:
         type: AlphaNumeric
-    - name: devbox_api
+    - name: devboxdaylight
       databases:
-        - devbox_api
+        - devboxdaylight
       password:
         type: AlphaNumeric
-    - name: devbox_zeroindex
+    - name: devboxzeroindex
       databases:
-        - devbox_zeroindex
+        - devboxzeroindex
       password:
         type: AlphaNumeric
 
