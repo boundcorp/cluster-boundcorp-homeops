@@ -68,6 +68,17 @@ spec:
         - sonarr
       password:
         type: AlphaNumeric
+    - name: devbox_api
+      databases:
+        - devbox_api
+      password:
+        type: AlphaNumeric
+    - name: devbox_zeroindex
+      databases:
+        - devbox_zeroindex
+      password:
+        type: AlphaNumeric
+
 
   backups:
     pgbackrest:
