@@ -8,3 +8,5 @@ data:
   init.sql: |
     \c devboxergo
     CREATE EXTENSION IF NOT EXISTS pgvector;
+    \c test_devboxergo
+    CREATE EXTENSION IF NOT EXISTS pgvector;

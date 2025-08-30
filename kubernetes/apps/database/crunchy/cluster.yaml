@@ -86,6 +86,7 @@ spec:
     - name: devboxergo
       databases:
         - devboxergo
+        - test_devboxergo
       password:
         type: AlphaNumeric
       options: "CREATEDB"
