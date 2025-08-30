@@ -51,10 +51,8 @@ spec:
               postgres-operator.crunchydata.com/data: postgres
 
   databaseInitSQL:
-    - name: devboxergo-init
-      database: devboxergo
-      sql: |
-        CREATE EXTENSION IF NOT EXISTS pgvector;
+    name: devboxergo-init
+    key: init.sql
 
   users:
     # Superuser

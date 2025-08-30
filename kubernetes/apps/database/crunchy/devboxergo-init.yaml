@@ -1,0 +1,10 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devboxergo-init
+  namespace: database
+data:
+  init.sql: |
+    \c devboxergo
+    CREATE EXTENSION IF NOT EXISTS pgvector;

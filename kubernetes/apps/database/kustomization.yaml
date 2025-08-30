@@ -8,4 +8,5 @@ resources:
   # Flux-Kustomizations
   - ./crunchy/secret.sops.yaml
   - ./crunchy/helmrelease.yaml
+  - ./crunchy/devboxergo-init.yaml
   - ./crunchy/cluster.yaml
