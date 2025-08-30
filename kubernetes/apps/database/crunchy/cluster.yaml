@@ -26,6 +26,7 @@ spec:
         max_wal_size: 5GB
         pg_hba:
           - hostssl all all all md5
+        shared_preload_libraries: "pgvector"
 
   instances:
     - name: postgres
@@ -48,6 +49,12 @@ spec:
             matchLabels:
               postgres-operator.crunchydata.com/cluster: *name
               postgres-operator.crunchydata.com/data: postgres
+
+  databaseInitSQL:
+    - name: devboxergo-init
+      database: devboxergo
+      sql: |
+        CREATE EXTENSION IF NOT EXISTS pgvector;
 
   users:
     # Superuser
@@ -78,6 +85,12 @@ spec:
         - devboxzeroindex
       password:
         type: AlphaNumeric
+    - name: devboxergo
+      databases:
+        - devboxergo
+      password:
+        type: AlphaNumeric
+      options: "CREATEDB"
 
 
   backups:
