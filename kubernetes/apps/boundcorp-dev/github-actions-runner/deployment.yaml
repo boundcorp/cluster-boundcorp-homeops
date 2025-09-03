@@ -1,0 +1,60 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-actions-runner
+  namespace: boundcorp-dev
+  labels:
+    app: github-actions-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: github-actions-runner
+  template:
+    metadata:
+      labels:
+        app: github-actions-runner
+    spec:
+      containers:
+      - name: runner
+        image: myoung34/github-runner:2.321.0
+        env:
+        - name: REPO_URL
+          value: "https://github.com/palomarsystems/pds"
+        - name: RUNNER_NAME
+          value: "boundcorp-k8s-runner"
+        - name: RUNNER_WORKDIR
+          value: "/tmp/runner/work"
+        - name: RUNNER_GROUP
+          value: "default"
+        - name: LABELS
+          value: "self-hosted,linux,x64,kubernetes,boundcorp"
+        - name: EPHEMERAL
+          value: "false"
+        - name: ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: github-runner-secret
+              key: GITHUB_TOKEN
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+        - name: workdir
+          mountPath: /tmp/runner
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        securityContext:
+          privileged: true
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      - name: workdir
+        emptyDir: {}
