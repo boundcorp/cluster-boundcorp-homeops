@@ -32,6 +32,10 @@ spec:
           value: "self-hosted,linux,x64,kubernetes,boundcorp"
         - name: EPHEMERAL
           value: "false"
+        - name: DISABLE_AUTO_UPDATE
+          value: "true"
+        - name: RUNNER_ALLOW_RUNASROOT
+          value: "true"
         - name: ACCESS_TOKEN
           valueFrom:
             secretKeyRef:
