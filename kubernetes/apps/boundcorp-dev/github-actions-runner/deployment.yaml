@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: runner
-        image: myoung34/github-runner:2.321.0
+        image: myoung34/github-runner:latest
         env:
         - name: REPO_URL
           value: "https://github.com/palomarsystems/pds"
@@ -33,7 +33,7 @@ spec:
         - name: EPHEMERAL
           value: "false"
         - name: DISABLE_AUTO_UPDATE
-          value: "true"
+          value: "false"
         - name: RUNNER_ALLOW_RUNASROOT
           value: "true"
         - name: ACCESS_TOKEN
