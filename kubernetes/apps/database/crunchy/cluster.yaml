@@ -90,6 +90,13 @@ spec:
       password:
         type: AlphaNumeric
       options: "CREATEDB"
+    - name: devboxcmux
+      databases:
+        - devboxcmux
+        - test_devboxcmux
+      password:
+        type: AlphaNumeric
+      options: "CREATEDB"
 
 
   backups:
