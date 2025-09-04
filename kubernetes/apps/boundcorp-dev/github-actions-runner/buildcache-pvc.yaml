@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: buildcache-pvc
+  namespace: boundcorp-dev
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-nova-nvme
+  resources:
+    requests:
+      storage: 50Gi

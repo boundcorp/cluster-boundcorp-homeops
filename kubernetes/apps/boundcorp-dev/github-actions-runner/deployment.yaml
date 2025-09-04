@@ -46,6 +46,8 @@ spec:
           mountPath: /var/run/docker.sock
         - name: workdir
           mountPath: /tmp/runner
+        - name: build-cache
+          mountPath: /cache
         resources:
           requests:
             cpu: 100m
@@ -62,3 +64,6 @@ spec:
           type: Socket
       - name: workdir
         emptyDir: {}
+      - name: build-cache
+        persistentVolumeClaim:
+          claimName: buildcache-pvc
