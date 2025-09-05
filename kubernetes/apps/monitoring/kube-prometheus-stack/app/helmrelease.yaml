@@ -37,7 +37,7 @@ spec:
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
       alertmanagerSpec:
-        replicas: 3
+        replicas: 0  # Scaled to 0 - not currently in use
         storage:
           volumeClaimTemplate:
             spec:
@@ -190,6 +190,7 @@ spec:
           - hosts:
               - *host
       prometheusSpec:
+        replicas: 0  # Scaled to 0 - not currently in use
         ruleSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
