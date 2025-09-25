@@ -97,6 +97,11 @@ spec:
       password:
         type: AlphaNumeric
       options: "CREATEDB"
+    - name: zward
+      databases:
+        - zward
+      password:
+        type: AlphaNumeric
 
 
   backups:
