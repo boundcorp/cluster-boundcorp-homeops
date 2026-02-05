@@ -20,7 +20,6 @@ spec:
   values:
     controllers:
       main:
-        replicas: 0  # MIGRATION: scaling down to patch PV to Titan
         containers:
           main:
             command:
@@ -43,10 +42,7 @@ spec:
             protocol: TCP
     persistence:
       data:
-        enabled: true
-        accessMode: ReadWriteOnce
-        storageClass: nfs-nova-nvme
-        size: 1Gi
+        existingClaim: wyoming-whisper-data  # Migrated to Titan NFS (10.20.30.99)
     resources:
       requests:
         cpu: 100m
