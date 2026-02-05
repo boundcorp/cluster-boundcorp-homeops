@@ -42,7 +42,10 @@ spec:
             protocol: TCP
     persistence:
       data:
-        existingClaim: wyoming-whisper-data  # Migrated to Titan NFS (10.20.30.99)
+        enabled: true
+        accessMode: ReadWriteOnce
+        storageClass: nfs-titan-nvme
+        size: 1Gi
     resources:
       requests:
         cpu: 100m
