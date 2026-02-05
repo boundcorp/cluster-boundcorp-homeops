@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-titan-nvme
+  annotations:
+    # Not default yet - switch after migration complete
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: 10.20.30.99
+  share: /volume1/k8s
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
