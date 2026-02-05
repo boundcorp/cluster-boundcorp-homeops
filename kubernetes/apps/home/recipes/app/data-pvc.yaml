@@ -12,7 +12,7 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: nfs-nova-nvme
+  storageClassName: nfs-titan-nvme
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -27,4 +27,4 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: nfs-nova-nvme
+  storageClassName: nfs-titan-nvme
