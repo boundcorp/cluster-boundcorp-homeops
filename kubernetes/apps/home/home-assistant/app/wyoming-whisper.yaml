@@ -20,6 +20,7 @@ spec:
   values:
     controllers:
       main:
+        replicas: 0  # MIGRATION: scaling down to patch PV to Titan
         containers:
           main:
             command:
