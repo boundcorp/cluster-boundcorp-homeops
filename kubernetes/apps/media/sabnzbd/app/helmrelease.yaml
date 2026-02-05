@@ -62,7 +62,7 @@ spec:
       config:
         enabled: true
         mountPath: /config
-        storageClass: nfs-nova-nvme
+        storageClass: nfs-titan-nvme
       media:
         enabled: true
         mountPath: /media

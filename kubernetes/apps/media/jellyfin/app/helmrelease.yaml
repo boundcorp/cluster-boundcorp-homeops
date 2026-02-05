@@ -107,7 +107,7 @@ spec:
     persistence:
       config:
         enabled: true
-        storageClass: nfs-nova-nvme
+        storageClass: nfs-titan-nvme
         size: 50Gi
         accessMode: ReadWriteOnce
       tmp:
