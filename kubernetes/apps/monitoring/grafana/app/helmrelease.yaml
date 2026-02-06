@@ -96,6 +96,6 @@ spec:
             - *host
     persistence:
       enabled: true
-      storageClassName: nfs-nova-nvme
+      storageClassName: nfs-titan-nvme
     testFramework:
       enabled: false

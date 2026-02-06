@@ -41,7 +41,7 @@ spec:
         storage:
           volumeClaimTemplate:
             spec:
-              storageClassName: nfs-nova-nvme
+              storageClassName: nfs-titan-nvme
               resources:
                 requests:
                   storage: 8Gi
@@ -201,7 +201,7 @@ spec:
         storageSpec:
           volumeClaimTemplate:
             spec:
-              storageClassName: nfs-nova-nvme
+              storageClassName: nfs-titan-nvme
               resources:
                 requests:
                   storage: 25Gi
