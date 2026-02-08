@@ -3,7 +3,7 @@ kind: StorageClass
 metadata:
   name: nfs-titan-nvme
   annotations:
-    # Not default yet - switch after migration complete
+    storageclass.kubernetes.io/is-default-class: "true"
 provisioner: nfs.csi.k8s.io
 parameters:
   server: 10.20.30.99

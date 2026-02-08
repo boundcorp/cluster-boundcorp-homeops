@@ -3,5 +3,4 @@ kind: Kustomization
 namespace: kube-system
 resources:
   - ./helm-release.yaml
-  - ./sc-nfs-nova-nvme.yaml
   - ./sc-nfs-titan-nvme.yaml

@@ -3,7 +3,7 @@ kind: StorageClass
 metadata:
   name: nfs-nova-nvme
   annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
+    storageclass.kubernetes.io/is-default-class: "false"
 provisioner: nfs.csi.k8s.io
 parameters:
   server: 10.20.30.112

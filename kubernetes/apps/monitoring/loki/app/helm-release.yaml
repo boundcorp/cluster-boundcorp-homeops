@@ -138,7 +138,7 @@ spec:
                 topologyKey: kubernetes.io/hostname
       persistence:
         size: 10Gi
-        storageClass: nfs-nova-nvme
+        storageClass: nfs-titan-nvme
     read:
       replicas: 3
       affinity: |
@@ -166,7 +166,7 @@ spec:
           emptyDir: {}
       persistence:
         size: 10Gi
-        storageClass: nfs-nova-nvme
+        storageClass: nfs-titan-nvme
     monitoring:
       serviceMonitor:
         enabled: false
