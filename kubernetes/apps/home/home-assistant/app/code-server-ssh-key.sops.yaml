@@ -6,7 +6,7 @@ metadata:
     name: code-server
     namespace: home
 stringData:
-    id_rsa: ENC[AES256_GCM,data:LW+5sy4=,iv:YwAQMzhHm+AzlZYnj0rIIK5kmkZBgt/hwgv6PNykiHI=,tag:UmDuBIrCDaWQgNvOgJeydA==,type:str]
+    id_rsa: ENC[AES256_GCM,data:yDnFjtw=,iv:73UdqKEKXtGQNEWo8aGsIoYvtJd6iBIYbvKfLT5sJhQ=,tag:EOc6JrYfl2+0aBZBxqN6Kw==,type:str]
 sops:
     kms: []
     gcp_kms: []
@@ -16,14 +16,14 @@ sops:
         - recipient: age168rnvw24yn8722y6lnlax5rzvwpxqunaxdjef9vwjpkay8gyt3ssj4lqgc
           enc: |
             -----BEGIN AGE ENCRYPTED FILE-----
-            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBIWWpiQk0vNERXVHo0MW94
-            UWNlcUQwWThRT1lRWXM5eTBMaU1oSkJ2YVFRClNZcDBaMmIyRGEzMGlERXhvV2RM
-            V0NpWlR1NWtac3c0QXZrakZsU3l1T28KLS0tIE5QVE9nMDFqRmlMSDFhaFdZSXZ3
-            cUdFYS9jUnB2cFA0R1VwU050SnFjZjgKkiAGYH4dt+pHHFf+bsdT/i3O0kNSDsjC
-            vkTVVrkHfO1Pa4MhmAaV30v8UhUvNPEVZfrJbCvLS+av1b4L0kx9Cw==
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBpWnFabnd2dlRXU2o5M3RE
+            bG5xbFNFVll2L3JQU0gvTC9ObEIxUjBiWjJZCkZOQ2NIeWk3bytqMmhhbEZ6OENl
+            UCtCY1RLK2dvUUp2aXNWaWJtS0Y4NkUKLS0tIHN4VUtORVRCUk0rdWNtQW1QZWZR
+            UlcrWGwvK2kzTzZZYktzL1B2RXNrYlkKfi5b3RPO6cV4JJ6NWbbY0754pYlfF7xk
+            /tAr0N/HE5iKb8rnMmmclm1wDbS97WaR8ka5DRElG1vzxakYXyy5yw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2024-10-25T23:29:09Z"
-    mac: ENC[AES256_GCM,data:mHMgZmaJHALOtl3mi0itPG4qqDfaoGrrQnd8PSXXw9aiuDsS4ASk63EAFA/u6RYaCO3zI32zCe7cCci/D+dyVgwGCB8AirBDTmKpFV4MaQyRjD4bVsf9He/MSJif95S4Qg3ZQZczU84wHNhAHv5Qh+sQKupn+WiEaHQiTDH8myU=,iv:hjWGVKDwF4z9Ho+QGSbY1a5bzWpBqQrA7Aj4NXowgNQ=,tag:ZuQx20ZaasntSSNuep7nRQ==,type:str]
+    lastmodified: "2026-02-08T19:30:49Z"
+    mac: ENC[AES256_GCM,data:fGTW986oLLXSgvGORzPraAsI0OTFkbZCqKico3CY1uNwvpMwQZmcXRgrbK36YZe7BvkCGwaTcG2AuZg+/chtrdnTTbMZgpOIYusKq9bVFarmaauKeSxDTWbcKxfclmnKgyYFR7/IKZncD6Cu1hi7HKwDGAemMhaXTJN7dHy9DWY=,iv:RIxGQ5LV8orxBXIw/2NaQIAHr2GSOWnWTWkPl3uFJIA=,tag:WRhMBaDQz+Zpcs3LAHosMw==,type:str]
     pgp: []
     encrypted_regex: ^(data|stringData)$
     version: 3.7.3
