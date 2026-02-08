@@ -25,7 +25,7 @@ spec:
       postgresql:
         max_wal_size: 5GB
         pg_hba:
-          - hostssl all all all md5
+          - hostssl all all all scram-sha-256
         shared_preload_libraries: "pgvector"
 
   instances:
@@ -152,14 +152,14 @@ spec:
         #     differential: "0 1 * * 1-6" # Mon-Sat at 01:00
         #     incremental: "0 2-23 * * *" # Every hour except 01:00
 
-  dataSource:
-    pgbackrest:
-      stanza: "db"
-      configuration: *backupConfig
-      global: *backupFlag
-      repo:
-        name: "repo1"
-        s3: *s3
+  # dataSource:
+  #   pgbackrest:
+  #     stanza: "db"
+  #     configuration: *backupConfig
+  #     global: *backupFlag
+  #     repo:
+  #       name: "repo1"
+  #       s3: *s3
 
   monitoring:
     pgmonitor:
