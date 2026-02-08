@@ -30,7 +30,7 @@ spec:
       serviceAccountName: recipes
       containers:
         - name: recipes
-          image: vabene1111/recipes:2.2.0
+          image: vabene1111/recipes:2.5.0
           imagePullPolicy: IfNotPresent
           command:
             - /opt/recipes/venv/bin/gunicorn
@@ -138,7 +138,7 @@ spec:
       initContainers:
         - name: init-chmod-data
           env: *django-env
-          image: vabene1111/recipes:2.2.0
+          image: vabene1111/recipes:2.5.0
           imagePullPolicy: Always
           resources:
             requests:

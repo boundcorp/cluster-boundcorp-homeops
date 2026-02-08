@@ -50,10 +50,6 @@ spec:
               postgres-operator.crunchydata.com/cluster: *name
               postgres-operator.crunchydata.com/data: postgres
 
-  databaseInitSQL:
-    name: devboxergo-init
-    key: init.sql
-
   users:
     # Superuser
     - name: postgres
@@ -71,35 +67,6 @@ spec:
     - name: sonarr
       databases:
         - sonarr
-      password:
-        type: AlphaNumeric
-    - name: devboxdaylight
-      databases:
-        - devboxdaylight
-      password:
-        type: AlphaNumeric
-    - name: devboxzeroindex
-      databases:
-        - devboxzeroindex
-      password:
-        type: AlphaNumeric
-    - name: devboxergo
-      databases:
-        - devboxergo
-        - test_devboxergo
-      password:
-        type: AlphaNumeric
-      options: "CREATEDB"
-    - name: devboxcmux
-      databases:
-        - devboxcmux
-        - test_devboxcmux
-      password:
-        type: AlphaNumeric
-      options: "CREATEDB"
-    - name: zward
-      databases:
-        - zward
       password:
         type: AlphaNumeric
 

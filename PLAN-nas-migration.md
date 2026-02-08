@@ -1,8 +1,8 @@
 # NAS Migration Plan: Consolidation to Titan
 
-**Status:** Phase 4 Complete - Media Namespace Migrated
+**Status:** Phase 4 FULLY COMPLETE - All NVMe workloads including Crunchy Postgres migrated to Titan
 **Started:** 2026-02-04
-**Last Updated:** 2026-02-06 (early morning)
+**Last Updated:** 2026-02-08
 
 ---
 
@@ -44,7 +44,7 @@ Long-term goal: potentially run k3s on Titan itself to consolidate the entire ho
 | **home** | recipes-media | 10Gi | Recipes | MEDIUM |
 | **home** | recipes-static | 10Gi | Recipes | MEDIUM |
 | ~~**home**~~ | ~~recipes-data-recipes-postgresql-0~~ | ~~2Gi~~ | ~~Old recipes postgres~~ | **DELETED** |
-| ~~**media**~~ | ~~mediamega-data~~ | ~~1Ti~~ | ~~Media library~~ | ✅ **MIGRATED** (2Ti on Titan, copy in progress) |
+| ~~**media**~~ | ~~mediamega-data~~ | ~~1Ti~~ | ~~Media library~~ | ❌ **DELETED** (was duplicate of slushmedia) |
 | ~~**media**~~ | ~~config-plex-0~~ | ~~50Gi~~ | ~~Plex~~ | ❌ **DELETED** (unused) |
 | ~~**media**~~ | ~~jellyfin-config~~ | ~~50Gi~~ | ~~Jellyfin~~ | ✅ **MIGRATED** |
 | ~~**media**~~ | ~~radarr-config~~ | ~~1Gi~~ | ~~Radarr~~ | ✅ **MIGRATED** |
@@ -263,8 +263,14 @@ nfs-iota-hdd-slush        -> 10.20.30.115 (iota)
 - [x] Wyoming Whisper - migrated (first test case)
 - [ ] Frigate media (1Ti) - **NOT MIGRATED** - large, needs direct copy from vega
 
-**Critical (still pending):**
-- [ ] Crunchy Postgres database - **SKIP for now** (complex, has its own backups)
+**Database Namespace ✅ COMPLETE (2026-02-08)**
+- [x] Crunchy Postgres - migrated to Titan via S3 pgbackrest restore (backup 20260208-100006F)
+  - Deleted old PostgresCluster CR + PVC, recreated with dataSource pointing to S3
+  - Fixed pg_hba auth method: md5 → scram-sha-256 (required for new SCRAM password hashes)
+  - Synced PGO-generated secrets to app namespaces (home, media) where copies existed
+  - Fixed sonarr cached config.xml with stale credentials
+  - Removed deprecated DB users: devboxdaylight, devboxzeroindex, devboxergo, devboxcmux, zward
+  - Updated recipes to v2.5.0
 
 **Media Namespace ✅ COMPLETE (2026-02-05)**
 - [x] Jellyfin config - migrated to Titan
@@ -274,25 +280,72 @@ nfs-iota-hdd-slush        -> 10.20.30.115 (iota)
 - [x] Plex - **DELETED** (was empty/unused)
 - [x] mediamega-data (2Ti) - **COMPLETE** - 1.2TB copied from vega to titan
 
-**Monitoring Namespace:**
-- [ ] Grafana
-- [ ] Prometheus
-- [ ] Alertmanager x3 (can lose history)
+**Monitoring Namespace ✅ COMPLETE (2026-02-06)**
+- [x] Grafana - migrated to Titan
+- [x] Prometheus - storage class updated (scaled to 0, old PVC deleted)
+- [x] Alertmanager x3 - storage class updated (scaled to 0, old PVCs deleted)
 
-**Other:**
-- [ ] Syncthing config
-- [ ] Build cache (can recreate)
-- [ ] Devbox (NOT STAGED - 5.6G)
+**Other ✅ COMPLETE (2026-02-06)**
+- [x] Syncthing config - migrated to Titan
+- [x] Build cache - deleted (no workloads, can recreate)
+- [x] Devbox - deleted (no workloads, can recreate)
+- [x] Frigate media - fresh start on Titan (no data migration needed)
 
-### Phase 5: Cleanup
-- [ ] Verify all workloads healthy on Titan storage
-- [ ] Remove old storage classes from manifests
-- [ ] Decommission nova NFS
-- [ ] Decommission iota NFS
-- [ ] Decommission vega NFS (if applicable)
+### Phase 5: Iota HDD Migration to Titan
+**Goal:** Move all 3 Unraid drives (2 storage + 1 parity) to Titan at once
+
+**Current Iota HDD usage:**
+- slushmedia-data: 2.4TB (Jellyfin media library - ACTIVE)
+- leeward-backups: 25GB (personal backups - ACTIVE)
+- vega-backup: 1.8TB (stale mirror from July 2025 - DELETE)
+- **Total after cleanup: ~2.5TB** (fits on Titan NVMe 2.8TB free)
+
+**Steps:**
+- [x] Delete stale vega-backup from iota (1.8TB) - DONE, freed 1.7TB
+- [x] Create temporary PVCs on Titan NVMe for iota data - DONE
+  - temp-slushmedia-data (3Ti) → pvc-bc2f9f21-6c5f-4771-9e45-d11ef43d414a
+  - temp-leeward-backups (50Gi) → pvc-add9e47a-7d21-4939-bda4-be94501d7d50
+- [x] Copy slushmedia-data (2.4TB) to Titan NVMe - DONE (54MB/s avg)
+- [x] Copy leeward-backups (25GB) to Titan NVMe - DONE
+
+**Phase 5a: Vega NVMe Decommission → Titan RAID 1**
+- [ ] Power down vega
+- [ ] Pull NVMe drive from vega
+- [ ] Power vega back on
+- [ ] Verify all k8s pods running OK (all NVMe data already on Titan)
+- [ ] Install NVMe in Titan NAS
+- [ ] Migrate Titan NVMe pool to RAID 1 (online migration, no data loss)
+
+**Phase 5b: Switch media apps to Titan temporary storage**
+- [ ] Update Jellyfin helmrelease: `slushmedia-data` → `temp-slushmedia-data`
+- [ ] Update Sonarr helmrelease: `slushmedia-data` → `temp-slushmedia-data`
+- [ ] Update Radarr helmrelease: `slushmedia-data` → `temp-slushmedia-data`
+- [ ] Update SABnzbd helmrelease: `slushmedia-data` → `temp-slushmedia-data`
+- [ ] Update Filebrowser: `slushmedia-data` → `temp-slushmedia-data`
+- [ ] Update leeward-backups references
+- [ ] Verify all apps working on temporary Titan storage
+- [ ] Commit and push GitOps changes
+
+**Phase 5c: Iota HDD drives → Titan**
+- [ ] Power down iota (Unraid)
+- [ ] Pull all 3 HDD drives (2 storage + 1 parity)
+- [ ] Install HDDs in Titan NAS
+- [ ] Configure Titan HDD pool (RAID level TBD)
+- [ ] Create `nfs-titan-hdd` storage class
+- [ ] Create permanent slushmedia-data + leeward-backups PVCs on nfs-titan-hdd
+- [ ] Copy data from NVMe temp → HDD permanent
+- [ ] Update app manifests to use permanent HDD PVCs
+- [ ] Delete temporary NVMe PVCs
+
+### Phase 6: Final Cleanup
+- [ ] Verify all workloads healthy on Titan storage (NVMe + HDD)
+- [ ] Remove old storage classes from manifests (nfs-nova-nvme, nfs-iota-hdd-slush)
+- [ ] Decommission vega NFS (NVMe removed, no longer serving storage)
+- [ ] Decommission iota (Unraid no longer needed, drives in Titan)
+- [ ] Update backup script (migrate from vega to Titan)
 - [ ] Update documentation
 
-### Phase 6: Future Consideration
+### Phase 7: Future Consideration
 - [ ] Evaluate running k3s on Titan directly
 - [ ] Single-box homelab architecture
 
@@ -553,6 +606,49 @@ The storage class `nfs-nova-nvme` points to `10.20.30.114` (nova), but:
 - **All media apps running**: sonarr, radarr, sabnzbd, jellyfin all healthy on Titan storage
 - **Media namespace FULLY MIGRATED**: All apps and data now on Titan NAS
 
+### 2026-02-06 (Phase 4 Complete)
+- **Monitoring namespace migrated**: Grafana on Titan, Prometheus/Alertmanager storage class updated (scaled to 0)
+- **Syncthing migrated**: 15.8MB config copied from vega to titan
+- **Frigate media**: Fresh 1Ti PVC on Titan (no data migration needed)
+- **Devbox PVC deleted**: No workloads using it, can recreate when needed
+- **Buildcache PVC deleted**: No workloads using it, can recreate when needed
+- **PHASE 4 COMPLETE**: All NVMe workloads migrated to Titan NAS
+- **nfs-nova-nvme is now EMPTY**: All workloads migrated to Titan
+
+**Final PVC count on Titan: 17 PVCs**
+- home: 10 (HA, zwave, mosquitto, esphome, frigate-config, frigate-media, recipes x2, whisper)
+- media: 4 (jellyfin, sonarr, radarr, sabnzbd) - mediamega deleted, slushmedia stays on iota
+- monitoring: 1 (grafana)
+- backups: 1 (syncthing)
+- database: 1 (crunchy postgres)
+
+### 2026-02-06 (Phase 5 Cleanup Started)
+- **mediamega-data analysis**: Discovered mediamega (1.2TB on Titan) was orphaned - no pods used it!
+  - Jellyfin/Sonarr/Radarr/SABnzbd all mount `slushmedia-data` (on Iota HDD)
+  - TV: All 24 shows on mediamega were duplicates of slushmedia (plus slushmedia has 25 more)
+  - Movies: 19/20 duplicates, only "Star Trek Section 31" was unique (not worth keeping)
+- **mediamega-data DELETED**: Removed orphaned PVC, freed ~500GB on Titan NVMe
+- **Titan NVMe status**: 936GB used, 2.8TB free (26% utilization)
+- **Iota HDD (slushmedia)**: 2.4TB media library - the REAL Jellyfin library, stays on Iota for now
+- **Stale vega-backup DELETED from iota**: 1.8TB freed (was July 2025 mirror, redundant)
+- **Iota → Titan copy COMPLETE**: slushmedia (2.4TB) + leeward-backups (25GB) copied to temp PVCs on Titan NVMe
+- **Titan NVMe status post-copy**: ~2.6TB used, ~1.1TB free
+- **Plan**: Pull vega NVMe → add to Titan for RAID 1, then switch apps to temp storage, then move Unraid HDDs to Titan
+
+### 2026-02-08 (Crunchy Postgres Migrated)
+- **Crunchy Postgres migrated to Titan**: Restored from S3 pgbackrest backup (20260208-100006F)
+  - Old NFS mount on vega was stale (NVMe removed from fstab), postgres was in CrashLoopBackOff
+  - Deleted PostgresCluster CR + old PVC, Flux recreated with dataSource for S3 restore
+  - Fixed dataSource anchor: `*minio` → `*s3`
+  - WAL replay took ~10 minutes, full restore ~15 minutes
+- **pg_hba auth fix**: Changed `md5` → `scram-sha-256` (PGO generates SCRAM passwords, md5 method caused auth failures)
+- **Secret sync issue discovered**: PGO copies secrets to app namespaces via crunchy-userinit, but recreating the cluster generated NEW secrets in database namespace while stale copies remained in home/media namespaces
+- **Sonarr config.xml caching**: Sonarr caches DB connection in persistent config.xml, had to manually update after password change
+- **Deprecated DB users removed**: devboxdaylight, devboxzeroindex, devboxergo, devboxcmux, zward (no running apps)
+- **Recipes updated**: 2.2.0 → 2.5.0
+- **nfs-nova-nvme is now COMPLETELY EMPTY**: Ready for decommission
+- **PVC count on Titan: 17** (was 16)
+
 ---
 
 ## PVC to PV Mapping Reference (Pre-Migration Snapshot)
@@ -579,7 +675,7 @@ This mapping is needed for data migration - the old PV name tells us which direc
 | media | sonarr-config | pvc-fe11d12b-fc39-4a8e-bea1-f172fb2e9f94 | (dynamic on Titan) | 1Gi | ✅ MIGRATED |
 | media | sabnzbd-config | pvc-bd3ad6f1-c687-438f-b928-33f469ff2b1f | (dynamic on Titan) | 1Gi | ✅ MIGRATED |
 | ~~media~~ | ~~config-plex-0~~ | ~~pvc-3e2c80f2-32bd-42da-bde3-cfe294655586~~ | - | ~~50Gi~~ | ❌ DELETED |
-| media | mediamega-data | pvc-b089aa67-bbf8-48e9-999d-859e0da2ba43 | pvc-0c7859c9-6c4b-402e-92df-cb069bf6250c | 2Ti | ✅ MIGRATED |
+| ~~media~~ | ~~mediamega-data~~ | ~~pvc-b089aa67-bbf8-48e9-999d-859e0da2ba43~~ | ~~pvc-0c7859c9-6c4b-402e-92df-cb069bf6250c~~ | ~~2Ti~~ | ❌ DELETED (duplicate of slushmedia) |
 | monitoring | grafana | pvc-cf24cd5d-a0a1-4f85-a875-12ac2955ce3b | 10Gi | pending |
 | monitoring | prometheus-...stack-0 | pvc-0441506b-d5d1-4ba1-9f7b-8d07033d9900 | 25Gi | pending |
 | monitoring | alertmanager-...stack-0 | pvc-017db479-1cf9-4491-98e4-f44cdcdb971d | 8Gi | pending |
@@ -587,7 +683,7 @@ This mapping is needed for data migration - the old PV name tells us which direc
 | monitoring | alertmanager-...stack-2 | pvc-b7b3403a-91eb-424d-b50b-343577f07722 | 8Gi | pending |
 | backups | syncthing-config | pvc-665fdbec-bbe5-46b4-9d2e-7f4604fcb376 | 10Gi | pending |
 | boundcorp-dev | buildcache-pvc | pvc-f02a0f63-dbcc-4b22-9ca2-437409f22a13 | 50Gi | pending |
-| database | postgres-postgres-lpqc-pgdata | pvc-6c5c84e7-1b52-47bf-94bf-236b518cade8 | 20Gi | **SKIP** (Crunchy) |
+| ~~database~~ | ~~postgres-postgres-lpqc-pgdata~~ | ~~pvc-6c5c84e7-1b52-47bf-94bf-236b518cade8~~ | ~~20Gi~~ | ✅ **MIGRATED** (S3 restore to Titan) |
 | devbox | devbox-home-pvc | pvc-0ea9bcfb-1cf4-4931-86ac-579a7808eece | 80Gi | pending (NOT staged) |
 
 ### nfs-iota-hdd-slush PVCs (migrate to nfs-titan-hdd later)
