@@ -1,0 +1,10 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-titan-hdd
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: 10.20.30.99
+  share: /volume2/k8s-hdd
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
