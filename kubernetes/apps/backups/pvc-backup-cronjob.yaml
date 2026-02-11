@@ -98,6 +98,9 @@ spec:
                 - name: sabnzbd-config
                   mountPath: /pvcs/sabnzbd-config
                   readOnly: true
+                - name: filebrowser-config
+                  mountPath: /pvcs/filebrowser-config
+                  readOnly: true
           volumes:
             # NFS mounts directly to Titan PVC directories (read-only)
             # Directory names are PV IDs on NFS
@@ -149,3 +152,7 @@ spec:
               nfs:
                 server: 10.20.30.99
                 path: /volume1/k8s/pvc-d3c2c528-2722-4e1c-9539-b698c1916d10
+            - name: filebrowser-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-c3c21f8d-135c-4460-8b50-fec226131982
