@@ -47,10 +47,7 @@ spec:
         existingClaim: slushmedia-data
       config:
         enabled: true
-        type: persistentVolumeClaim
-        storageClass: nfs-titan-nvme
-        accessMode: ReadWriteOnce
-        size: 100Mi
+        existingClaim: filebrowser-config
 
     ingress:
       main:
