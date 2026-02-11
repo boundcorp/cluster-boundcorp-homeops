@@ -1,8 +1,8 @@
 # NAS Migration Plan: Consolidation to Titan
 
-**Status:** Phase 4 FULLY COMPLETE - All NVMe workloads including Crunchy Postgres migrated to Titan
+**Status:** MIGRATION COMPLETE - All storage on Titan, all apps healthy
 **Started:** 2026-02-04
-**Last Updated:** 2026-02-08
+**Last Updated:** 2026-02-11
 
 ---
 
@@ -308,42 +308,50 @@ nfs-iota-hdd-slush        -> 10.20.30.115 (iota)
 - [x] Copy slushmedia-data (2.4TB) to Titan NVMe - DONE (54MB/s avg)
 - [x] Copy leeward-backups (25GB) to Titan NVMe - DONE
 
-**Phase 5a: Vega NVMe Decommission → Titan RAID 1**
-- [ ] Power down vega
-- [ ] Pull NVMe drive from vega
-- [ ] Power vega back on
-- [ ] Verify all k8s pods running OK (all NVMe data already on Titan)
-- [ ] Install NVMe in Titan NAS
-- [ ] Migrate Titan NVMe pool to RAID 1 (online migration, no data loss)
+**Phase 5a: Vega NVMe Decommission → Titan RAID 1 ✅ COMPLETE (2026-02-09)**
+- [x] Power down vega
+- [x] Pull NVMe drive from vega (WD_BLACK SN850X 4TB)
+- [x] Install NVMe in Titan NAS (M.2 slot 2)
+- [x] Migrate Titan NVMe pool to RAID 1 (online migration)
+- Volume 1: RAID 1, M.2 1 (SN7100X) + M.2 2 (SN850X), 3.63 TB
 
-**Phase 5b: Switch media apps to Titan temporary storage**
-- [ ] Update Jellyfin helmrelease: `slushmedia-data` → `temp-slushmedia-data`
-- [ ] Update Sonarr helmrelease: `slushmedia-data` → `temp-slushmedia-data`
-- [ ] Update Radarr helmrelease: `slushmedia-data` → `temp-slushmedia-data`
-- [ ] Update SABnzbd helmrelease: `slushmedia-data` → `temp-slushmedia-data`
-- [ ] Update Filebrowser: `slushmedia-data` → `temp-slushmedia-data`
-- [ ] Update leeward-backups references
-- [ ] Verify all apps working on temporary Titan storage
-- [ ] Commit and push GitOps changes
+**Phase 5b: SKIPPED** - Went directly from iota → permanent HDD PVCs (accepted media downtime)
 
-**Phase 5c: Iota HDD drives → Titan**
-- [ ] Power down iota (Unraid)
-- [ ] Pull all 3 HDD drives (2 storage + 1 parity)
-- [ ] Install HDDs in Titan NAS
-- [ ] Configure Titan HDD pool (RAID level TBD)
-- [ ] Create `nfs-titan-hdd` storage class
-- [ ] Create permanent slushmedia-data + leeward-backups PVCs on nfs-titan-hdd
-- [ ] Copy data from NVMe temp → HDD permanent
-- [ ] Update app manifests to use permanent HDD PVCs
-- [ ] Delete temporary NVMe PVCs
+**Phase 5c: Iota HDD drives → Titan ✅ COMPLETE (2026-02-11)**
+- [x] Power down iota (Unraid)
+- [x] Pull 3x 10TB WDC WD101EFBX-68B0AN0 HDD drives from iota
+- [x] Install HDDs in Titan NAS (bays 1, 5, 8)
+- [x] Configure Titan HDD pool - Volume 2: RAID 5, 3x 10TB, 18.18 TB usable (Btrfs)
+- [x] Create NFS export: `/volume2/k8s-hdd` → 10.20.30.0/24 (rw, no_root_squash)
+- [x] Create `nfs-titan-hdd` storage class (10.20.30.99:/volume2/k8s-hdd)
+- [x] Create permanent slushmedia-data (10Ti) + leeward-backups (2Ti) PVCs on nfs-titan-hdd
+  - slushmedia-data → pvc-a3c9b2cf-1ca0-413e-ac59-479da34da2a1
+  - leeward-backups → pvc-f49a34db-7b6d-4b00-b6b0-2642c1fe4f70
+- [x] Copy leeward-backups NVMe temp → HDD permanent (25GB, completed 2026-02-09)
+- [x] Delete temp-leeward-backups PVC + rsync-leeward deployment
+- [x] Scale syncthing + toolbox-pod back up (both running healthy)
+- [x] Copy slushmedia NVMe temp → HDD permanent (2.62TB, 4545 files, 40h40m, completed 2026-02-11 09:26 UTC)
+- [x] Delete rsync-slushmedia deployment
+- [x] Clean up 6 orphaned Released PVs from old migrations (iota + vega)
+- [x] Delete temp-slushmedia-data PVC — already cleaned up (was gone by 2026-02-11)
+- [x] Restart media apps and verify healthy (2026-02-11)
+  - Jellyfin: wiped corrupt DBs, fresh start, fixed supplementalGroups (+1000), added monthly backup CronJob
+  - Filebrowser: changed config from read-only configMap to writable PVC (nfs-titan-nvme, 100Mi) with fsGroup
+  - Sonarr, Radarr, SABnzbd: already running healthy
+- [x] Verify slushmedia data integrity — `.rsync-complete` marker confirmed, 2.4TB, 4546 files
 
-### Phase 6: Final Cleanup
-- [ ] Verify all workloads healthy on Titan storage (NVMe + HDD)
-- [ ] Remove old storage classes from manifests (nfs-nova-nvme, nfs-iota-hdd-slush)
-- [ ] Decommission vega NFS (NVMe removed, no longer serving storage)
-- [ ] Decommission iota (Unraid no longer needed, drives in Titan)
-- [ ] Update backup script (migrate from vega to Titan)
-- [ ] Update documentation
+### Phase 6: Final Cleanup ✅ COMPLETE (2026-02-11)
+- [x] Verify all workloads healthy on Titan storage (NVMe + HDD) — all apps running
+- [x] Remove old storage classes from manifests — deleted sc-nfs-nova-nvme.yaml + sc-nfs-iota-hdd-slush.yaml
+- [x] Delete orphaned nfs-iota-hdd-slush SC from cluster (kubectl delete sc)
+- [x] Delete orphaned mediamega-data PVC (2Ti NVMe, no pods used it)
+- [x] Decommission vega NFS — NVMe in Titan RAID 1, vega is k8s worker only
+- [x] Decommission iota — powered off, all drives in Titan
+- [x] Update .gitignore — added .backups/, *.pem, *.ppk, id_ssh-*
+- [x] Move frigate-media (1Ti) to nfs-titan-hdd — fresh PVC, recordings don't need NVMe
+- [x] Update backup script — migrated to CronJob on Titan (see backup-script section)
+- [x] Add Jellyfin monthly backup CronJob (SQLite + XML config)
+- [x] Update documentation (this file + MEMORY.md)
 
 ### Phase 7: Future Consideration
 - [ ] Evaluate running k3s on Titan directly
@@ -356,10 +364,7 @@ nfs-iota-hdd-slush        -> 10.20.30.115 (iota)
 Items deferred to keep scope manageable:
 
 - [ ] **Recipes → haha cluster migration** - Move Tandoor Recipes to the HA VPS cluster instead of homeops. Requires solving PostgreSQL on haha (managed DB, self-hosted, or SQLite).
-- [ ] **Move frigate-media to HDD tier** - 1TB of recordings don't need NVMe speed
-- [ ] **Move mediamega to HDD tier** - 1TB media library, HDD is fine for streaming
-- [ ] **Review Archive folder** - ~380GB of old data on vega, clean up or migrate
-- [ ] **Fix storage class naming** - Rename `nfs-nova-nvme` to `nfs-vega-nvme` for accuracy (or just migrate to titan)
+- [ ] **Review Archive folder** - ~380GB of old data on vega, clean up or migrate (backed up to atlas)
 
 ---
 
@@ -648,6 +653,34 @@ The storage class `nfs-nova-nvme` points to `10.20.30.114` (nova), but:
 - **Recipes updated**: 2.2.0 → 2.5.0
 - **nfs-nova-nvme is now COMPLETELY EMPTY**: Ready for decommission
 - **PVC count on Titan: 17** (was 16)
+
+### 2026-02-09 (Phase 5a + 5c: Hardware Migration)
+- **Vega NVMe decommissioned**: Pulled WD_BLACK SN850X 4TB from vega, installed in Titan M.2 slot 2
+- **Titan NVMe RAID 1 complete**: Volume 1 now RAID 1 (SN7100X + SN850X), 3.63 TB
+- **Iota HDDs migrated**: 3x 10TB WDC WD101EFBX pulled from iota, installed in Titan bays 1, 5, 8
+- **Titan HDD pool created**: Volume 2, RAID 5, 18.18 TB usable (Btrfs)
+- **Phase 5b SKIPPED**: Went directly from iota → permanent HDD PVCs (accepted brief media downtime)
+- **nfs-titan-hdd storage class created**: 10.20.30.99:/volume2/k8s-hdd
+- **PVCs migrated to HDD**: slushmedia-data (10Ti) + leeward-backups (2Ti) on nfs-titan-hdd
+- **Data copy in progress**: rsync deployments copying NVMe temp → HDD permanent (~2.4TB + 25GB)
+- **5x 4TB HDDs not installed** (only 3x 10TB used, 7 empty HDD bays remaining)
+- **Titan storage summary**: Volume 1 NVMe RAID 1 (3.63TB), Volume 2 HDD RAID 5 (18.18TB)
+- **PVC count on Titan: 19** (17 NVMe + 2 HDD)
+
+### 2026-02-11 (Phase 5c Complete + Phase 6 Complete)
+- **slushmedia rsync COMPLETE**: 2.62TB, 4545 files, 40h40m, 17 MB/s avg (finished 09:26 UTC)
+- **leeward-backups rsync completed earlier**: 25GB, 3678 files, ~1h
+- **Cleanup done**: rsync deployments deleted, temp PVCs deleted, 6 orphaned PVs cleaned up
+- **Jellyfin fixed**: Wiped corrupt DBs (empty migrations.xml + malformed library.db), fresh start
+  - Fixed supplementalGroups: added group 1000 so ffprobe can read media files
+  - Added monthly SQLite backup CronJob
+- **Filebrowser fixed**: Changed config from read-only configMap to writable PVC (100Mi nfs-titan-nvme) with fsGroup 1000
+- **mediamega-data PVC deleted**: Orphaned 2Ti NVMe, no pods used it
+- **Old storage classes removed**: sc-nfs-nova-nvme.yaml + sc-nfs-iota-hdd-slush.yaml deleted from manifests, nfs-iota-hdd-slush SC deleted from cluster
+- **frigate-media moved to HDD**: Fresh PVC on nfs-titan-hdd (recordings don't need NVMe)
+- **Backup script migrated**: CronJob on Titan replacing vega-based cron script
+- **.gitignore updated**: .backups/, *.pem, *.ppk, id_ssh-* (after accidental commit of sensitive files)
+- **MIGRATION COMPLETE**: All storage consolidated on Titan NAS
 
 ---
 

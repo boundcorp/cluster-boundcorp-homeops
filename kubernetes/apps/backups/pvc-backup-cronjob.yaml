@@ -1,0 +1,151 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pvc-backup-s3
+  namespace: backups
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: "${SECRET_VOLSYNC_AWS_ACCESS_KEY_ID}"
+  AWS_SECRET_ACCESS_KEY: "${SECRET_VOLSYNC_AWS_SECRET_ACCESS_KEY}"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pvc-backup
+  namespace: backups
+spec:
+  schedule: "0 0 * * *"  # Daily at midnight
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: backup
+              image: amazon/aws-cli:2.15.0
+              envFrom:
+                - secretRef:
+                    name: pvc-backup-s3
+              env:
+                - name: AWS_DEFAULT_REGION
+                  value: eu-north-1
+                - name: S3_BUCKET
+                  value: s3://boundcorp-backups-eu-north-1/homeops-backup-nfs
+              command:
+                - bash
+                - -c
+                - |
+                  set -euo pipefail
+                  echo "=== PVC Backup to S3 - $(date) ==="
+
+                  # Back up each mounted PVC to S3
+                  ERRORS=0
+                  for dir in /pvcs/*/; do
+                    name=$(basename "$dir")
+                    echo "--- $name ---"
+                    aws s3 sync "$dir" "$S3_BUCKET/$name/" \
+                      --delete --only-show-errors 2>&1 || {
+                      echo "ERROR: Failed to sync $name"
+                      ERRORS=$((ERRORS + 1))
+                    }
+                    SIZE=$(du -sh "$dir" 2>/dev/null | cut -f1)
+                    echo "  $SIZE synced"
+                  done
+
+                  echo "=== Backup complete at $(date) - $ERRORS errors ==="
+                  [ $ERRORS -eq 0 ] || exit 1
+              volumeMounts:
+                # Home namespace PVCs
+                - name: home-assistant-config
+                  mountPath: /pvcs/home-assistant-config
+                  readOnly: true
+                - name: esphome-config
+                  mountPath: /pvcs/esphome-config
+                  readOnly: true
+                - name: frigate-config
+                  mountPath: /pvcs/frigate-config
+                  readOnly: true
+                - name: zwave-js-ui-config
+                  mountPath: /pvcs/zwave-js-ui-config
+                  readOnly: true
+                - name: mosquitto-config
+                  mountPath: /pvcs/mosquitto-config
+                  readOnly: true
+                - name: wyoming-whisper-data
+                  mountPath: /pvcs/wyoming-whisper-data
+                  readOnly: true
+                - name: recipes-media
+                  mountPath: /pvcs/recipes-media
+                  readOnly: true
+                - name: recipes-static
+                  mountPath: /pvcs/recipes-static
+                  readOnly: true
+                # Media namespace PVCs
+                - name: jellyfin-config
+                  mountPath: /pvcs/jellyfin-config
+                  readOnly: true
+                - name: radarr-config
+                  mountPath: /pvcs/radarr-config
+                  readOnly: true
+                - name: sonarr-config
+                  mountPath: /pvcs/sonarr-config
+                  readOnly: true
+                - name: sabnzbd-config
+                  mountPath: /pvcs/sabnzbd-config
+                  readOnly: true
+          volumes:
+            # NFS mounts directly to Titan PVC directories (read-only)
+            # Directory names are PV IDs on NFS
+            - name: home-assistant-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-ce686504-1c91-4bca-b2be-8c9f5d623368
+            - name: esphome-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-f64dd2e4-face-4d5d-8c41-9e248cf5a7d5
+            - name: frigate-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-5ad89a0f-e69d-4b86-9ccd-2b2bcec25639
+            - name: zwave-js-ui-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-10cef59c-af18-4043-9cb9-2aa45a2a42b7
+            - name: mosquitto-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-50d5e76a-7eef-4a72-9373-70a3ca473e01
+            - name: wyoming-whisper-data
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-e3ca061a-947f-454b-8d55-ba43187d35eb
+            - name: recipes-media
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-bb28fcde-3f78-4eef-8e40-1c28cdab28f5
+            - name: recipes-static
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-5564002d-fabd-491d-9b74-1dfb0ea21c3a
+            - name: jellyfin-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-3ad447f5-155a-44ba-aed8-07144e80da75
+            - name: radarr-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-ed505e04-314f-49dd-a27f-21c83becab7f
+            - name: sonarr-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-6c77a59a-6af0-42c3-a292-6274bc64167d
+            - name: sabnzbd-config
+              nfs:
+                server: 10.20.30.99
+                path: /volume1/k8s/pvc-d3c2c528-2722-4e1c-9539-b698c1916d10

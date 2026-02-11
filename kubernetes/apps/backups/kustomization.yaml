@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvc-leeward-backups.yaml
+  - pvc-backup-cronjob.yaml
   - toolbox-pod.yaml
   - rclone-config-secret.sops.yaml
   - ./syncthing
