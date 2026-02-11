@@ -9,6 +9,11 @@ kubeconfig
 *.agekey
 *.pub
 *.key
+# Backups and secrets
+.backups/
+*.pem
+*.ppk
+id_ssh-*
 # Ansible
 xanmanning.k3s*
 restore
