@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - ./helmrelease.yaml
   - ./jellyfin-restarter.yaml
+  - ./jellyfin-backup.yaml

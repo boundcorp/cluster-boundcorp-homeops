@@ -1,0 +1,48 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: jellyfin-backup
+  namespace: media
+spec:
+  schedule: "0 3 1 * *"  # 3am on the 1st of every month
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: alpine:3.19
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  BACKUP_DIR="/config/backups/$(date +%Y-%m-%d)"
+                  mkdir -p "$BACKUP_DIR"
+                  echo "Backing up Jellyfin config to $BACKUP_DIR"
+                  # SQLite databases (use .backup for consistency)
+                  apk add --no-cache sqlite
+                  for db in /config/data/jellyfin.db /config/data/library.db; do
+                    if [ -f "$db" ]; then
+                      DEST="$BACKUP_DIR/$(basename $db)"
+                      sqlite3 "$db" ".backup '$DEST'"
+                      echo "Backed up $db ($(du -sh "$DEST" | cut -f1))"
+                    fi
+                  done
+                  # XML and JSON config files
+                  cp -a /config/config/ "$BACKUP_DIR/config/"
+                  echo "Backed up config directory"
+                  # Prune backups older than 6 months
+                  find /config/backups -maxdepth 1 -type d -mtime +180 -exec rm -rf {} +
+                  echo "Backup complete: $(du -sh "$BACKUP_DIR" | cut -f1)"
+              volumeMounts:
+                - name: config
+                  mountPath: /config
+          volumes:
+            - name: config
+              persistentVolumeClaim:
+                claimName: jellyfin-config
