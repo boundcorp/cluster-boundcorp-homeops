@@ -26,6 +26,9 @@ spec:
   uninstall:
     keepHistory: false
   values:
+    defaultPodOptions:
+      securityContext:
+        fsGroup: 1000
     controllers:
       main:
         containers:
