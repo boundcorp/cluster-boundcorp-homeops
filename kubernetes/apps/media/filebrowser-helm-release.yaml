@@ -44,37 +44,10 @@ spec:
         existingClaim: slushmedia-data
       config:
         enabled: true
-        type: configMap
-        name: filebrowser-config
-
-    configMaps:
-      config:
-        enabled: true
-        name: filebrowser-config
-        data:
-          disk-speed.sh: |
-            #!/bin/bash
-
-            # Parameters
-
-            OUTPUT_FILE="/srv/$${1:-junk}"
-            BLOCK_SIZE="1G"
-            COUNT="$${2:-1024}" # Default 1TB, given BLOCK_SIZE of 1G
-
-            # Create and write to the file, measuring write speed
-            echo "Starting disk write speed test..."
-            for i in $(seq 1 $COUNT); do
-                DEST=$${OUTPUT_FILE}_$${i}
-                echo "$(date) - Writing block $i of $$COUNT to $$DEST"
-                dd if=/dev/zero of=$$DEST bs=$$BLOCK_SIZE count=1 conv=fsync
-            done
-
-            echo "Disk write speed test completed."
-
-            # Optionally, measure read speed
-            echo "Starting disk read speed test..."
-            dd if=${OUTPUT_FILE}_1 of=/dev/null bs=$BLOCK_SIZE count=1
-            echo "Disk read speed test completed."
+        type: persistentVolumeClaim
+        storageClass: nfs-titan-nvme
+        accessMode: ReadWriteOnce
+        size: 100Mi
 
     ingress:
       main:
