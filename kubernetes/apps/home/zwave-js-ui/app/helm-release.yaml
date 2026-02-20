@@ -79,9 +79,9 @@ spec:
       usb:
         enabled: true
         type: hostPath
-        hostPath: /dev/ttyUSB8
-        mountPath: /dev/ttyUSB8
-        hostPathType: CharDevice
+        hostPath: /dev/serial/by-id/usb-Silicon_Labs_Zooz_ZST10_700_Z-Wave_Stick_e2f6931dedcbec1198bf49b77b8007ef-if00-port0
+        mountPath: /dev/zwave
+        hostPathType: ""
     nodeSelector:
       feature.node.kubernetes.io/usb-ff_10c4_ea60.present: "true"
     resources:
