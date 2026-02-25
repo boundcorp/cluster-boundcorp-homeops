@@ -83,7 +83,7 @@ spec:
         mountPath: /dev/zwave
         hostPathType: ""
     nodeSelector:
-      kubernetes.io/hostname: ziti
+      feature.node.kubernetes.io/usb-ff_10c4_ea60.present: "true"
     resources:
       requests:
         cpu: 10m
