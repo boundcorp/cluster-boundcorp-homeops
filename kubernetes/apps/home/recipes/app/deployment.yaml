@@ -109,7 +109,7 @@ spec:
           securityContext:
             runAsUser: 65534
         - name: recipes-nginx
-          image: nginx:latest
+          image: nginx:1.27.3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
