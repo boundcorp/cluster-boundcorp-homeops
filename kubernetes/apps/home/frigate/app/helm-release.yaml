@@ -26,7 +26,7 @@ spec:
       tag: 0.13.2
     env:
       TZ: "${TIMEZONE}"
-      # LIBVA_DRIVER_NAME: i965  # disabled while testing VAAPI lockup theory
+      LIBVA_DRIVER_NAME: i965
       FRIGATE_MQTT_USERNAME: "${SECRET_MQTT_USERNAME}"
       FRIGATE_MQTT_PASSWORD: "${SECRET_MQTT_PASSWORD}"
       FRIGATE_CAMERA_AUTH: "${SECRET_FRIGATE_CAMERA_AUTH}"

@@ -10,3 +10,7 @@ parameters:
   share: /volume1/k8s
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
+mountOptions:
+  - soft
+  - timeo=30
+  - retrans=3
