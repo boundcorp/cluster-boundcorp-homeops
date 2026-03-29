@@ -39,7 +39,7 @@ spec:
               AUTOSAVENUM: "5"
               MAXTICKRATE: "30"
               TIMEOUT: "30"
-              SKIPUPDATE: "false"
+              SKIPUPDATE: "true"
             probes:
               liveness:
                 enabled: true
