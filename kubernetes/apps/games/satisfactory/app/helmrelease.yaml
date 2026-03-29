@@ -98,15 +98,14 @@ spec:
                 echo "Downloading FICSIT CLI..."
                 wget -O /tmp/ficsit "https://github.com/satisfactorymodding/ficsit-cli/releases/download/v0.6.1/ficsit_linux_amd64"
                 chmod +x /tmp/ficsit
-                echo "Copying config files..."
-                mkdir -p /tmp/ficsit-local /tmp/ficsit-cache
-                cp /ficsit-config/installations.json /tmp/installations.json
-                cp /ficsit-config/profiles.json /tmp/profiles.json
+                mkdir -p /tmp/ficsit-cache
+                echo "Setting up local dir structure..."
+                mkdir -p /tmp/ficsit-data
+                cp /ficsit-config/installations.json /tmp/ficsit-data/installations.json
+                cp /ficsit-config/profiles.json /tmp/ficsit-data/profiles.json
                 echo "Applying mod profile..."
                 /tmp/ficsit apply \
-                  --installations-file /tmp/installations.json \
-                  --profiles-file /tmp/profiles.json \
-                  --local-dir /tmp/ficsit-local \
+                  --local-dir /tmp/ficsit-data \
                   --cache-dir /tmp/ficsit-cache
                 echo "FICSIT CLI done."
         pod:
