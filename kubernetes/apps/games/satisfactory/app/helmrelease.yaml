@@ -93,9 +93,10 @@ spec:
               - /bin/sh
               - -c
               - |
-                set -e
+                set -ex
+                apk add --no-cache ca-certificates
                 echo "Downloading FICSIT CLI..."
-                wget -q -O /tmp/ficsit "https://github.com/satisfactorymodding/ficsit-cli/releases/download/v0.6.1/ficsit_linux_amd64"
+                wget -O /tmp/ficsit "https://github.com/satisfactorymodding/ficsit-cli/releases/download/v0.6.1/ficsit_linux_amd64"
                 chmod +x /tmp/ficsit
                 echo "Copying config files..."
                 mkdir -p /tmp/ficsit-local /tmp/ficsit-cache
