@@ -1,0 +1,146 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: satisfactory
+  namespace: games
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.1.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      satisfactory:
+        containers:
+          app:
+            image:
+              repository: wolveix/satisfactory-server
+              tag: latest
+              pullPolicy: Always
+            env:
+              MAXPLAYERS: "8"
+              PGID: "1000"
+              PUID: "1000"
+              STEAMBETA: "false"
+              AUTOSAVENUM: "5"
+              MAXTICKRATE: "30"
+              TIMEOUT: "30"
+              SKIPUPDATE: "false"
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - bash
+                      - /home/steam/healthcheck.sh
+                  initialDelaySeconds: 300
+                  periodSeconds: 30
+                  timeoutSeconds: 30
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - bash
+                      - /home/steam/healthcheck.sh
+                  initialDelaySeconds: 300
+                  periodSeconds: 30
+                  timeoutSeconds: 30
+                  failureThreshold: 3
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - bash
+                      - /home/steam/healthcheck.sh
+                  initialDelaySeconds: 120
+                  periodSeconds: 30
+                  timeoutSeconds: 30
+                  failureThreshold: 10
+            resources:
+              requests:
+                cpu: "2"
+                memory: 4Gi
+              limits:
+                cpu: "4"
+                memory: 8Gi
+        initContainers:
+          ficsit-cli:
+            image:
+              repository: alpine
+              tag: "3.21"
+            command:
+              - /bin/sh
+              - -c
+              - |
+                set -e
+                echo "Downloading FICSIT CLI..."
+                wget -q -O /tmp/ficsit "https://github.com/satisfactorymodding/ficsit-cli/releases/download/v0.6.1/ficsit_linux_amd64"
+                chmod +x /tmp/ficsit
+                echo "Copying config files..."
+                mkdir -p /tmp/ficsit-local /tmp/ficsit-cache
+                cp /ficsit-config/installations.json /tmp/installations.json
+                cp /ficsit-config/profiles.json /tmp/profiles.json
+                echo "Applying mod profile..."
+                /tmp/ficsit apply \
+                  --installations-file /tmp/installations.json \
+                  --profiles-file /tmp/profiles.json \
+                  --local-dir /tmp/ficsit-local \
+                  --cache-dir /tmp/ficsit-cache
+                echo "FICSIT CLI done."
+        pod:
+          terminationGracePeriodSeconds: 30
+    service:
+      app:
+        controller: satisfactory
+        type: LoadBalancer
+        ports:
+          game-udp:
+            port: 7777
+            targetPort: 7777
+            protocol: UDP
+          game-tcp:
+            port: 7777
+            targetPort: 7777
+            protocol: TCP
+          messaging:
+            port: 8888
+            targetPort: 8888
+            protocol: TCP
+    persistence:
+      config:
+        enabled: true
+        storageClass: nfs-titan-nvme
+        size: 30Gi
+        accessMode: ReadWriteOnce
+        globalMounts:
+          - path: /config
+      ficsit-config:
+        enabled: true
+        type: configMap
+        name: satisfactory-ficsit-config
+        advancedMounts:
+          satisfactory:
+            ficsit-cli:
+              - path: /ficsit-config
+                readOnly: true

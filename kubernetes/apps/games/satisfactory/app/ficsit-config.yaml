@@ -1,0 +1,38 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: satisfactory-ficsit-config
+  namespace: games
+data:
+  installations.json: |
+    {
+      "selected_installation": "/config/gamefiles",
+      "installations": [
+        {
+          "path": "/config/gamefiles",
+          "profile": "Default",
+          "vanilla": false
+        }
+      ],
+      "version": 0
+    }
+  profiles.json: |
+    {
+      "profiles": {
+        "Default": {
+          "mods": {
+            "Cartograph": { "version": ">=0.0.0", "enabled": true },
+            "FicsitRemoteMonitoring": { "version": ">=0.0.0", "enabled": true },
+            "InfiniteZoop": { "version": ">=0.0.0", "enabled": true },
+            "KBlueprintDesignPlus": { "version": ">=0.0.0", "enabled": true },
+            "SML": { "version": ">=0.0.0", "enabled": true },
+            "TajsGraph": { "version": ">=0.0.0", "enabled": true }
+          },
+          "name": "Default",
+          "required_targets": null
+        }
+      },
+      "selected_profile": "Default",
+      "version": 0
+    }
