@@ -27,6 +27,7 @@ data:
             "InfiniteZoop": { "version": ">=0.0.0", "enabled": true },
             "KBlueprintDesignPlus": { "version": ">=0.0.0", "enabled": true },
             "SML": { "version": ">=0.0.0", "enabled": true },
+            "SmallTrainStation": { "version": ">=0.0.0", "enabled": true },
             "TajsGraph": { "version": ">=0.0.0", "enabled": true }
           },
           "name": "Default",

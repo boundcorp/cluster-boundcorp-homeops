@@ -116,6 +116,9 @@ spec:
       app:
         controller: satisfactory
         type: LoadBalancer
+        externalIPs:
+          - ${SVC_SATISFACTORY_ADDR}
+        externalTrafficPolicy: Local
         ports:
           game-udp:
             port: 7777
