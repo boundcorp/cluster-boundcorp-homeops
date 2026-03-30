@@ -22,11 +22,17 @@ data:
       "profiles": {
         "Default": {
           "mods": {
+            "BlueprintHighlighted": { "version": ">=0.0.0", "enabled": true },
             "Cartograph": { "version": ">=0.0.0", "enabled": true },
+            "FicsItCam": { "version": ">=0.0.0", "enabled": true },
             "FicsitRemoteMonitoring": { "version": ">=0.0.0", "enabled": true },
+            "FicsitWiremod": { "version": ">=0.0.0", "enabled": true },
+            "InfiniteDismantle": { "version": ">=0.0.0", "enabled": true },
+            "InfiniteElevators": { "version": ">=0.0.0", "enabled": true },
             "InfiniteZoop": { "version": ">=0.0.0", "enabled": true },
             "KBlueprintDesignPlus": { "version": ">=0.0.0", "enabled": true },
             "SML": { "version": ">=0.0.0", "enabled": true },
+            "SmallTrainStation": { "version": ">=0.0.0", "enabled": true },
             "TajsGraph": { "version": ">=0.0.0", "enabled": true }
           },
           "name": "Default",
