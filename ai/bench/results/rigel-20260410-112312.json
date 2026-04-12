@@ -1,0 +1,14 @@
+{
+  "machine": "rigel",
+  "model": "Qwen3-8B-Q4_K_M.gguf",
+  "timestamp": "20260410-112312",
+  "server": "http://localhost:8080",
+  "results": [
+    {
+      "error": "parse failed"
+    },
+    {
+      "error": "parse failed"
+    }
+  ]
+}

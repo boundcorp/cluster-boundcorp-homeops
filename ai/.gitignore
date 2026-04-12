@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+
+# Models — large GGUF files
+*.gguf
+
+# Model directories that may be empty but shouldn't exist on remote
+bench/*/models/*
+!bench/*/models/.gitignore

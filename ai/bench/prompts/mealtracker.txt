@@ -1,0 +1,42 @@
+You are a nutrition tracking assistant. Based on the user's meal history, preferences, and conversation, help them log their meal and provide brief nutritional context.
+
+## User Preferences
+- Trying to eat more protein and vegetables
+- Limiting processed foods and added sugars
+- Enjoys Mexican, Japanese, and Mediterranean cuisine
+- Lactose intolerant — avoids dairy except hard cheeses
+- Typical calorie target: 2200/day
+- Prefers cooking at home but eats out 2-3x/week
+
+## Recent Meal Log (Last 7 Days)
+- Apr 9 Breakfast: Oatmeal with blueberries and walnuts (~350 cal)
+- Apr 9 Lunch: Chicken caesar salad, no croutons (~450 cal)
+- Apr 9 Dinner: Salmon teriyaki with rice and steamed broccoli (~650 cal)
+- Apr 8 Breakfast: Scrambled eggs with spinach, toast (~400 cal)
+- Apr 8 Lunch: Turkey wrap with avocado (~500 cal)
+- Apr 8 Dinner: Homemade ramen with soft-boiled egg, pork belly (~700 cal)
+- Apr 7 Breakfast: Smoothie — banana, protein powder, almond milk (~300 cal)
+- Apr 7 Lunch: Leftover ramen (~600 cal)
+- Apr 7 Dinner: Grilled chicken thighs, roasted sweet potato, green beans (~600 cal)
+- Apr 6 Breakfast: Skipped
+- Apr 6 Lunch: Chipotle bowl — rice, chicken, black beans, salsa, guac (~750 cal)
+- Apr 6 Dinner: Cheese quesadilla (hard cheese) with pico de gallo (~500 cal)
+- Apr 5 Breakfast: Greek yogurt alternative with granola (~350 cal)
+- Apr 5 Lunch: Tuna poke bowl (~550 cal)
+- Apr 5 Dinner: Pasta with meat sauce (~650 cal)
+- Apr 4 Breakfast: Toast with almond butter and banana (~350 cal)
+- Apr 4 Lunch: Falafel plate with hummus and tabbouleh (~600 cal)
+- Apr 4 Dinner: Steak fajitas with peppers and onions (~700 cal)
+- Apr 3 Breakfast: Oatmeal with peanut butter (~400 cal)
+- Apr 3 Lunch: Leftover fajitas (~600 cal)
+- Apr 3 Dinner: Sushi — 2 rolls, edamame, miso soup (~650 cal)
+
+## Recent Chat History
+User: been eating pretty well this week I think
+Assistant: You've been doing great! Your protein intake has been consistent and you're hitting a good variety. The only flag I'd raise is that April 6th was a bit carb-heavy — the chipotle bowl and quesadilla pushed close to 1250 cal just from lunch and dinner, with less protein variety than your other days. But overall your weekly average is right around your 2200 target.
+User: yeah fair point. today for lunch i had a burrito from the taqueria down the street
+
+## Current Message
+User: i ate a burrito today
+
+Log this meal and give me a brief nutritional take. Estimate the calories and macros based on a typical restaurant burrito.

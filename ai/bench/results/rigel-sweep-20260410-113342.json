@@ -1,0 +1,103 @@
+{
+  "machine": "rigel",
+  "timestamp": "20260410-113342",
+  "models": [
+    {
+      "model": "Qwen3-30B-A3B-Q4_K_M.gguf",
+      "error": "server_start_timeout",
+      "stderr": "0000:01:00.0) - 6399 MiB free\nllama_model_load: error loading model: tensor 'blk.0.ffn_down_exps.weight' data is not within the file bounds, model is corrupted or incomplete\nllama_model_load_from_file_impl: failed to load model\ncommon_init_from_params: failed to load model './rigel/models/Qwen3-30B-A3B-Q4_K_M.gguf'\nsrv    load_model: failed to load model, './rigel/models/Qwen3-30B-A3B-Q4_K_M.gguf'\nsrv    operator(): operator(): cleaning up before exit...\nmain: exiting due to model loading error\n"
+    },
+    {
+      "model": "Qwen3-1.7B-Q8_0.gguf",
+      "model_size_gb": 1.83,
+      "vram": "4404, 8192",
+      "results": [
+        {
+          "prompt": "mealtracker",
+          "prompt_tokens": 711,
+          "completion_tokens": 260,
+          "prompt_tok_per_s": 9285.7,
+          "gen_tok_per_s": 173.2,
+          "total_time_s": 1.59,
+          "reasoning_len": 0,
+          "response_len": 924,
+          "response_preview": "**Meal Log:**\n- **Date:** April 8, 2025  \n- **Meal:** Burrito from the Taqueria  \n- **Calories:** ~600\u2013700 cal (estimated based on typical restaurant burrito)  \n- **Macros:**  \n  - **Protein:** ~15\u201320 g (from chicken, beans, avocado, or other fillers)  \n  - **Carbs:** ~40\u201360 g (from tortilla, rice, "
+        },
+        {
+          "prompt": "routing",
+          "prompt_tokens": 99,
+          "completion_tokens": 30,
+          "prompt_tok_per_s": 5920.7,
+          "gen_tok_per_s": 176.9,
+          "total_time_s": 0.25,
+          "reasoning_len": 0,
+          "response_len": 127,
+          "response_preview": "SIMPLE: The user request is a factual lookup asking for the capital of France, which is a straightforward piece of information."
+        }
+      ]
+    },
+    {
+      "model": "Qwen3-4B-Q4_K_M.gguf",
+      "model_size_gb": 2.5,
+      "vram": "5240, 8192",
+      "results": [
+        {
+          "prompt": "mealtracker",
+          "prompt_tokens": 711,
+          "completion_tokens": 286,
+          "prompt_tok_per_s": 4055.7,
+          "gen_tok_per_s": 124.5,
+          "total_time_s": 2.49,
+          "reasoning_len": 0,
+          "response_len": 1088,
+          "response_preview": "**Meal Log: April 12, 2024 - Lunch: Burrito (from taqueria)**  \n- **Estimated Calories:** 550-650  \n- **Macros (estimated):** 25-30g protein, 45-55g fat, 60-70g carbs  \n\n**Nutritional Take:**  \nYour burrito is a good choice, but it\u2019s important to consider the type of burrito. Since you enjoy Mexican"
+        },
+        {
+          "prompt": "routing",
+          "prompt_tokens": 99,
+          "completion_tokens": 22,
+          "prompt_tok_per_s": 3090.2,
+          "gen_tok_per_s": 131.4,
+          "total_time_s": 0.28,
+          "reasoning_len": 0,
+          "response_len": 85,
+          "response_preview": "SIMPLE: It is a straightforward factual question asking for the capital of a country."
+        }
+      ]
+    },
+    {
+      "model": "Qwen3-14B-Q4_K_M.gguf",
+      "error": "server_start_timeout",
+      "stderr": "RTX 3070 Ti) (0000:01:00.0) - 6424 MiB free\nllama_model_load: error loading model: tensor 'blk.27.ffn_up.weight' data is not within the file bounds, model is corrupted or incomplete\nllama_model_load_from_file_impl: failed to load model\ncommon_init_from_params: failed to load model './rigel/models/Qwen3-14B-Q4_K_M.gguf'\nsrv    load_model: failed to load model, './rigel/models/Qwen3-14B-Q4_K_M.gguf'\nsrv    operator(): operator(): cleaning up before exit...\nmain: exiting due to model loading error\n"
+    },
+    {
+      "model": "Qwen3-8B-Q4_K_M.gguf",
+      "model_size_gb": 5.03,
+      "vram": "7335, 8192",
+      "results": [
+        {
+          "prompt": "mealtracker",
+          "prompt_tokens": 711,
+          "completion_tokens": 394,
+          "prompt_tok_per_s": 2276.6,
+          "gen_tok_per_s": 80.5,
+          "total_time_s": 5.22,
+          "reasoning_len": 0,
+          "response_len": 1497,
+          "response_preview": "You logged a **burrito** for lunch today. Based on a typical restaurant-style burrito (with rice, beans, cheese, meat, salsa, and tortilla), here's an estimated nutritional breakdown:\n\n- **Calories**: ~**800\u20131000 calories**  \n- **Protein**: ~**25\u201335g**  \n- **Carbohydrates**: ~**70\u201390g**  \n- **Fats**"
+        },
+        {
+          "prompt": "routing",
+          "prompt_tokens": 99,
+          "completion_tokens": 21,
+          "prompt_tok_per_s": 1906.7,
+          "gen_tok_per_s": 88.2,
+          "total_time_s": 0.36,
+          "reasoning_len": 0,
+          "response_len": 71,
+          "response_preview": "SIMPLE: It is a factual lookup question about the capital of a country."
+        }
+      ]
+    }
+  ]
+}

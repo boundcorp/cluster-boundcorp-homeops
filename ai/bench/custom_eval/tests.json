@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "description": "General intelligence eval: coding, math/science, logic, tool use. Target difficulty: solvable by 30B models most of the time, unsolvable by 1.7B most of the time.",
+  "tests": [
+    {
+      "id": "code-01-binary-search",
+      "category": "coding",
+      "prompt": "Write a Python function `search_rotated(nums, target)` that performs O(log n) search on a sorted array that has been rotated an unknown number of times. Return the index of target, or -1 if not found. Example: search_rotated([4,5,6,7,0,1,2], 0) == 4. Provide only the function code, no explanation.",
+      "expected": "A correct O(log n) binary search handling rotation by checking which half is sorted at each step.",
+      "judge_hint": "Must be O(log n). Must handle the rotation (cannot just be a plain linear search or a plain binary search that doesn't account for rotation)."
+    },
+    {
+      "id": "code-02-debug",
+      "category": "coding",
+      "prompt": "The following Python function should return the length of the longest increasing subsequence. It has a bug. Identify and fix it, then provide the corrected code.\n\n```python\ndef longest_increasing_subsequence(arr):\n    if not arr:\n        return 0\n    dp = [1] * len(arr)\n    for i in range(len(arr)):\n        for j in range(i):\n            if arr[j] < arr[i]:\n                dp[i] = dp[j] + 1\n    return max(dp)\n```",
+      "expected": "The bug: `dp[i] = dp[j] + 1` should be `dp[i] = max(dp[i], dp[j] + 1)`. Without the max, later shorter subsequences overwrite longer ones found earlier.",
+      "judge_hint": "Correct fix is using max() to compare dp[i] with dp[j]+1. The returned function must work correctly on e.g. [10,9,2,5,3,7,101,18] → 4."
+    },
+    {
+      "id": "code-03-data-structure",
+      "category": "coding",
+      "prompt": "Implement a Python class `LRUCache` with O(1) `get(key)` and `put(key, value)` operations. Constructor takes capacity. get returns the value (moves to most recent) or -1 if not present. put inserts or updates (evicting least recently used if at capacity). Provide only the class, no example usage.",
+      "expected": "A hash map + doubly linked list implementation, or using Python's OrderedDict with move_to_end() and popitem(last=False).",
+      "judge_hint": "Must be O(1) for both operations. OrderedDict solution is acceptable. A list-based solution that does O(n) scanning is wrong."
+    },
+    {
+      "id": "code-04-recursion",
+      "category": "coding",
+      "prompt": "Write a Python function `count_ways(n)` that returns the number of distinct ways to climb n stairs if you can take 1, 2, or 3 steps at a time. Use dynamic programming. Example: count_ways(4) == 7 (ways are 1+1+1+1, 1+1+2, 1+2+1, 2+1+1, 2+2, 1+3, 3+1).",
+      "expected": "A DP solution where dp[i] = dp[i-1] + dp[i-2] + dp[i-3], with base cases dp[0]=1, dp[1]=1, dp[2]=2.",
+      "judge_hint": "Must return 7 for n=4 and 13 for n=5. Base cases must be correct."
+    },
+
+    {
+      "id": "math-01-compound-interest",
+      "category": "math-science",
+      "prompt": "Alice invests $10,000 in an account earning 6% annual interest compounded monthly. She adds $200 at the end of every month. How much will she have after 5 years? Round to the nearest dollar. Show your work briefly.",
+      "expected": "Approximately $27,452 or $27,453 (exact: depends on exact formula, but ~$13,489 from initial + ~$13,954 from monthly contributions).",
+      "judge_hint": "Accept answers between $27,400 and $27,500. Must show the monthly compound interest formula or equivalent reasoning, not just pick a number."
+    },
+    {
+      "id": "math-02-physics",
+      "category": "math-science",
+      "prompt": "A ball is thrown straight up from a 20m tall building with an initial velocity of 15 m/s. Using g = 9.8 m/s², how long does it take to hit the ground below? Show the equation and solve to 2 decimal places.",
+      "expected": "Approximately 4.09 seconds. Using h(t) = 20 + 15t - 4.9t² = 0, quadratic formula gives t ≈ 4.09s (positive root).",
+      "judge_hint": "Must set up the equation h(t) = h₀ + v₀t - (1/2)gt² = 0. Accept final answer between 4.0 and 4.2 seconds."
+    },
+    {
+      "id": "math-03-probability",
+      "category": "math-science",
+      "prompt": "You have a bag containing 3 red balls and 5 blue balls. You draw 2 balls without replacement. What is the probability that both balls are the same color? Express as a fraction.",
+      "expected": "13/28. P(both red) = (3/8)(2/7) = 6/56. P(both blue) = (5/8)(4/7) = 20/56. Total = 26/56 = 13/28.",
+      "judge_hint": "Must correctly account for without replacement. Accept 13/28 or equivalent decimal ~0.464 or ~46.4%. The answer must be derived, not guessed."
+    },
+    {
+      "id": "math-04-calculus",
+      "category": "math-science",
+      "prompt": "Find the maximum value of the function f(x) = x² · e^(-x) for x ≥ 0. Show your work.",
+      "expected": "Maximum is at x = 2, with value 4/e² ≈ 0.541. Taking derivative: f'(x) = 2xe^(-x) - x²e^(-x) = xe^(-x)(2-x). Setting = 0 gives x = 0 or x = 2. Check x = 2 is max: f(2) = 4/e².",
+      "judge_hint": "Must find critical point at x=2 via derivative. Final answer ~0.541 or 4/e² is correct. Missing the derivative or getting wrong critical point is failure."
+    },
+
+    {
+      "id": "logic-01-knights-knaves",
+      "category": "logic",
+      "prompt": "On an island, knights always tell the truth and knaves always lie. You meet three islanders: Alice, Bob, and Carol. Alice says: 'Bob and Carol are both knaves.' Bob says: 'Alice is a knave.' Carol says nothing. Determine what each person is (knight or knave) and explain your reasoning.",
+      "expected": "Alice is a knave, Bob is a knight, Carol is a knight. If Alice were a knight, both Bob and Carol would be knaves, but then Bob (knave) saying 'Alice is a knave' would be true, contradiction. So Alice is a knave. Therefore Alice's statement is false, meaning at least one of Bob/Carol is a knight. Bob says Alice is a knave - this is true, so Bob is a knight. Carol could be either, but since Alice's statement 'Bob AND Carol are both knaves' is false, and Bob is a knight, the statement is already false regardless of Carol. So we need another constraint... actually we need Carol to be a knight for Alice's false statement to be maximally false, but logically Carol could be either. The standard answer: Alice is knave, Bob is knight, Carol is knight (since the puzzle usually has unique solution).",
+      "judge_hint": "The key correct deductions: Alice must be a knave (because if knight, contradiction with Bob), Bob must be a knight (since he correctly says Alice is a knave). Carol's status is technically underdetermined but most models will say knight. Accept any answer that gets Alice=knave and Bob=knight with correct reasoning."
+    },
+    {
+      "id": "logic-02-river-crossing",
+      "category": "logic",
+      "prompt": "A farmer needs to cross a river with a wolf, a goat, and a cabbage. The boat can only carry the farmer and one item at a time. If left alone, the wolf will eat the goat, and the goat will eat the cabbage. How does the farmer get all three across safely? Provide the sequence of crossings.",
+      "expected": "1. Farmer takes goat across. 2. Farmer returns alone. 3. Farmer takes wolf across. 4. Farmer returns with goat. 5. Farmer takes cabbage across. 6. Farmer returns alone. 7. Farmer takes goat across.",
+      "judge_hint": "Must get the key insight of returning with the goat on step 4. Any solution where wolf+goat or goat+cabbage are left alone together fails. The 7-step solution is standard."
+    },
+    {
+      "id": "logic-03-weighing",
+      "category": "logic",
+      "prompt": "You have 12 coins that look identical. 11 of them weigh the same, but 1 is counterfeit and has a different weight (you don't know if it's heavier or lighter). Using a balance scale only 3 times, how can you identify the counterfeit coin AND determine whether it's heavier or lighter? Describe your strategy.",
+      "expected": "Split into 3 groups of 4. Weigh group A vs group B. Case 1: balanced — counterfeit in C, use 2 more weighings with known-good coins to find it and determine direction. Case 2: unbalanced — counterfeit in A or B, use remaining 2 weighings with strategic swapping and known-good coins. The full solution involves careful case analysis.",
+      "judge_hint": "This is a famously hard puzzle. Accept any solution that correctly splits 12 into 3 groups of 4, explains what to do in both balanced and unbalanced cases for the first weighing, and shows correct strategy for the second and third weighings. Getting all cases exactly right is hard — accept if the high-level strategy is sound."
+    },
+    {
+      "id": "logic-04-constraint",
+      "category": "logic",
+      "prompt": "Three friends (Amy, Ben, Cat) each ordered a different drink (tea, coffee, juice) at a different price ($3, $4, $5). Given: (1) Amy didn't order the $5 drink. (2) The person who ordered coffee paid $4. (3) Ben ordered juice. (4) The juice cost more than the tea. Who ordered what and for how much?",
+      "expected": "Amy ordered coffee for $4. Ben ordered juice for $5. Cat ordered tea for $3. Reasoning: From (2), coffee = $4. From (3), Ben = juice. From (4), juice > tea. From (1), Amy ≠ $5, so Amy isn't juice (since if juice is $5, and if juice were $4 that's coffee, contradiction). Ben ordered juice, so Amy ordered coffee or tea. If Amy = tea, then Cat = coffee = $4, Ben = juice. Then juice > tea means juice = $5, tea = $3. But wait Amy ≠ $5 is satisfied. Let me check: Amy=tea=$3, Cat=coffee=$4, Ben=juice=$5. (1) Amy≠$5 ✓ (2) coffee=$4 ✓ (3) Ben=juice ✓ (4) juice>tea: 5>3 ✓. Both work! Need to re-examine: actually if Amy=coffee=$4, then Cat=tea, Ben=juice. juice>tea means juice could be $5, tea=$3. Amy≠$5 ✓. So there are 2 solutions unless another constraint forces it. Re-reading: actually the first solution (Amy=tea, Cat=coffee, Ben=juice) also works. The puzzle may have ambiguity. Most common answer: Amy=coffee=$4, Ben=juice=$5, Cat=tea=$3.",
+      "judge_hint": "Accept any solution where Ben=juice, coffee=$4, and all four constraints are satisfied. The most common valid answer is Amy=coffee=$4, Ben=juice=$5, Cat=tea=$3."
+    },
+
+    {
+      "id": "tool-01-simple",
+      "category": "tool-use",
+      "prompt": "You have access to these tools:\n- `get_weather(city: str) -> dict`: Returns current weather for a city\n- `get_time(timezone: str) -> str`: Returns current time in a timezone\n- `calculator(expression: str) -> float`: Evaluates a math expression\n- `web_search(query: str) -> list`: Searches the web\n\nUser asks: 'What's 247 times 389?'\n\nDecide which tool (if any) to call and with what arguments. Respond with JSON: {\"tool\": \"tool_name\", \"args\": {...}} or {\"tool\": null, \"reason\": \"direct answer\"}.",
+      "expected": "{\"tool\": \"calculator\", \"args\": {\"expression\": \"247 * 389\"}}",
+      "judge_hint": "Must pick calculator with an expression that evaluates to 96083 (247*389). The tool choice is the key test. If the model answers directly without tools, it's acceptable IF the answer 96083 is correct. Picking any other tool is wrong."
+    },
+    {
+      "id": "tool-02-restraint",
+      "category": "tool-use",
+      "prompt": "You have access to these tools:\n- `get_weather(city: str) -> dict`: Returns current weather for a city\n- `get_time(timezone: str) -> str`: Returns current time in a timezone\n- `calculator(expression: str) -> float`: Evaluates a math expression\n- `web_search(query: str) -> list`: Searches the web\n\nUser asks: 'What is the capital of France?'\n\nDecide which tool (if any) to call and with what arguments. Respond with JSON: {\"tool\": \"tool_name\", \"args\": {...}} or {\"tool\": null, \"reason\": \"direct answer\"}.",
+      "expected": "{\"tool\": null, \"reason\": \"direct answer\"} with Paris as the answer",
+      "judge_hint": "This tests tool-use restraint. The correct answer is NO tool needed — the model should answer 'Paris' directly from its training data. Using web_search is suboptimal but not catastrophically wrong. Picking calculator, get_weather, or get_time is clearly wrong."
+    },
+    {
+      "id": "tool-03-chaining",
+      "category": "tool-use",
+      "prompt": "You have access to these tools:\n- `get_weather(city: str) -> dict`: Returns {'temp_c': float, 'condition': str}\n- `convert_temp(celsius: float) -> float`: Converts Celsius to Fahrenheit\n- `calculator(expression: str) -> float`: Evaluates a math expression\n\nUser asks: 'What's the temperature in Tokyo in Fahrenheit?'\n\nThis requires multiple tool calls. Describe the sequence of tool calls you would make, in order. Respond with a JSON array of tool calls: [{\"tool\": \"...\", \"args\": {...}}, ...]",
+      "expected": "[{\"tool\": \"get_weather\", \"args\": {\"city\": \"Tokyo\"}}, {\"tool\": \"convert_temp\", \"args\": {\"celsius\": \"<temp from step 1>\"}}]",
+      "judge_hint": "Must recognize this requires 2 tool calls: first get_weather for Tokyo, then convert_temp with the result. Calling only get_weather and declaring the Celsius answer is incorrect (user asked for Fahrenheit). Using calculator instead of convert_temp is wrong."
+    },
+    {
+      "id": "tool-04-ambiguity",
+      "category": "tool-use",
+      "prompt": "You have access to these tools:\n- `search_files(query: str, directory: str) -> list`: Searches for files\n- `read_file(path: str) -> str`: Reads a file's contents\n- `delete_file(path: str) -> bool`: Deletes a file\n\nUser asks: 'Delete the old log files.'\n\nThe request is ambiguous. What should you do? Respond with either: (a) A JSON tool call if you have enough info, or (b) A JSON object {\"action\": \"clarify\", \"question\": \"...\"} asking for clarification.",
+      "expected": "{\"action\": \"clarify\", \"question\": \"Which directory contains the log files, and what defines 'old' (e.g., older than 30 days)?\"}",
+      "judge_hint": "Correct answer: ask for clarification. The request is dangerously ambiguous (destructive operation, unclear scope). Calling delete_file without knowing which files is catastrophically wrong. Calling search_files first is also acceptable as an intermediate step. The best answer asks a clarifying question."
+    }
+  ]
+}

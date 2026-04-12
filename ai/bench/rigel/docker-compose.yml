@@ -1,0 +1,19 @@
+services:
+  llama-server:
+    image: ghcr.io/ggerganov/llama.cpp:server-cuda-b4719
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/models
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    command: >
+      --host 0.0.0.0
+      --port 8080
+      --model /models/${MODEL:-default.gguf}
+      --ctx-size 8192
+      --n-gpu-layers 99
+      --threads 8
+      --batch-size 512
