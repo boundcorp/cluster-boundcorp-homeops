@@ -1,0 +1,19 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: token-collector
+  namespace: tools
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: tokens.octo.boundcorp.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: token-collector
+                port:
+                  name: http

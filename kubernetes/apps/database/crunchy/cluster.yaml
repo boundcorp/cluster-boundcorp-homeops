@@ -69,6 +69,11 @@ spec:
         - sonarr
       password:
         type: AlphaNumeric
+    - name: token_collector
+      databases:
+        - token_collector
+      password:
+        type: AlphaNumeric
 
 
   backups:

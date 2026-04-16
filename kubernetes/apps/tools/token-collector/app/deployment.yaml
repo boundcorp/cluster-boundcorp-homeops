@@ -1,0 +1,91 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: token-collector
+  namespace: tools
+  labels:
+    app: token-collector
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: token-collector
+  template:
+    metadata:
+      labels:
+        app: token-collector
+    spec:
+      initContainers:
+        - name: migrate
+          image: ghcr.io/boundcorp/token-collector:latest
+          command: ["python", "manage.py", "migrate", "--noinput"]
+          env: &app-env
+            - name: DJANGO_SETTINGS_MODULE
+              value: "token_collector.settings"
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: token-collector
+                  key: secret-key
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-token-collector
+                  key: host
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-token-collector
+                  key: pgbouncer-port
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-token-collector
+                  key: user
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-token-collector
+                  key: dbname
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-token-collector
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)"
+      containers:
+        - name: token-collector
+          image: ghcr.io/boundcorp/token-collector:latest
+          command:
+            - uvicorn
+            - wsgi:application
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8000"
+            - --interface
+            - wsgi
+          ports:
+            - containerPort: 8000
+              name: http
+          env: *app-env
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 8000
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 8000
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
