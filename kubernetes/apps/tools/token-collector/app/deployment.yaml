@@ -63,6 +63,8 @@ spec:
         - name: token-collector
           image: ghcr.io/boundcorp/token-collector:latest
           command:
+            - python
+            - "-m"
             - uvicorn
             - wsgi:application
             - --host
