@@ -18,6 +18,8 @@ spec:
       labels:
         app: token-collector
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       initContainers:
         - name: migrate
           image: ghcr.io/boundcorp/token-collector:latest
