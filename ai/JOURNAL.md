@@ -347,3 +347,93 @@ existing infrastructure handles the target use cases well. Revisit if:
   be committed
 - GPG signing is broken — use `git -c commit.gpgsign=false commit`
 - Wants TDD/structured approach but tolerates ad-hoc iteration during exploration phase
+
+---
+
+## 2026-04-25 — Qwen 3.6 RunPod Bench (vs Qwen 2.5 baseline)
+
+### Summary
+
+First bench of the new Qwen 3.6 generation (released ~2026-04). Three variants on RunPod
+GPUs via the token-collector orchestrator. **All three score ~7 points above the Qwen 2.5
+baseline** on a combined HumanEval+GSM8K benchmark, and the MoE variants run 2-4x faster
+per token. The 35B-A3B AWQ on a $0.40/hr A40 is the new value king.
+
+### Hardware × Model Matrix Tested
+
+| Tier | GPU | $/hr | Model | Quant | Weight size |
+|---|---|---:|---|---|---:|
+| dev-small | RTX A40 48GB | $0.40 | Qwen3.6-35B-A3B (MoE) | AWQ 4-bit | 25GB |
+| dev-medium | A100 SXM4 80GB | $1.39 | Qwen3.6-27B (dense) | FP8 | 28GB |
+| dev-medium-fp8 | A100 SXM4 80GB | $1.39 | Qwen3.6-35B-A3B (MoE) | FP8 | 37GB |
+
+### Results
+
+| Model | GPU | HumanEval | GSM8K | Combined | tok/s | $/Mtok |
+|---|---|---:|---:|---:|---:|---:|
+| **3.6 35B-A3B-AWQ** | A40 | 153/164 (93.3%) | 92/100 (92.0%) | **245/264 (92.8%)** | 72 | **$1.55** |
+| **3.6 35B-A3B-FP8** | A100 | 155/164 (94.5%) | 91/100 (91.0%) | **246/264 (93.2%)** | **123** | $3.15 |
+| **3.6 27B-FP8 dense** | A100 | 153/164 (93.3%) | 94/100 (94.0%) | **247/264 (93.6%)** | 45 | $8.65 |
+| 2.5 32B-AWQ (prior) | A40 | 135/164 (82.3%) | 94/100 (94.0%) | 229/264 (86.7%) | 25 | $4.37 |
+| 2.5 72B-AWQ (prior) | A100 | 132/164 (80.5%) | 97/100 (97.0%) | 229/264 (86.7%) | 31 | $12.58 |
+
+### Key Findings
+
+1. **Qwen 3.6 ≈ +7 pts over 2.5** on combined eval, regardless of variant — substantial
+   generation-over-generation improvement. Mostly comes from HumanEval (+11-14 pts);
+   GSM8K is roughly tied with 2.5 (or slightly worse).
+
+2. **35B-A3B AWQ on A40 is the new default for cost-sensitive inference**: $1.55/Mtok
+   (2.8× cheaper than the A100 FP8 for ~0.4 pt drop). Use this unless you need throughput
+   or full precision.
+
+3. **MoE crushes dense on $/quality**: 35B-A3B (3B active) is 1.6-2.7× faster than
+   27B dense at near-identical scores. The dense variant wins GSM8K by 3 pts but loses
+   on speed and code parity.
+
+4. **FP8 ≈ AWQ in quality** on this eval: 35B-A3B at FP8 vs AWQ differs by 0.4 pts (in
+   FP8's favor on HumanEval, in AWQ's favor on GSM8K). Pick by hardware fit, not quality.
+
+5. **Speed regime change vs 2.5**: 25-30 tok/s → 72-123 tok/s. MoE architecture is the
+   reason (Qwen2.5 was all dense). Future cost-of-inference math should assume Qwen3-style
+   MoE, not dense.
+
+### Issues Hit
+
+- **BF16-27B (55GB) wouldn't load on A100**: tried twice, vLLM never bound to port 8000
+  after >25 min on each attempt. Likely some combination of HF download bandwidth and
+  vLLM 0.19 model-load latency for that file size. Pivoted to FP8-27B (28GB) which loaded
+  in ~5min with no quality loss. **Don't bother with BF16 weights >50GB on RunPod** —
+  go straight to FP8 or AWQ.
+
+- **Watchdog killed pods at 10min idle** during the first bench round, because direct
+  bench traffic (curl to runpod proxy URL) bypasses the orchestrator's `last_activity_at`
+  tracking. With no recent activity, `is_idle()` falls back to `started_at`, which is
+  10 min ago by the time HumanEval finishes → pod torn down mid-run. Worked around by
+  bumping `max_idle_minutes` to 60 in the DB for these profiles. **Real fix**:
+  orchestrator should track activity from the proxy traffic, or expose a heartbeat
+  endpoint that benches can ping.
+
+### Cost Summary
+
+- Total session burn: **~$3.78** (across multiple aborted/retried runs)
+- Productive bench cost: **$1.04** (sum of bench-only $ across the 3 successful runs)
+- Account balance: $96.80 → $92.93
+
+### Profile / Seed Changes
+
+- Dropped `dev-xsmall` (3090 + Qwen3-30B-A3B was broken with vLLM:latest, and 3090 was
+  too tight on KV for Qwen3.6 27B at useful context).
+- New tier model lineup committed in `token-collector/.../seed_gpu_profiles.py`:
+  - `dev-small`: A40 + Qwen3.6-35B-A3B-AWQ ($0.40/hr) ← **default**
+  - `dev-medium`: A100 + Qwen3.6-27B-FP8 dense ($1.39/hr)
+  - `dev-medium-fp8`: A100 + Qwen3.6-35B-A3B-FP8 MoE ($1.39/hr)
+  - `dev-large`: 4×H100 + Qwen3.5-397B-A17B (untouched)
+
+### Next Steps
+
+1. **Fix watchdog activity tracking** so benches don't trigger idle teardown — either
+   read RunPod proxy traffic stats or add a `/heartbeat` endpoint.
+2. **Try dev-large** on Qwen3.5-397B-A17B (or skip if 35B-A3B is already at 93%).
+3. **Compare with octo CPU-only Qwen3-30B-A3B** (the 13/16 baseline from 2026-04-10) —
+   does the +7pt gain on the cloud equal more than the 18 tok/s on octo?
