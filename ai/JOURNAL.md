@@ -350,6 +350,81 @@ existing infrastructure handles the target use cases well. Revisit if:
 
 ---
 
+## 2026-04-28 — Fresh Bench Rerun + dev-large Attempts (397B AWQ)
+
+### Summary
+
+Reran dev-small and dev-medium benches to get fresh, input/output-weighted cost numbers
+for direct comparison against Anthropic API pricing. Both confirmed April 25 numbers within
+±1 pt. Also made **two failed attempts** at dev-large (4×H100 + Qwen3.5-397B-A17B-AWQ) —
+neither produced results. Total wasted: ~$23.
+
+### Fresh Bench Results (2026-04-28)
+
+| Tier | GPU | $/hr | Model | HumanEval | GSM8K | Combined | tok/s | $/Mtok eff* |
+|------|-----|-----:|-------|----------:|------:|---------:|------:|------------:|
+| dev-small | A40 48GB | $0.40 | Qwen3.6-35B-A3B-AWQ (MoE) | 155/164 (94.5%) | 92/100 (92.0%) | **93.6%** | 75 | **$1.53** |
+| dev-medium | A100 80GB | $1.39 | Qwen3.6-27B-FP8 (dense) | 153/164 (93.3%) | 92/100 (92.0%) | **92.8%** | 44 | **$9.10** |
+| dev-large | 4×H100 | $10.76 | Qwen3.5-397B-A17B-AWQ | — | — | ❌ FAILED | — | — |
+
+*Effective $/Mtok = output $/Mtok × 1.04 (adding 1/5 weight for input, assuming 5× faster prefill)
+
+### vs Claude API (effective $/Mtok comparison)
+
+| Model | HumanEval (pub) | GSM8K (pub) | $/Mtok eff |
+|-------|----------------:|------------:|-----------:|
+| **dev-small** (self-host) | 94.5% (measured) | 92.0% (measured) | **$1.53** |
+| Claude Haiku 3.5 (API) | ~88% | ~89% | ~$4.16 |
+| **dev-medium** (self-host) | 93.3% (measured) | 92.0% (measured) | **$9.10** |
+| Claude Sonnet 3.5/4 (API) | ~94% | ~96% | ~$15.60 |
+
+API effective $/Mtok = output_price + 0.2 × input_price (Haiku 3.5: $4.00 + 0.2×$0.80; Sonnet: $15.00 + 0.2×$3.00)
+
+**Key finding:** dev-small at $1.53/Mtok beats Haiku 3.5 API on accuracy (94.5% vs ~88% HumanEval)
+at 2.7× lower cost. Self-hosted MoE completely flips the cost/quality curve vs API.
+
+### dev-large Failure Log
+
+**Attempt 1** — `awq_marlin` quantization backend
+- Pod ID: `9vp9dx2meq5qf4`
+- Container never started: `runtime: null` for 55+ minutes
+- Likely cause: `awq_marlin` kernel incompatibility with QuantTrio AWQ model format
+- Cost: ~$14.43
+
+**Attempt 2** — `awq` quantization backend (after DB fix)
+- Pod ID: `iqlvwsdx2hhyau`
+- Endpoint URL appeared quickly (container started), but vLLM never responded to `/v1/models`
+- Waited 48 minutes — no response
+- Likely cause: 190GB model download (~95 shards × 2GB) at RunPod HF speeds + possible AWQ
+  kernel compilation took >48 min; we may have killed it just before it finished
+- Cost: ~$8.76
+
+**Total dev-large waste: ~$23.19**
+
+**Unresolved**: whether the model is broken with vLLM:latest or just needs >60 min to load.
+Options for next attempt:
+- Pin a specific vLLM version known to work with AWQ
+- Try without `--quantization` flag (let vLLM autodetect from config.json)
+- Wait 90+ min before declaring failure
+- Use 8×H100 + FP8 (403GB fits in 640GB) — more expensive but should just work
+
+### Config Fixes Applied
+
+- `seed_gpu_profiles.py` dev-large: `awq_marlin` → `awq` (matches production DB)
+- `seed_gpu_profiles.py` dev-large: `max_idle_minutes` 10 → 60
+- Production DB dev-large profile: `quantization` set to `awq` via kubectl
+
+### Cost Summary
+
+- dev-small rerun: ~$0.189
+- dev-medium rerun: ~$0.833
+- dev-large attempt 1: ~$14.43
+- dev-large attempt 2: ~$8.76
+- **Session total: ~$24.21**
+- Account balance: ~$68–76 (before any other activity)
+
+---
+
 ## 2026-04-25 — Qwen 3.6 RunPod Bench (vs Qwen 2.5 baseline)
 
 ### Summary
