@@ -116,8 +116,8 @@ spec:
       app:
         controller: satisfactory
         type: LoadBalancer
-        externalIPs:
-          - ${SVC_SATISFACTORY_ADDR}
+        annotations:
+          io.cilium/lb-ipam-ips: ${SVC_SATISFACTORY_ADDR}
         ports:
           game-udp:
             port: 7777
