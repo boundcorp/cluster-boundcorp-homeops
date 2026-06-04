@@ -39,7 +39,7 @@ spec:
               AUTOSAVENUM: "5"
               MAXTICKRATE: "30"
               TIMEOUT: "30"
-              SKIPUPDATE: "true"
+              SKIPUPDATE: "false"
             probes:
               liveness:
                 enabled: true
@@ -49,7 +49,7 @@ spec:
                     command:
                       - bash
                       - /home/steam/healthcheck.sh
-                  initialDelaySeconds: 300
+                  initialDelaySeconds: 60
                   periodSeconds: 30
                   timeoutSeconds: 30
                   failureThreshold: 3
@@ -61,7 +61,7 @@ spec:
                     command:
                       - bash
                       - /home/steam/healthcheck.sh
-                  initialDelaySeconds: 300
+                  initialDelaySeconds: 60
                   periodSeconds: 30
                   timeoutSeconds: 30
                   failureThreshold: 3
@@ -73,7 +73,7 @@ spec:
                     command:
                       - bash
                       - /home/steam/healthcheck.sh
-                  initialDelaySeconds: 600
+                  initialDelaySeconds: 60
                   periodSeconds: 30
                   timeoutSeconds: 30
                   failureThreshold: 30

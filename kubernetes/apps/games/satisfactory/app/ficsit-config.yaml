@@ -12,7 +12,7 @@ data:
         {
           "path": "/config/gamefiles",
           "profile": "Default",
-          "vanilla": false
+          "vanilla": true
         }
       ],
       "version": 0
@@ -21,15 +21,7 @@ data:
     {
       "profiles": {
         "Default": {
-          "mods": {
-            "Cartograph": { "version": ">=0.0.0", "enabled": true },
-            "FicsitRemoteMonitoring": { "version": ">=0.0.0", "enabled": true },
-            "InfiniteZoop": { "version": ">=0.0.0", "enabled": true },
-            "KBlueprintDesignPlus": { "version": ">=0.0.0", "enabled": true },
-            "SML": { "version": ">=0.0.0", "enabled": true },
-            "SmallTrainStation": { "version": ">=0.0.0", "enabled": true },
-            "TajsGraph": { "version": ">=0.0.0", "enabled": true }
-          },
+          "mods": {},
           "name": "Default",
           "required_targets": null
         }
