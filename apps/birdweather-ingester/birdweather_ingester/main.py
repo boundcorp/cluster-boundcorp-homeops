@@ -1440,18 +1440,18 @@ def render_daily_card(
     context: dict[str, Any],
 ) -> tuple[bytes, dict[str, Any], str | None]:
     width, height = 1920, 1080
-    image_panel_width = 760
+    image_panel_width = 680
     card = Image.new("RGB", (width, height), "#f4efe6")
     draw = ImageDraw.Draw(card)
 
-    title_font = load_font(92, bold=True)
-    subtitle_font = load_font(44, italic=True)
-    section_font = load_font(42, bold=True)
-    fact_font = load_font(34)
-    small_font = load_font(28)
-    chip_font = load_font(34, bold=True)
-    stat_label_font = load_font(25, bold=True)
-    stat_value_font = load_font(34)
+    title_font = load_font(112, bold=True)
+    subtitle_font = load_font(52, italic=True)
+    section_font = load_font(54, bold=True)
+    fact_font = load_font(46)
+    small_font = load_font(34)
+    chip_font = load_font(44, bold=True)
+    stat_label_font = load_font(31, bold=True)
+    stat_value_font = load_font(45)
 
     photo = context.get("photo")
     source_media_path = photo.get("local_media_path") if photo else None
@@ -1477,46 +1477,46 @@ def render_daily_card(
     overlay_draw.rectangle((0, height - 150, image_panel_width, height), fill=(0, 0, 0, 150))
     card.paste(overlay, (0, 0), overlay)
 
-    x = image_panel_width + 70
+    x = image_panel_width + 76
     y = 62
-    max_text_width = width - x - 74
+    max_text_width = width - x - 68
 
     draw.text((x, y), context["common_name"], font=title_font, fill="#1f3029")
-    y += 108
+    y += 128
     if context.get("scientific_name"):
         draw.text((x, y), context["scientific_name"], font=subtitle_font, fill="#58665e")
-        y += 72
+        y += 82
 
     chip_text = f"{context['detections_today']} detections today"
     chip_bbox = draw.textbbox((0, 0), chip_text, font=chip_font)
-    chip_width = chip_bbox[2] - chip_bbox[0] + 58
-    draw.rounded_rectangle((x, y, x + chip_width, y + 70), radius=22, fill="#1f6f5b")
-    draw.text((x + 29, y + 15), chip_text, font=chip_font, fill="#ffffff")
-    y += 104
+    chip_width = chip_bbox[2] - chip_bbox[0] + 70
+    draw.rounded_rectangle((x, y, x + chip_width, y + 88), radius=24, fill="#1f6f5b")
+    draw.text((x + 35, y + 18), chip_text, font=chip_font, fill="#ffffff")
+    y += 122
 
     stats = [
         ("Seen today", format_hours(context.get("hours_today") or [])),
         ("Common hours", format_hours([item["hour"] for item in context.get("common_hours") or []])),
         ("Common months", format_months(context.get("common_months") or [])),
     ]
-    stat_gap = 22
+    stat_gap = 24
     stat_width = (max_text_width - (stat_gap * 2)) // 3
     stat_top = y
     for index, (label, value) in enumerate(stats):
         stat_x = x + index * (stat_width + stat_gap)
-        draw.rounded_rectangle((stat_x, stat_top, stat_x + stat_width, stat_top + 132), radius=18, fill="#ebe1d2")
-        draw.text((stat_x + 24, stat_top + 20), label.upper(), font=stat_label_font, fill="#6d746b")
-        draw_wrapped(draw, value, (stat_x + 24, stat_top + 62), stat_value_font, "#1f3029", stat_width - 48, line_gap=4)
-    y += 172
+        draw.rounded_rectangle((stat_x, stat_top, stat_x + stat_width, stat_top + 158), radius=20, fill="#ebe1d2")
+        draw.text((stat_x + 26, stat_top + 22), label.upper(), font=stat_label_font, fill="#6d746b")
+        draw_wrapped(draw, value, (stat_x + 26, stat_top + 74), stat_value_font, "#1f3029", stat_width - 52, line_gap=6)
+    y += 198
 
     draw.line((x, y, width - 70, y), fill="#d5c8b5", width=4)
-    y += 38
+    y += 34
     draw.text((x, y), "Field Notes", font=section_font, fill="#30443a")
-    y += 60
-    for fact in (context.get("facts") or [])[:3]:
-        y = draw_wrapped(draw, fact["fact"], (x, y), fact_font, "#24342d", max_text_width, line_gap=10)
-        y += 28
-        if y > 900:
+    y += 74
+    for fact in (context.get("facts") or [])[:2]:
+        y = draw_wrapped(draw, fact["fact"], (x, y), fact_font, "#24342d", max_text_width, line_gap=13)
+        y += 34
+        if y > 915:
             break
 
     latest = context.get("latest_detected_at")
