@@ -1831,11 +1831,6 @@ def render_daily_card(
     elif not artifact:
         draw.rectangle((0, 0, image_panel_width, height), fill="#34443b")
 
-    overlay = Image.new("RGBA", (image_panel_width, height), (0, 0, 0, 0))
-    overlay_draw = ImageDraw.Draw(overlay)
-    overlay_draw.rectangle((0, height - 150, image_panel_width, height), fill=(0, 0, 0, 150))
-    card.paste(overlay, (0, 0), overlay)
-
     x = image_panel_width + 62
     y = 66
     right_margin = 68
@@ -1887,13 +1882,6 @@ def render_daily_card(
     if latest:
         latest_text = latest.astimezone(ZoneInfo(config.station_timezone)).strftime("Latest: %b %-d, %-I:%M %p")
         draw.text((x, height - 78), latest_text, font=small_font, fill="#58665e")
-
-    if photo and not artifact:
-        attribution = photo.get("photographer") or photo.get("attribution") or photo.get("source_name")
-        license_name = photo.get("license")
-        credit = " / ".join(part for part in [attribution, license_name] if part)
-        if credit:
-            draw_wrapped(draw, credit, (34, height - 112), small_font, "#ffffff", image_panel_width - 68, line_gap=6)
 
     out = BytesIO()
     card.save(out, format="PNG", optimize=True)
