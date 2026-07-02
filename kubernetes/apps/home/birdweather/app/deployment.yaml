@@ -21,6 +21,8 @@ spec:
         reloader.stakater.com/auto: "true"
     spec:
       restartPolicy: Always
+      imagePullSecrets:
+        - name: ghcr-boundcorp-pull
       containers:
         - name: birdweather-ingester
           image: ghcr.io/boundcorp/birdweather-ingester:latest
@@ -93,6 +95,8 @@ spec:
                 secretKeyRef:
                   name: postgres-pguser-birdweather
                   key: password
+            - name: POSTGRES_SCHEMA
+              value: birdweather
           resources:
             requests:
               cpu: 10m

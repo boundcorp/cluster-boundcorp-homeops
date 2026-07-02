@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 import paho.mqtt.publish as mqtt_publish
 import psycopg
 import requests
+from psycopg import sql
 from psycopg.types.json import Jsonb
 
 
@@ -122,6 +123,7 @@ class Config:
     postgres_user: str
     postgres_db: str
     postgres_password: str
+    postgres_schema: str
 
     @property
     def postgres_dsn(self) -> str:
@@ -171,6 +173,7 @@ def load_config() -> Config:
         postgres_user=env_required("POSTGRES_USER"),
         postgres_db=env_required("POSTGRES_DB"),
         postgres_password=env_required("POSTGRES_PASSWORD"),
+        postgres_schema=os.environ.get("POSTGRES_SCHEMA", "birdweather"),
     )
 
 
@@ -194,7 +197,12 @@ def setup_logging() -> None:
 
 
 def connect(config: Config) -> psycopg.Connection[Any]:
-    return psycopg.connect(config.postgres_dsn, autocommit=False, prepare_threshold=None)
+    conn = psycopg.connect(config.postgres_dsn, autocommit=False, prepare_threshold=None)
+    with conn.cursor() as cur:
+        cur.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(config.postgres_schema)))
+        cur.execute(sql.SQL("SET search_path TO {}").format(sql.Identifier(config.postgres_schema)))
+    conn.commit()
+    return conn
 
 
 def safe_error(exc: Exception, config: Config) -> str:

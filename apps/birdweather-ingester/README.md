@@ -11,6 +11,7 @@ Required environment:
 - `POSTGRES_USER`
 - `POSTGRES_DB`
 - `POSTGRES_PASSWORD`
+- `POSTGRES_SCHEMA` default `birdweather`
 
 Optional environment:
 
