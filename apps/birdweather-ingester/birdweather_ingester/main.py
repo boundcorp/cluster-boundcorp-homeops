@@ -7,6 +7,7 @@ import re
 import signal
 import sys
 import time
+from base64 import b64decode
 from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
@@ -30,6 +31,22 @@ WIKIPEDIA_REST_URL = "https://en.wikipedia.org/w/rest.php/v1"
 WIKIPEDIA_REST_LEGACY_URL = "https://en.wikipedia.org/api/rest_v1"
 WIKIPEDIA_ACTION_URL = "https://en.wikipedia.org/w/api.php"
 USER_AGENT = "boundcorp-birdweather-ingester/0.1 (https://github.com/boundcorp/cluster-boundcorp-homeops)"
+OPENAI_IMAGES_URL = "https://api.openai.com/v1/images/generations"
+
+ART_STYLE_PROMPTS = {
+    "watercolor-field-guide": "transparent watercolor and fine ink field-guide plate, natural pigments, warm archival paper",
+    "graphite-sketch": "detailed graphite pencil sketch, careful feather texture, warm off-white naturalist notebook paper",
+    "ink-wash": "black ink linework with soft gray wash, elegant scientific illustration, restrained paper texture",
+    "colored-pencil": "layered colored-pencil wildlife study, visible pencil grain, accurate markings, cream paper",
+    "gouache-study": "matte gouache wildlife study, rich but natural color, clean silhouette, subtle paper texture",
+    "vintage-engraving": "19th-century natural history engraving style, fine hatching, lightly hand-tinted, aged ivory paper",
+    "japanese-woodblock": "Japanese woodblock print inspired bird study, flat natural color, crisp contours, handmade paper",
+    "oil-field-study": "small oil-paint field study, soft brushwork, natural light, muted gallery-quality wildlife art",
+    "charcoal-study": "soft charcoal and white chalk study, expressive but anatomically accurate, toned paper",
+    "botanical-plate": "botanical plate style with a simple native perch, refined natural history composition, off-white plate background",
+    "minimal-ink": "minimal ink and muted watercolor wash, lots of breathing room, accurate field marks, modern naturalist card art",
+    "ornithology-plate": "classic ornithology monograph plate, precise full-body bird, delicate watercolor, museum archive paper",
+}
 
 STATION_QUERY = """
 query($id: ID!) {
@@ -128,6 +145,13 @@ class Config:
     max_cards_per_poll: int
     max_card_source_image_bytes: int
     media_export_dir: str | None
+    generate_species_art: bool
+    openai_api_key: str | None
+    openai_image_model: str
+    openai_image_quality: str
+    openai_image_size: str
+    generated_art_styles: tuple[str, ...]
+    max_art_generations_per_poll: int
     station_timezone: str
     mqtt_host: str | None
     mqtt_port: int
@@ -185,6 +209,17 @@ def load_config() -> Config:
         max_cards_per_poll=env_int("MAX_CARDS_PER_POLL", 25),
         max_card_source_image_bytes=env_int("MAX_CARD_SOURCE_IMAGE_BYTES", 15 * 1024 * 1024),
         media_export_dir=os.environ.get("MEDIA_EXPORT_DIR"),
+        generate_species_art=os.environ.get("GENERATE_SPECIES_ART", "false").lower() in {"1", "true", "yes", "on"},
+        openai_api_key=os.environ.get("OPENAI_API_KEY"),
+        openai_image_model=os.environ.get("OPENAI_IMAGE_MODEL", "gpt-image-2"),
+        openai_image_quality=os.environ.get("OPENAI_IMAGE_QUALITY", "low"),
+        openai_image_size=os.environ.get("OPENAI_IMAGE_SIZE", "704x1088"),
+        generated_art_styles=tuple(
+            style.strip()
+            for style in os.environ.get("GENERATED_ART_STYLES", ",".join(ART_STYLE_PROMPTS)).split(",")
+            if style.strip()
+        ),
+        max_art_generations_per_poll=env_int("MAX_ART_GENERATIONS_PER_POLL", 2),
         station_timezone=os.environ.get("STATION_TIMEZONE", "America/Los_Angeles"),
         mqtt_host=os.environ.get("MQTT_HOST"),
         mqtt_port=env_int("MQTT_PORT", 1883),
@@ -232,7 +267,10 @@ def connect(config: Config) -> psycopg.Connection[Any]:
 
 
 def safe_error(exc: Exception, config: Config) -> str:
-    return str(exc).replace(config.birdweather_token, "[redacted]")
+    message = str(exc).replace(config.birdweather_token, "[redacted]")
+    if config.openai_api_key:
+        message = message.replace(config.openai_api_key, "[redacted]")
+    return message
 
 
 def strip_html(value: str | None) -> str | None:
@@ -307,6 +345,26 @@ def draw_wrapped(
     x, y = xy
     line_height = draw.textbbox((0, 0), "Ag", font=font)[3] + line_gap
     for line in wrap_text(draw, text, font, max_width):
+        draw.text((x, y), line, font=font, fill=fill)
+        y += line_height
+    return y
+
+
+def draw_wrapped_limited(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    xy: tuple[int, int],
+    font: ImageFont.ImageFont,
+    fill: str,
+    max_width: int,
+    max_y: int,
+    line_gap: int = 8,
+) -> int:
+    x, y = xy
+    line_height = draw.textbbox((0, 0), "Ag", font=font)[3] + line_gap
+    for line in wrap_text(draw, text, font, max_width):
+        if y + line_height > max_y:
+            return max_y
         draw.text((x, y), line, font=font, fill=fill)
         y += line_height
     return y
@@ -553,6 +611,10 @@ def init_schema(conn: psycopg.Connection[Any]) -> None:
 
             CREATE INDEX IF NOT EXISTS species_artifacts_species_type_style_idx
               ON species_artifacts (species_id, artifact_type, style);
+
+            CREATE UNIQUE INDEX IF NOT EXISTS species_artifacts_drawing_style_unique_idx
+              ON species_artifacts (species_id, artifact_type, style)
+              WHERE artifact_type = 'drawing' AND style IS NOT NULL;
 
             CREATE TABLE IF NOT EXISTS daily_species_cards (
               species_id bigint NOT NULL REFERENCES species(id) ON DELETE CASCADE,
@@ -1357,6 +1419,20 @@ def card_context(
 
         cur.execute(
             """
+            SELECT id, artifact_type, style, provider, model, media_path, image, metadata
+            FROM species_artifacts
+            WHERE species_id = %s
+              AND artifact_type = 'drawing'
+              AND content_type = 'image/png'
+            ORDER BY random()
+            LIMIT 1
+            """,
+            (species_id,),
+        )
+        artifact_row = cur.fetchone()
+
+        cur.execute(
+            """
             SELECT local_hour, detections
             FROM species_monthly_stats
             WHERE species_id = %s
@@ -1396,10 +1472,24 @@ def card_context(
             "height": photo_row[10],
         }
 
+    artifact = None
+    if artifact_row:
+        artifact = {
+            "id": artifact_row[0],
+            "artifact_type": artifact_row[1],
+            "style": artifact_row[2],
+            "provider": artifact_row[3],
+            "model": artifact_row[4],
+            "media_path": artifact_row[5],
+            "image": bytes(artifact_row[6]) if artifact_row[6] else None,
+            "metadata": artifact_row[7],
+        }
+
     return {
         **species,
         "facts": facts,
         "photo": photo,
+        "artifact": artifact,
         "common_hours": common_hours,
         "common_months": common_months,
     }
@@ -1434,28 +1524,285 @@ def format_months(months: list[dict[str, Any]]) -> str:
     return ", ".join(names[item["month"] - 1] for item in months)
 
 
+def interesting_facts(facts: list[dict[str, Any]]) -> list[str]:
+    boring_patterns = [
+        r"^wikipedia describes this species as:",
+        r"\bspecies of bird\b",
+    ]
+    selected: list[str] = []
+    for fact in facts:
+        text = re.sub(r"\s+", " ", (fact.get("fact") or "")).strip()
+        if not text:
+            continue
+        lowered = text.lower()
+        if any(re.search(pattern, lowered) for pattern in boring_patterns):
+            continue
+        selected.append(text)
+    return selected[:3]
+
+
+def art_prompt(context: dict[str, Any], style: str) -> str:
+    style_description = ART_STYLE_PROMPTS.get(style, style.replace("-", " "))
+    facts = " ".join(interesting_facts(context.get("facts") or []))[:700]
+    scientific_name = context.get("scientific_name") or "unknown scientific name"
+    return (
+        "Create a portrait-oriented bird illustration designed for a Home Assistant wall display card. "
+        "The final card crops this image into a 700x1080 portrait panel, so keep the complete bird safely "
+        "inside the central 80% of the image with generous margin around beak, tail, and feet. "
+        f"Subject: {context['common_name']} ({scientific_name}). "
+        f"Style: {style_description}. "
+        "Composition: one accurate full-body bird, naturally perched, plain warm off-white background, "
+        "no text, no labels, no frame, no watermark, no extra birds. "
+        f"Accuracy notes: {facts}"
+    )
+
+
+def openai_generate_image(
+    session: requests.Session,
+    config: Config,
+    prompt: str,
+) -> bytes:
+    if not config.openai_api_key:
+        raise RuntimeError("OPENAI_API_KEY is not configured")
+    response = session.post(
+        OPENAI_IMAGES_URL,
+        headers={
+            "Authorization": f"Bearer {config.openai_api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": config.openai_image_model,
+            "prompt": prompt,
+            "size": config.openai_image_size,
+            "quality": config.openai_image_quality,
+            "n": 1,
+        },
+        timeout=max(config.http_timeout_seconds, 180),
+    )
+    response.raise_for_status()
+    payload = response.json()
+    b64_json = (payload.get("data") or [{}])[0].get("b64_json")
+    if not b64_json:
+        raise RuntimeError("OpenAI image response did not include b64_json")
+    return b64decode(b64_json)
+
+
+def artifact_exists(conn: psycopg.Connection[Any], species_id: int, style: str) -> bool:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT 1
+            FROM species_artifacts
+            WHERE species_id = %s
+              AND artifact_type = 'drawing'
+              AND style = %s
+            LIMIT 1
+            """,
+            (species_id, style),
+        )
+        return cur.fetchone() is not None
+
+
+def save_species_artifact(
+    cur: psycopg.Cursor[Any],
+    config: Config,
+    context: dict[str, Any],
+    style: str,
+    prompt: str,
+    png: bytes,
+) -> str:
+    digest = sha256(png).hexdigest()
+    media_path = f"generated-art/{context['species_id']}/{style}-{digest[:12]}.png"
+    media_write(config, media_path, png)
+    source_photo_id = context.get("photo", {}).get("id") if context.get("photo") else None
+    cur.execute(
+        """
+        INSERT INTO species_artifacts (
+          species_id, artifact_type, style, provider, model, prompt, source_photo_id,
+          content_type, byte_size, sha256, image, media_path, metadata, generated_at
+        )
+        VALUES (%s, 'drawing', %s, 'openai', %s, %s, %s, 'image/png', %s, %s, %s, %s, %s, now())
+        ON CONFLICT (species_id, artifact_type, style)
+          WHERE artifact_type = 'drawing' AND style IS NOT NULL
+        DO UPDATE
+          SET provider = excluded.provider,
+              model = excluded.model,
+              prompt = excluded.prompt,
+              source_photo_id = excluded.source_photo_id,
+              content_type = excluded.content_type,
+              byte_size = excluded.byte_size,
+              sha256 = excluded.sha256,
+              image = excluded.image,
+              media_path = excluded.media_path,
+              metadata = excluded.metadata,
+              generated_at = excluded.generated_at,
+              updated_at = now()
+        """,
+        (
+            context["species_id"],
+            style,
+            config.openai_image_model,
+            prompt,
+            source_photo_id,
+            len(png),
+            digest,
+            png,
+            media_path,
+            json_clean(
+                {
+                    "size": config.openai_image_size,
+                    "quality": config.openai_image_quality,
+                    "target_card_panel": {"width": 700, "height": 1080},
+                }
+            ),
+        ),
+    )
+    return media_path
+
+
+def generate_species_artifacts(
+    conn: psycopg.Connection[Any],
+    session: requests.Session,
+    config: Config,
+) -> int:
+    if not config.generate_species_art or not config.openai_api_key:
+        return 0
+
+    generated = 0
+    for species in species_for_daily_cards(conn, config):
+        if generated >= config.max_art_generations_per_poll:
+            break
+        context = card_context(conn, species)
+        for style in config.generated_art_styles:
+            if generated >= config.max_art_generations_per_poll:
+                break
+            if artifact_exists(conn, context["species_id"], style):
+                continue
+            prompt = art_prompt(context, style)
+            try:
+                png = openai_generate_image(session, config, prompt)
+                with conn.cursor() as cur:
+                    save_species_artifact(cur, config, context, style, prompt, png)
+                conn.commit()
+                generated += 1
+                LOG.info(
+                    "generated species art species_id=%s common_name=%s style=%s",
+                    context["species_id"],
+                    context["common_name"],
+                    style,
+                )
+            except Exception as exc:
+                conn.rollback()
+                LOG.warning(
+                    "failed to generate species art species_id=%s common_name=%s style=%s: %s",
+                    context["species_id"],
+                    context["common_name"],
+                    style,
+                    safe_error(exc, config),
+                )
+    return generated
+
+
+def draw_hour_strip(
+    draw: ImageDraw.ImageDraw,
+    xy: tuple[int, int],
+    width: int,
+    hours: list[int] | list[dict[str, Any]],
+    fill: str,
+) -> None:
+    x, y = xy
+    values = {int(item["hour"]): int(item.get("detections", 1)) for item in hours if isinstance(item, dict)}
+    if not values:
+        values = {int(hour): 1 for hour in hours if not isinstance(hour, dict)}
+    max_value = max(values.values(), default=1)
+    gap = 4
+    block_width = (width - gap * 23) / 24
+    for hour in range(24):
+        left = int(x + hour * (block_width + gap))
+        right = int(left + block_width)
+        value = values.get(hour, 0)
+        if value:
+            intensity = 0.45 + 0.55 * (value / max_value)
+            color = fill
+            bar_height = int(22 + 42 * intensity)
+        else:
+            color = "#ddd4c6"
+            bar_height = 14
+        draw.rounded_rectangle((left, y + 68 - bar_height, right, y + 68), radius=4, fill=color)
+
+    label_font = load_font(22, bold=True)
+    for hour, label in [(0, "12a"), (6, "6a"), (12, "12p"), (18, "6p")]:
+        label_x = int(x + hour * (block_width + gap))
+        draw.text((label_x, y + 78), label, font=label_font, fill="#6d746b")
+
+
+def draw_month_strip(
+    draw: ImageDraw.ImageDraw,
+    xy: tuple[int, int],
+    width: int,
+    months: list[dict[str, Any]],
+    fill: str,
+) -> None:
+    x, y = xy
+    values = {int(item["month"]): int(item.get("detections", 1)) for item in months}
+    max_value = max(values.values(), default=1)
+    gap = 8
+    block_width = (width - gap * 11) / 12
+    for month in range(1, 13):
+        left = int(x + (month - 1) * (block_width + gap))
+        right = int(left + block_width)
+        value = values.get(month, 0)
+        if value:
+            bar_height = int(20 + 50 * (value / max_value))
+            color = fill
+        else:
+            bar_height = 14
+            color = "#ddd4c6"
+        draw.rounded_rectangle((left, y + 70 - bar_height, right, y + 70), radius=5, fill=color)
+
+    label_font = load_font(22, bold=True)
+    for month, label in [(1, "J"), (4, "A"), (7, "J"), (10, "O")]:
+        label_x = int(x + (month - 1) * (block_width + gap))
+        draw.text((label_x, y + 80), label, font=label_font, fill="#6d746b")
+
+
 def render_daily_card(
     session: requests.Session,
     config: Config,
     context: dict[str, Any],
 ) -> tuple[bytes, dict[str, Any], str | None]:
     width, height = 1920, 1080
-    image_panel_width = 680
+    image_panel_width = 700
     card = Image.new("RGB", (width, height), "#f4efe6")
     draw = ImageDraw.Draw(card)
 
-    title_font = load_font(112, bold=True)
-    subtitle_font = load_font(52, italic=True)
-    section_font = load_font(54, bold=True)
-    fact_font = load_font(46)
-    small_font = load_font(34)
-    chip_font = load_font(44, bold=True)
-    stat_label_font = load_font(31, bold=True)
-    stat_value_font = load_font(45)
+    title_font = load_font(84, bold=True)
+    subtitle_font = load_font(40, italic=True)
+    fact_font = load_font(36)
+    small_font = load_font(28)
+    chip_font = load_font(34, bold=True)
+    stat_label_font = load_font(28, bold=True)
 
+    artifact = context.get("artifact")
     photo = context.get("photo")
     source_media_path = photo.get("local_media_path") if photo else None
-    if photo:
+    if artifact:
+        try:
+            artifact_image = None
+            if artifact.get("image"):
+                artifact_image = Image.open(BytesIO(bytes(artifact["image"])))
+            elif artifact.get("local_path"):
+                artifact_image = Image.open(artifact["local_path"])
+            elif artifact.get("media_path") and config.media_export_dir:
+                artifact_image = Image.open(Path(config.media_export_dir) / artifact["media_path"])
+            if artifact_image is None:
+                raise RuntimeError("artifact has no image payload or readable media path")
+            card.paste(crop_cover(artifact_image, (image_panel_width, height)), (0, 0))
+        except Exception as exc:
+            LOG.warning("failed to use generated artifact for species_id=%s: %s", context["species_id"], safe_error(exc, config))
+            artifact = None
+
+    if not artifact and photo:
         try:
             source_image, source_payload, source_content_type = fetch_image_asset(session, config, photo["photo_url"])
             if not source_media_path:
@@ -1469,7 +1816,7 @@ def render_daily_card(
         except Exception as exc:
             LOG.warning("failed to fetch card photo for species_id=%s: %s", context["species_id"], safe_error(exc, config))
             draw.rectangle((0, 0, image_panel_width, height), fill="#34443b")
-    else:
+    elif not artifact:
         draw.rectangle((0, 0, image_panel_width, height), fill="#34443b")
 
     overlay = Image.new("RGBA", (image_panel_width, height), (0, 0, 0, 0))
@@ -1477,46 +1824,51 @@ def render_daily_card(
     overlay_draw.rectangle((0, height - 150, image_panel_width, height), fill=(0, 0, 0, 150))
     card.paste(overlay, (0, 0), overlay)
 
-    x = image_panel_width + 76
-    y = 62
-    max_text_width = width - x - 68
+    x = image_panel_width + 62
+    y = 66
+    right_margin = 68
+    weather_safe_left = width - 520
+    title_width = weather_safe_left - x - 42
+    max_text_width = width - x - right_margin
 
-    draw.text((x, y), context["common_name"], font=title_font, fill="#1f3029")
-    y += 128
+    y = draw_wrapped(draw, context["common_name"], (x, y), title_font, "#1f3029", title_width, line_gap=6)
+    y += 8
     if context.get("scientific_name"):
         draw.text((x, y), context["scientific_name"], font=subtitle_font, fill="#58665e")
-        y += 82
+        y += 66
 
     chip_text = f"{context['detections_today']} detections today"
     chip_bbox = draw.textbbox((0, 0), chip_text, font=chip_font)
-    chip_width = chip_bbox[2] - chip_bbox[0] + 70
-    draw.rounded_rectangle((x, y, x + chip_width, y + 88), radius=24, fill="#1f6f5b")
-    draw.text((x + 35, y + 18), chip_text, font=chip_font, fill="#ffffff")
-    y += 122
+    chip_width = chip_bbox[2] - chip_bbox[0] + 50
+    draw.rounded_rectangle((x, y, x + chip_width, y + 64), radius=18, fill="#1f6f5b")
+    draw.text((x + 25, y + 13), chip_text, font=chip_font, fill="#ffffff")
+    y = max(y + 96, 344)
 
     stats = [
-        ("Seen today", format_hours(context.get("hours_today") or [])),
-        ("Common hours", format_hours([item["hour"] for item in context.get("common_hours") or []])),
-        ("Common months", format_months(context.get("common_months") or [])),
+        ("Seen today", "hours_today", context.get("hours_today") or []),
+        ("Usual hours", "common_hours", context.get("common_hours") or []),
+        ("Season", "common_months", context.get("common_months") or []),
     ]
     stat_gap = 24
     stat_width = (max_text_width - (stat_gap * 2)) // 3
     stat_top = y
-    for index, (label, value) in enumerate(stats):
+    for index, (label, kind, value) in enumerate(stats):
         stat_x = x + index * (stat_width + stat_gap)
-        draw.rounded_rectangle((stat_x, stat_top, stat_x + stat_width, stat_top + 158), radius=20, fill="#ebe1d2")
-        draw.text((stat_x + 26, stat_top + 22), label.upper(), font=stat_label_font, fill="#6d746b")
-        draw_wrapped(draw, value, (stat_x + 26, stat_top + 74), stat_value_font, "#1f3029", stat_width - 52, line_gap=6)
-    y += 198
+        draw.rounded_rectangle((stat_x, stat_top, stat_x + stat_width, stat_top + 158), radius=18, fill="#ebe1d2")
+        draw.text((stat_x + 26, stat_top + 20), label.upper(), font=stat_label_font, fill="#6d746b")
+        if kind == "common_months":
+            draw_month_strip(draw, (stat_x + 26, stat_top + 62), stat_width - 52, value, "#1f6f5b")
+        else:
+            draw_hour_strip(draw, (stat_x + 26, stat_top + 62), stat_width - 52, value, "#1f6f5b")
+    y += 206
 
     draw.line((x, y, width - 70, y), fill="#d5c8b5", width=4)
-    y += 34
-    draw.text((x, y), "Field Notes", font=section_font, fill="#30443a")
-    y += 74
-    for fact in (context.get("facts") or [])[:2]:
-        y = draw_wrapped(draw, fact["fact"], (x, y), fact_font, "#24342d", max_text_width, line_gap=13)
-        y += 34
-        if y > 915:
+    y += 42
+    facts = interesting_facts(context.get("facts") or [])
+    for fact in facts:
+        y = draw_wrapped_limited(draw, fact, (x, y), fact_font, "#24342d", max_text_width, height - 118, line_gap=12)
+        y += 30
+        if y > height - 150:
             break
 
     latest = context.get("latest_detected_at")
@@ -1524,7 +1876,7 @@ def render_daily_card(
         latest_text = latest.astimezone(ZoneInfo(config.station_timezone)).strftime("Latest: %b %-d, %-I:%M %p")
         draw.text((x, height - 78), latest_text, font=small_font, fill="#58665e")
 
-    if photo:
+    if photo and not artifact:
         attribution = photo.get("photographer") or photo.get("attribution") or photo.get("source_name")
         license_name = photo.get("license")
         credit = " / ".join(part for part in [attribution, license_name] if part)
@@ -1544,6 +1896,7 @@ def render_daily_card(
         "common_months": context.get("common_months") or [],
         "facts": context.get("facts") or [],
         "photo": photo,
+        "artifact": {key: value for key, value in (artifact or {}).items() if key != "image"} if artifact else None,
         "source_media_path": source_media_path,
         "width": width,
         "height": height,
@@ -1558,7 +1911,8 @@ def save_daily_card(
     png: bytes,
     card_data: dict[str, Any],
 ) -> str:
-    media_path = f"bird-cards/{context['species_id']}-{slugify(context['common_name'])}.png"
+    digest = sha256(png).hexdigest()
+    media_path = f"bird-cards/{context['species_id']}-{slugify(context['common_name'])}-{digest[:12]}.png"
     media_write(config, media_path, png)
     cur.execute(
         """
@@ -1580,7 +1934,7 @@ def save_daily_card(
             context["species_id"],
             context["local_date"],
             len(png),
-            sha256(png).hexdigest(),
+            digest,
             png,
             media_path,
             json_clean(card_data),
@@ -1856,6 +2210,9 @@ def poll_once(
     species_enriched = enrich_species(conn, session, config)
     if species_enriched:
         LOG.info("enriched %s species", species_enriched)
+    art_generated = generate_species_artifacts(conn, session, config)
+    if art_generated:
+        LOG.info("generated %s species art assets", art_generated)
     cards_generated = generate_daily_cards(conn, session, config)
     if cards_generated:
         LOG.info("generated %s daily species cards", cards_generated)

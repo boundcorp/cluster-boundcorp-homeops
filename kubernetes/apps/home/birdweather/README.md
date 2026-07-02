@@ -73,6 +73,7 @@ Media export:
 - Source photos are exported under `/media/birdweather/source-photos/<species_id>/`.
 - Composed cards for species seen today are exported under `/media/birdweather/bird-cards/`.
 - The card export folder is pruned after each generation pass, so birds not seen today are removed from the Home Assistant media source.
+- Card filenames include a content hash, which forces WallPanel and browser caches to load new images after regeneration.
 - The same files are visible in Home Assistant's media browser under the `birdweather` folder.
 - The PVC uses `nfs-titan-nvme`, so the backing files are also inspectable on Titan's NFS storage.
 - Postgres remains the source of truth for metadata and also stores the composed PNG bytes.
@@ -90,6 +91,7 @@ WallPanel should point at the registered media source, not the container filesys
 ```yaml
 wallpanel:
   image_url: /birdweather/bird-cards
+  media_list_update_interval: 60
 ```
 
 Audio storage details:
@@ -202,10 +204,27 @@ Proposed flow:
 
 AI provider note:
 
-- Do not commit or reuse existing personal API keys for image generation.
-- When this feature is implemented, choose the image model/provider at that time based on current quality, cost, licensing, and API ergonomics.
-- Ask for a fresh dedicated API key before enabling generation.
-- Store that key in a new SOPS secret and keep generated-art calls behind an explicit feature flag.
+- Generated art uses OpenAI `gpt-image-2` through the image generation API.
+- Output size is `704x1088`, which closely matches the Bird Card image panel (`700x1080`) and avoids large crop surprises.
+- The OpenAI API key is read from `OPENAI_API_KEY`, sourced from the `birdweather-ingester` secret key `openai-api-key`.
+- Keep generated-art calls behind `GENERATE_SPECIES_ART=true` and cap calls with `MAX_ART_GENERATIONS_PER_POLL`.
+- Do not commit plaintext API keys. The live secret may be patched manually for immediate testing, but the SOPS secret should be updated once the age identity is available.
+- Art is generated once per species/style and stored in `species_artifacts` plus `/media/birdweather/generated-art/<species_id>/`.
+
+Generated art styles:
+
+- `watercolor-field-guide`
+- `graphite-sketch`
+- `ink-wash`
+- `colored-pencil`
+- `gouache-study`
+- `vintage-engraving`
+- `japanese-woodblock`
+- `oil-field-study`
+- `charcoal-study`
+- `botanical-plate`
+- `minimal-ink`
+- `ornithology-plate`
 
 Bird Card content:
 

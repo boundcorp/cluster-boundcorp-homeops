@@ -108,6 +108,22 @@ spec:
               value: "15728640"
             - name: MEDIA_EXPORT_DIR
               value: /media/birdweather
+            - name: GENERATE_SPECIES_ART
+              value: "true"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: birdweather-ingester
+                  key: openai-api-key
+                  optional: true
+            - name: OPENAI_IMAGE_MODEL
+              value: gpt-image-2
+            - name: OPENAI_IMAGE_QUALITY
+              value: low
+            - name: OPENAI_IMAGE_SIZE
+              value: 704x1088
+            - name: MAX_ART_GENERATIONS_PER_POLL
+              value: "4"
           resources:
             requests:
               cpu: 10m
