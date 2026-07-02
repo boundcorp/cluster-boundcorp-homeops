@@ -77,6 +77,21 @@ Media export:
 - The PVC uses `nfs-titan-nvme`, so the backing files are also inspectable on Titan's NFS storage.
 - Postgres remains the source of truth for metadata and also stores the composed PNG bytes.
 
+Home Assistant must register the mounted media path before WallPanel can browse it:
+
+```yaml
+homeassistant:
+  media_dirs:
+    birdweather: /media/birdweather
+```
+
+WallPanel should point at the registered media source, not the container filesystem path:
+
+```yaml
+wallpanel:
+  image_url: /birdweather/bird-cards
+```
+
 Audio storage details:
 
 - Audio is stored as `bytea` in `soundscape_assets.audio`.
