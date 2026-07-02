@@ -424,6 +424,18 @@ def media_prune_directory(config: Config, relative_dir: str, keep_paths: set[str
             path.unlink()
 
 
+def media_prune_bird_cards(config: Config, active_species_ids: set[int]) -> None:
+    if not config.media_export_dir:
+        return
+    target_dir = Path(config.media_export_dir) / "bird-cards"
+    if not target_dir.exists():
+        return
+    active_prefixes = tuple(f"{species_id}-" for species_id in active_species_ids)
+    for path in target_dir.iterdir():
+        if path.is_file() and not path.name.startswith(active_prefixes):
+            path.unlink()
+
+
 def image_extension(content_type: str | None, fallback_url: str | None = None) -> str:
     if content_type == "image/png":
         return "png"
@@ -1952,17 +1964,17 @@ def generate_daily_cards(
         return 0
 
     generated = 0
-    generated_paths: set[str] = set()
+    active_species_ids: set[int] = set()
     for species in species_for_daily_cards(conn, config):
+        active_species_ids.add(int(species["species_id"]))
         try:
             context = card_context(conn, species)
             png, card_data, source_media_path = render_daily_card(session, config, context)
             with conn.cursor() as cur:
                 if source_media_path and context.get("photo"):
                     update_species_photo_media_path(cur, context["photo"]["id"], source_media_path)
-                media_path = save_daily_card(cur, config, context, png, card_data)
+                save_daily_card(cur, config, context, png, card_data)
             conn.commit()
-            generated_paths.add(media_path)
             generated += 1
         except Exception as exc:
             conn.rollback()
@@ -1973,7 +1985,7 @@ def generate_daily_cards(
                 safe_error(exc, config),
             )
 
-    media_prune_directory(config, "bird-cards", generated_paths)
+    media_prune_bird_cards(config, active_species_ids)
     return generated
 
 
