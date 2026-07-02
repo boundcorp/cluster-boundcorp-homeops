@@ -1427,17 +1427,19 @@ def render_daily_card(
     config: Config,
     context: dict[str, Any],
 ) -> tuple[bytes, dict[str, Any], str | None]:
-    width, height = 1600, 1000
-    image_panel_width = 660
+    width, height = 1920, 1080
+    image_panel_width = 760
     card = Image.new("RGB", (width, height), "#f4efe6")
     draw = ImageDraw.Draw(card)
 
-    title_font = load_font(70, bold=True)
-    subtitle_font = load_font(34, italic=True)
-    section_font = load_font(30, bold=True)
-    body_font = load_font(29)
-    small_font = load_font(22)
-    chip_font = load_font(25, bold=True)
+    title_font = load_font(92, bold=True)
+    subtitle_font = load_font(44, italic=True)
+    section_font = load_font(42, bold=True)
+    fact_font = load_font(34)
+    small_font = load_font(28)
+    chip_font = load_font(34, bold=True)
+    stat_label_font = load_font(25, bold=True)
+    stat_value_font = load_font(34)
 
     photo = context.get("photo")
     source_media_path = photo.get("local_media_path") if photo else None
@@ -1460,58 +1462,62 @@ def render_daily_card(
 
     overlay = Image.new("RGBA", (image_panel_width, height), (0, 0, 0, 0))
     overlay_draw = ImageDraw.Draw(overlay)
-    overlay_draw.rectangle((0, height - 170, image_panel_width, height), fill=(0, 0, 0, 145))
+    overlay_draw.rectangle((0, height - 150, image_panel_width, height), fill=(0, 0, 0, 150))
     card.paste(overlay, (0, 0), overlay)
 
-    x = image_panel_width + 58
-    y = 58
-    max_text_width = width - x - 70
+    x = image_panel_width + 70
+    y = 62
+    max_text_width = width - x - 74
 
     draw.text((x, y), context["common_name"], font=title_font, fill="#1f3029")
-    y += 84
+    y += 108
     if context.get("scientific_name"):
         draw.text((x, y), context["scientific_name"], font=subtitle_font, fill="#58665e")
-        y += 58
+        y += 72
 
     chip_text = f"{context['detections_today']} detections today"
     chip_bbox = draw.textbbox((0, 0), chip_text, font=chip_font)
-    chip_width = chip_bbox[2] - chip_bbox[0] + 46
-    draw.rounded_rectangle((x, y, x + chip_width, y + 54), radius=18, fill="#1f6f5b")
-    draw.text((x + 23, y + 12), chip_text, font=chip_font, fill="#ffffff")
-    y += 90
+    chip_width = chip_bbox[2] - chip_bbox[0] + 58
+    draw.rounded_rectangle((x, y, x + chip_width, y + 70), radius=22, fill="#1f6f5b")
+    draw.text((x + 29, y + 15), chip_text, font=chip_font, fill="#ffffff")
+    y += 104
 
     stats = [
         ("Seen today", format_hours(context.get("hours_today") or [])),
         ("Common hours", format_hours([item["hour"] for item in context.get("common_hours") or []])),
         ("Common months", format_months(context.get("common_months") or [])),
     ]
-    for label, value in stats:
-        draw.text((x, y), label, font=section_font, fill="#30443a")
-        y = draw_wrapped(draw, value, (x + 330, y + 1), body_font, "#1f3029", max_text_width - 330)
-        y += 14
+    stat_gap = 22
+    stat_width = (max_text_width - (stat_gap * 2)) // 3
+    stat_top = y
+    for index, (label, value) in enumerate(stats):
+        stat_x = x + index * (stat_width + stat_gap)
+        draw.rounded_rectangle((stat_x, stat_top, stat_x + stat_width, stat_top + 132), radius=18, fill="#ebe1d2")
+        draw.text((stat_x + 24, stat_top + 20), label.upper(), font=stat_label_font, fill="#6d746b")
+        draw_wrapped(draw, value, (stat_x + 24, stat_top + 62), stat_value_font, "#1f3029", stat_width - 48, line_gap=4)
+    y += 172
 
-    y += 18
-    draw.line((x, y, width - 70, y), fill="#d5c8b5", width=3)
-    y += 34
+    draw.line((x, y, width - 70, y), fill="#d5c8b5", width=4)
+    y += 38
     draw.text((x, y), "Field Notes", font=section_font, fill="#30443a")
-    y += 48
-    for fact in (context.get("facts") or [])[:4]:
-        y = draw_wrapped(draw, f"- {fact['fact']}", (x, y), body_font, "#24342d", max_text_width, line_gap=8)
-        y += 16
-        if y > 850:
+    y += 60
+    for fact in (context.get("facts") or [])[:3]:
+        y = draw_wrapped(draw, fact["fact"], (x, y), fact_font, "#24342d", max_text_width, line_gap=10)
+        y += 28
+        if y > 900:
             break
 
     latest = context.get("latest_detected_at")
     if latest:
         latest_text = latest.astimezone(ZoneInfo(config.station_timezone)).strftime("Latest: %b %-d, %-I:%M %p")
-        draw.text((x, height - 72), latest_text, font=small_font, fill="#58665e")
+        draw.text((x, height - 78), latest_text, font=small_font, fill="#58665e")
 
     if photo:
         attribution = photo.get("photographer") or photo.get("attribution") or photo.get("source_name")
         license_name = photo.get("license")
         credit = " / ".join(part for part in [attribution, license_name] if part)
         if credit:
-            draw_wrapped(draw, credit, (28, height - 128), small_font, "#ffffff", image_panel_width - 56, line_gap=5)
+            draw_wrapped(draw, credit, (34, height - 112), small_font, "#ffffff", image_panel_width - 68, line_gap=6)
 
     out = BytesIO()
     card.save(out, format="PNG", optimize=True)
