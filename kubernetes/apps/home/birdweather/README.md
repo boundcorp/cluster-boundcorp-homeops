@@ -52,6 +52,12 @@ Main tables:
 - `soundscape_assets`: one audio blob per unique BirdWeather `soundscape_id`.
 - `poll_runs`: per-poll status and error history.
 - `ingest_state`: cursor/state data for incremental polling.
+- `species_facts`: curated or generated short facts for each species.
+- `species_photos`: sourced reference photos with attribution/license metadata.
+- `species_artifacts`: generated or derived images, including future bird drawings.
+- `daily_species_cards`: composed card images for species seen on a given local date.
+- `species_hourly_stats`: per-species detection counts by local date/hour.
+- `species_monthly_stats`: per-species historical detection counts by month/hour.
 
 Audio storage details:
 
@@ -189,12 +195,9 @@ Compositor approach:
 
 Suggested future tables:
 
-- `species_facts`
-- `species_photos`
-- `species_artifacts`
-- `daily_species_cards`
-- `species_hourly_stats`
-- `species_monthly_stats`
+- The metadata/card/stats tables now exist as scaffolding.
+- Next work is populating `species_facts` and `species_photos`.
+- After that, implement generated `species_artifacts` and `daily_species_cards`.
 
 ## Design Notes
 

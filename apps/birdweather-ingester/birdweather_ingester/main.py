@@ -312,6 +312,109 @@ def init_schema(conn: psycopg.Connection[Any]) -> None:
               detections_inserted integer NOT NULL DEFAULT 0,
               error text
             );
+
+            CREATE TABLE IF NOT EXISTS species_facts (
+              id bigserial PRIMARY KEY,
+              species_id bigint NOT NULL REFERENCES species(id) ON DELETE CASCADE,
+              fact text NOT NULL,
+              category text,
+              source_name text,
+              source_url text,
+              generated_by text,
+              confidence double precision,
+              reviewed_at timestamptz,
+              created_at timestamptz NOT NULL DEFAULT now(),
+              updated_at timestamptz NOT NULL DEFAULT now(),
+              UNIQUE (species_id, fact)
+            );
+
+            CREATE INDEX IF NOT EXISTS species_facts_species_category_idx
+              ON species_facts (species_id, category);
+
+            CREATE TABLE IF NOT EXISTS species_photos (
+              id bigserial PRIMARY KEY,
+              species_id bigint NOT NULL REFERENCES species(id) ON DELETE CASCADE,
+              source_name text NOT NULL,
+              source_url text NOT NULL,
+              photo_url text NOT NULL,
+              thumbnail_url text,
+              photographer text,
+              license text,
+              attribution text,
+              width integer,
+              height integer,
+              display_rank integer NOT NULL DEFAULT 100,
+              raw jsonb,
+              created_at timestamptz NOT NULL DEFAULT now(),
+              updated_at timestamptz NOT NULL DEFAULT now(),
+              UNIQUE (species_id, photo_url)
+            );
+
+            CREATE INDEX IF NOT EXISTS species_photos_species_rank_idx
+              ON species_photos (species_id, display_rank, id);
+
+            CREATE TABLE IF NOT EXISTS species_artifacts (
+              id bigserial PRIMARY KEY,
+              species_id bigint NOT NULL REFERENCES species(id) ON DELETE CASCADE,
+              artifact_type text NOT NULL,
+              style text,
+              provider text,
+              model text,
+              prompt text,
+              source_photo_id bigint REFERENCES species_photos(id) ON DELETE SET NULL,
+              content_type text,
+              byte_size integer,
+              sha256 text,
+              image bytea,
+              media_path text,
+              metadata jsonb,
+              generated_at timestamptz,
+              created_at timestamptz NOT NULL DEFAULT now(),
+              updated_at timestamptz NOT NULL DEFAULT now()
+            );
+
+            CREATE INDEX IF NOT EXISTS species_artifacts_species_type_style_idx
+              ON species_artifacts (species_id, artifact_type, style);
+
+            CREATE TABLE IF NOT EXISTS daily_species_cards (
+              species_id bigint NOT NULL REFERENCES species(id) ON DELETE CASCADE,
+              local_date date NOT NULL,
+              artifact_id bigint REFERENCES species_artifacts(id) ON DELETE SET NULL,
+              content_type text,
+              byte_size integer,
+              sha256 text,
+              image bytea,
+              media_path text,
+              card_data jsonb NOT NULL,
+              generated_at timestamptz NOT NULL DEFAULT now(),
+              PRIMARY KEY (species_id, local_date)
+            );
+
+            CREATE TABLE IF NOT EXISTS species_hourly_stats (
+              species_id bigint NOT NULL REFERENCES species(id) ON DELETE CASCADE,
+              local_date date NOT NULL,
+              local_hour smallint NOT NULL CHECK (local_hour >= 0 AND local_hour <= 23),
+              detections integer NOT NULL,
+              first_detected_at timestamptz NOT NULL,
+              latest_detected_at timestamptz NOT NULL,
+              updated_at timestamptz NOT NULL DEFAULT now(),
+              PRIMARY KEY (species_id, local_date, local_hour)
+            );
+
+            CREATE INDEX IF NOT EXISTS species_hourly_stats_date_idx
+              ON species_hourly_stats (local_date DESC, species_id);
+
+            CREATE TABLE IF NOT EXISTS species_monthly_stats (
+              species_id bigint NOT NULL REFERENCES species(id) ON DELETE CASCADE,
+              month smallint NOT NULL CHECK (month >= 1 AND month <= 12),
+              local_hour smallint NOT NULL CHECK (local_hour >= 0 AND local_hour <= 23),
+              detections integer NOT NULL,
+              days_seen integer NOT NULL,
+              first_detected_at timestamptz NOT NULL,
+              latest_detected_at timestamptz NOT NULL,
+              updated_at timestamptz NOT NULL DEFAULT now(),
+              PRIMARY KEY (species_id, month, local_hour)
+            );
             """
         )
     conn.commit()
@@ -689,6 +792,61 @@ def insert_station_snapshot(cur: psycopg.Cursor[Any], station: dict[str, Any]) -
     )
 
 
+def refresh_species_stats(conn: psycopg.Connection[Any], config: Config) -> None:
+    tz = ZoneInfo(config.station_timezone)
+    local_date = datetime.now(tz).date()
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM species_hourly_stats WHERE local_date = %s",
+            (local_date,),
+        )
+        cur.execute(
+            """
+            INSERT INTO species_hourly_stats (
+              species_id, local_date, local_hour, detections,
+              first_detected_at, latest_detected_at, updated_at
+            )
+            SELECT
+              species_id,
+              (detected_at AT TIME ZONE %s)::date AS local_date,
+              EXTRACT(hour FROM detected_at AT TIME ZONE %s)::smallint AS local_hour,
+              count(*)::integer AS detections,
+              min(detected_at) AS first_detected_at,
+              max(detected_at) AS latest_detected_at,
+              now() AS updated_at
+            FROM detections
+            WHERE species_id IS NOT NULL
+              AND (detected_at AT TIME ZONE %s)::date = %s
+            GROUP BY species_id, local_date, local_hour
+            """,
+            (config.station_timezone, config.station_timezone, config.station_timezone, local_date),
+        )
+
+        cur.execute("TRUNCATE species_monthly_stats")
+        cur.execute(
+            """
+            INSERT INTO species_monthly_stats (
+              species_id, month, local_hour, detections, days_seen,
+              first_detected_at, latest_detected_at, updated_at
+            )
+            SELECT
+              species_id,
+              EXTRACT(month FROM detected_at AT TIME ZONE %s)::smallint AS month,
+              EXTRACT(hour FROM detected_at AT TIME ZONE %s)::smallint AS local_hour,
+              count(*)::integer AS detections,
+              count(DISTINCT (detected_at AT TIME ZONE %s)::date)::integer AS days_seen,
+              min(detected_at) AS first_detected_at,
+              max(detected_at) AS latest_detected_at,
+              now() AS updated_at
+            FROM detections
+            WHERE species_id IS NOT NULL
+            GROUP BY species_id, month, local_hour
+            """,
+            (config.station_timezone, config.station_timezone, config.station_timezone),
+        )
+    conn.commit()
+
+
 def today_summary(conn: psycopg.Connection[Any], config: Config) -> dict[str, Any]:
     tz = ZoneInfo(config.station_timezone)
     now_local = datetime.now(tz)
@@ -917,6 +1075,7 @@ def poll_once(
     audio_downloaded = download_soundscapes(conn, session, config, detections)
     if audio_downloaded:
         LOG.info("downloaded %s new soundscape assets", audio_downloaded)
+    refresh_species_stats(conn, config)
     publish_home_assistant_state(conn, config)
     return len(detections), inserted
 
