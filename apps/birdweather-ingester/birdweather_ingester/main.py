@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import signal
 import sys
 import time
@@ -22,6 +23,10 @@ from psycopg.types.json import Jsonb
 LOG = logging.getLogger("birdweather_ingester")
 REST_BASE_URL = "https://app.birdweather.com/api/v1"
 GRAPHQL_URL = "https://app.birdweather.com/graphql"
+WIKIPEDIA_REST_URL = "https://en.wikipedia.org/w/rest.php/v1"
+WIKIPEDIA_REST_LEGACY_URL = "https://en.wikipedia.org/api/rest_v1"
+WIKIPEDIA_ACTION_URL = "https://en.wikipedia.org/w/api.php"
+USER_AGENT = "boundcorp-birdweather-ingester/0.1 (https://github.com/boundcorp/cluster-boundcorp-homeops)"
 
 STATION_QUERY = """
 query($id: ID!) {
@@ -113,6 +118,9 @@ class Config:
     download_audio: bool
     max_audio_bytes: int
     max_audio_downloads_per_poll: int
+    enrich_species: bool
+    max_species_enrichments_per_poll: int
+    max_photos_per_species: int
     station_timezone: str
     mqtt_host: str | None
     mqtt_port: int
@@ -163,6 +171,9 @@ def load_config() -> Config:
         download_audio=os.environ.get("DOWNLOAD_AUDIO", "true").lower() in {"1", "true", "yes", "on"},
         max_audio_bytes=env_int("MAX_AUDIO_BYTES", 25 * 1024 * 1024),
         max_audio_downloads_per_poll=env_int("MAX_AUDIO_DOWNLOADS_PER_POLL", 20),
+        enrich_species=os.environ.get("ENRICH_SPECIES", "true").lower() in {"1", "true", "yes", "on"},
+        max_species_enrichments_per_poll=env_int("MAX_SPECIES_ENRICHMENTS_PER_POLL", 5),
+        max_photos_per_species=env_int("MAX_PHOTOS_PER_SPECIES", 8),
         station_timezone=os.environ.get("STATION_TIMEZONE", "America/Los_Angeles"),
         mqtt_host=os.environ.get("MQTT_HOST"),
         mqtt_port=env_int("MQTT_PORT", 1883),
@@ -196,6 +207,10 @@ def setup_logging() -> None:
     )
 
 
+def configure_session(session: requests.Session) -> None:
+    session.headers.update({"User-Agent": USER_AGENT})
+
+
 def connect(config: Config) -> psycopg.Connection[Any]:
     conn = psycopg.connect(config.postgres_dsn, autocommit=False, prepare_threshold=None)
     with conn.cursor() as cur:
@@ -207,6 +222,20 @@ def connect(config: Config) -> psycopg.Connection[Any]:
 
 def safe_error(exc: Exception, config: Config) -> str:
     return str(exc).replace(config.birdweather_token, "[redacted]")
+
+
+def strip_html(value: str | None) -> str | None:
+    if not value:
+        return None
+    return re.sub(r"<[^>]+>", "", value).strip()
+
+
+def split_facts(text: str | None) -> list[str]:
+    if not text:
+        return []
+    normalized = re.sub(r"\s+", " ", text).strip()
+    sentences = re.split(r"(?<=[.!?])\s+", normalized)
+    return [sentence.strip() for sentence in sentences if 20 <= len(sentence.strip()) <= 240]
 
 
 def init_schema(conn: psycopg.Connection[Any]) -> None:
@@ -496,6 +525,97 @@ def fetch_station_snapshot(
     return station
 
 
+def search_wikipedia_page(
+    session: requests.Session,
+    config: Config,
+    common_name: str,
+    scientific_name: str | None,
+) -> dict[str, Any] | None:
+    for query in [scientific_name, common_name]:
+        if not query:
+            continue
+        response = session.get(
+            f"{WIKIPEDIA_REST_URL}/search/page",
+            params={"q": query, "limit": 1},
+            timeout=config.http_timeout_seconds,
+        )
+        response.raise_for_status()
+        pages = response.json().get("pages") or []
+        if pages:
+            return pages[0]
+    return None
+
+
+def fetch_wikipedia_summary(
+    session: requests.Session,
+    config: Config,
+    title: str,
+) -> dict[str, Any]:
+    response = session.get(
+        f"{WIKIPEDIA_REST_LEGACY_URL}/page/summary/{requests.utils.quote(title, safe='')}",
+        timeout=config.http_timeout_seconds,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_wikipedia_image_titles(
+    session: requests.Session,
+    config: Config,
+    title: str,
+) -> list[str]:
+    response = session.get(
+        WIKIPEDIA_ACTION_URL,
+        params={
+            "action": "query",
+            "format": "json",
+            "prop": "images",
+            "titles": title,
+            "imlimit": 50,
+        },
+        timeout=config.http_timeout_seconds,
+    )
+    response.raise_for_status()
+    pages = response.json().get("query", {}).get("pages", {})
+    image_titles: list[str] = []
+    for page in pages.values():
+        for image in page.get("images") or []:
+            image_title = image.get("title")
+            if image_title and re.search(r"\.(jpe?g|png)$", image_title, re.IGNORECASE):
+                image_titles.append(image_title)
+    return image_titles
+
+
+def fetch_wikipedia_image_info(
+    session: requests.Session,
+    config: Config,
+    image_titles: list[str],
+) -> list[dict[str, Any]]:
+    if not image_titles:
+        return []
+    response = session.get(
+        WIKIPEDIA_ACTION_URL,
+        params={
+            "action": "query",
+            "format": "json",
+            "prop": "imageinfo",
+            "titles": "|".join(image_titles[: config.max_photos_per_species]),
+            "iiprop": "url|size|mime|extmetadata",
+            "iiurlwidth": 1200,
+        },
+        timeout=config.http_timeout_seconds,
+    )
+    response.raise_for_status()
+    pages = response.json().get("query", {}).get("pages", {})
+    infos: list[dict[str, Any]] = []
+    for page in pages.values():
+        info = (page.get("imageinfo") or [None])[0]
+        if info and (info.get("mime") or "").startswith("image/"):
+            info["title"] = page.get("title")
+            infos.append(info)
+    return infos
+
+
 def fetch_audio_asset(
     session: requests.Session,
     config: Config,
@@ -594,6 +714,163 @@ def insert_detection(cur: psycopg.Cursor[Any], detection: dict[str, Any]) -> boo
         ),
     )
     return cur.fetchone() is not None
+
+
+def species_needing_enrichment(
+    conn: psycopg.Connection[Any],
+    limit: int,
+) -> list[dict[str, Any]]:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT s.id, s.common_name, s.scientific_name
+            FROM species s
+            WHERE NOT EXISTS (
+                SELECT 1 FROM species_facts f WHERE f.species_id = s.id
+              )
+              OR NOT EXISTS (
+                SELECT 1 FROM species_photos p WHERE p.species_id = s.id
+              )
+            ORDER BY s.updated_at DESC, s.id
+            LIMIT %s
+            """,
+            (limit,),
+        )
+        return [
+            {"id": row[0], "common_name": row[1], "scientific_name": row[2]}
+            for row in cur.fetchall()
+        ]
+
+
+def insert_species_fact(
+    cur: psycopg.Cursor[Any],
+    species_id: int,
+    fact: str,
+    category: str,
+    source_name: str,
+    source_url: str | None,
+) -> None:
+    cur.execute(
+        """
+        INSERT INTO species_facts (
+          species_id, fact, category, source_name, source_url, updated_at
+        )
+        VALUES (%s, %s, %s, %s, %s, now())
+        ON CONFLICT (species_id, fact) DO UPDATE
+          SET category = excluded.category,
+              source_name = excluded.source_name,
+              source_url = excluded.source_url,
+              updated_at = excluded.updated_at
+        """,
+        (species_id, fact, category, source_name, source_url),
+    )
+
+
+def insert_species_photo(
+    cur: psycopg.Cursor[Any],
+    species_id: int,
+    source_name: str,
+    info: dict[str, Any],
+    display_rank: int,
+) -> None:
+    metadata = info.get("extmetadata") or {}
+
+    def meta_value(key: str) -> str | None:
+        value = metadata.get(key) or {}
+        return strip_html(value.get("value"))
+
+    photo_url = info.get("url")
+    if not photo_url:
+        return
+    cur.execute(
+        """
+        INSERT INTO species_photos (
+          species_id, source_name, source_url, photo_url, thumbnail_url,
+          photographer, license, attribution, width, height, display_rank,
+          raw, updated_at
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+        ON CONFLICT (species_id, photo_url) DO UPDATE
+          SET thumbnail_url = excluded.thumbnail_url,
+              photographer = excluded.photographer,
+              license = excluded.license,
+              attribution = excluded.attribution,
+              width = excluded.width,
+              height = excluded.height,
+              display_rank = LEAST(species_photos.display_rank, excluded.display_rank),
+              raw = excluded.raw,
+              updated_at = excluded.updated_at
+        """,
+        (
+            species_id,
+            source_name,
+            info.get("descriptionurl") or photo_url,
+            photo_url,
+            info.get("thumburl"),
+            meta_value("Artist"),
+            meta_value("LicenseShortName") or meta_value("UsageTerms"),
+            meta_value("Credit") or meta_value("Attribution"),
+            info.get("width"),
+            info.get("height"),
+            display_rank,
+            json_clean(info),
+        ),
+    )
+
+
+def enrich_species(
+    conn: psycopg.Connection[Any],
+    session: requests.Session,
+    config: Config,
+) -> int:
+    if not config.enrich_species:
+        return 0
+
+    enriched = 0
+    for species in species_needing_enrichment(conn, config.max_species_enrichments_per_poll):
+        try:
+            page = search_wikipedia_page(
+                session,
+                config,
+                species["common_name"],
+                species.get("scientific_name"),
+            )
+            if not page:
+                continue
+
+            title = page["title"]
+            summary = fetch_wikipedia_summary(session, config, title)
+            source_url = (
+                summary.get("content_urls", {})
+                .get("desktop", {})
+                .get("page")
+            )
+            facts = []
+            description = summary.get("description")
+            if description:
+                facts.append((f"Wikipedia describes this species as: {description}.", "overview"))
+            facts.extend((fact, "overview") for fact in split_facts(summary.get("extract")))
+
+            image_titles = fetch_wikipedia_image_titles(session, config, title)
+            image_infos = fetch_wikipedia_image_info(session, config, image_titles)
+
+            with conn.cursor() as cur:
+                for fact, category in facts:
+                    insert_species_fact(cur, species["id"], fact, category, "Wikipedia", source_url)
+                for rank, info in enumerate(image_infos, start=1):
+                    insert_species_photo(cur, species["id"], "Wikimedia Commons", info, rank)
+            conn.commit()
+            enriched += 1
+        except Exception as exc:
+            conn.rollback()
+            LOG.warning(
+                "failed to enrich species_id=%s common_name=%s: %s",
+                species["id"],
+                species["common_name"],
+                safe_error(exc, config),
+            )
+
+    return enriched
 
 
 def soundscape_needs_download(cur: psycopg.Cursor[Any], soundscape_id: int) -> bool:
@@ -1036,6 +1313,7 @@ def poll_once(
     session: requests.Session,
     config: Config,
 ) -> tuple[int, int]:
+    configure_session(session)
     state = get_state(conn, "detections")
     if state and state.get("latest_detected_at"):
         since = parse_ts(state["latest_detected_at"]) or datetime.now(UTC)
@@ -1076,6 +1354,9 @@ def poll_once(
     if audio_downloaded:
         LOG.info("downloaded %s new soundscape assets", audio_downloaded)
     refresh_species_stats(conn, config)
+    species_enriched = enrich_species(conn, session, config)
+    if species_enriched:
+        LOG.info("enriched %s species", species_enriched)
     publish_home_assistant_state(conn, config)
     return len(detections), inserted
 
@@ -1126,7 +1407,7 @@ def run() -> None:
     signal.signal(signal.SIGINT, handle_signal)
 
     session = requests.Session()
-    session.headers.update({"User-Agent": "boundcorp-birdweather-ingester/0.1"})
+    configure_session(session)
 
     with connect(config) as conn:
         init_schema(conn)

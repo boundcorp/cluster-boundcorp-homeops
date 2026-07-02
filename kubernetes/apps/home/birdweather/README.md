@@ -59,6 +59,14 @@ Main tables:
 - `species_hourly_stats`: per-species detection counts by local date/hour.
 - `species_monthly_stats`: per-species historical detection counts by month/hour.
 
+Species enrichment:
+
+- The worker enriches species missing facts/photos after each poll.
+- Current source is Wikipedia/Wikimedia Commons, which requires no API key.
+- Summary facts are sourced from Wikipedia page summaries.
+- Photos are sourced from Wikimedia page image metadata where attribution/license metadata is available.
+- Enrichment is controlled by `ENRICH_SPECIES`, `MAX_SPECIES_ENRICHMENTS_PER_POLL`, and `MAX_PHOTOS_PER_SPECIES`.
+
 Audio storage details:
 
 - Audio is stored as `bytea` in `soundscape_assets.audio`.
@@ -121,11 +129,10 @@ KUBECONFIG=./kubeconfig flux reconcile kustomization cluster-apps-home-birdweath
 
 Goal: enrich each detected species with a reusable library of short facts.
 
-Likely shape:
+Initial implementation:
 
-- Add table `species_facts`.
-- Store several dozen concise facts per species.
-- Include source, category, confidence, and generated/reviewed status.
+- `species_facts` exists and is populated from Wikipedia summaries.
+- Next pass should add more structured fact providers to reach several dozen concise facts per species.
 - Prefer stable fact categories such as behavior, call/song, migration, nesting, diet, habitat, range, field marks, conservation, and local seasonal notes.
 
 Possible schema:
@@ -143,9 +150,9 @@ Possible schema:
 
 Goal: source real reference photos for each species.
 
-Plan:
+Initial implementation:
 
-- Add table `species_photos`.
+- `species_photos` exists and is populated from Wikimedia image metadata.
 - Store photo URL, thumbnail URL, photographer/attribution/license, source, dimensions, and preferred display rank.
 - Do not hotlink blindly in generated cards if the source license requires attribution or local caching.
 - Use photos as references and fallback display assets, not as generated-art replacements.

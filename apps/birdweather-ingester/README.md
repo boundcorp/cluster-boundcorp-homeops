@@ -22,6 +22,9 @@ Optional environment:
 - `DOWNLOAD_AUDIO` default `true`
 - `MAX_AUDIO_BYTES` default `26214400`
 - `MAX_AUDIO_DOWNLOADS_PER_POLL` default `20`
+- `ENRICH_SPECIES` default `true`
+- `MAX_SPECIES_ENRICHMENTS_PER_POLL` default `5`
+- `MAX_PHOTOS_PER_SPECIES` default `8`
 - `STATION_TIMEZONE` default `America/Los_Angeles`
 - `MQTT_HOST` enables Home Assistant MQTT discovery/state publishing
 - `MQTT_PORT` default `1883`
