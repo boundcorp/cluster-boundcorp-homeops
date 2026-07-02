@@ -71,7 +71,8 @@ Species enrichment:
 Media export:
 
 - Source photos are exported under `/media/birdweather/source-photos/<species_id>/`.
-- Composed cards are exported under `/media/birdweather/daily-cards/<local_date>/`.
+- Composed cards for species seen today are exported under `/media/birdweather/bird-cards/`.
+- The card export folder is pruned after each generation pass, so birds not seen today are removed from the Home Assistant media source.
 - The same files are visible in Home Assistant's media browser under the `birdweather` folder.
 - The PVC uses `nfs-titan-nvme`, so the backing files are also inspectable on Titan's NFS storage.
 - Postgres remains the source of truth for metadata and also stores the composed PNG bytes.
