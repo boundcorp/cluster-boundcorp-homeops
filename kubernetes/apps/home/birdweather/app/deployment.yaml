@@ -21,6 +21,9 @@ spec:
         reloader.stakater.com/auto: "true"
     spec:
       restartPolicy: Always
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
       imagePullSecrets:
         - name: ghcr-boundcorp-pull
       containers:
@@ -97,6 +100,14 @@ spec:
                   key: password
             - name: POSTGRES_SCHEMA
               value: birdweather
+            - name: GENERATE_DAILY_CARDS
+              value: "true"
+            - name: MAX_CARDS_PER_POLL
+              value: "25"
+            - name: MAX_CARD_SOURCE_IMAGE_BYTES
+              value: "15728640"
+            - name: MEDIA_EXPORT_DIR
+              value: /media/birdweather
           resources:
             requests:
               cpu: 10m
@@ -112,6 +123,9 @@ spec:
             runAsNonRoot: true
             runAsUser: 65534
             runAsGroup: 65534
+          volumeMounts:
+            - name: media
+              mountPath: /media/birdweather
           livenessProbe:
             exec:
               command:
@@ -128,3 +142,7 @@ spec:
                 - "import os; os._exit(0)"
             initialDelaySeconds: 10
             periodSeconds: 60
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: birdweather-media

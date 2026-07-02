@@ -8,12 +8,15 @@ import signal
 import sys
 import time
 from hashlib import sha256
+from io import BytesIO
+from pathlib import Path
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
 import paho.mqtt.publish as mqtt_publish
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 import psycopg
 import requests
 from psycopg import sql
@@ -121,6 +124,10 @@ class Config:
     enrich_species: bool
     max_species_enrichments_per_poll: int
     max_photos_per_species: int
+    generate_daily_cards: bool
+    max_cards_per_poll: int
+    max_card_source_image_bytes: int
+    media_export_dir: str | None
     station_timezone: str
     mqtt_host: str | None
     mqtt_port: int
@@ -174,6 +181,10 @@ def load_config() -> Config:
         enrich_species=os.environ.get("ENRICH_SPECIES", "true").lower() in {"1", "true", "yes", "on"},
         max_species_enrichments_per_poll=env_int("MAX_SPECIES_ENRICHMENTS_PER_POLL", 5),
         max_photos_per_species=env_int("MAX_PHOTOS_PER_SPECIES", 8),
+        generate_daily_cards=os.environ.get("GENERATE_DAILY_CARDS", "true").lower() in {"1", "true", "yes", "on"},
+        max_cards_per_poll=env_int("MAX_CARDS_PER_POLL", 25),
+        max_card_source_image_bytes=env_int("MAX_CARD_SOURCE_IMAGE_BYTES", 15 * 1024 * 1024),
+        media_export_dir=os.environ.get("MEDIA_EXPORT_DIR"),
         station_timezone=os.environ.get("STATION_TIMEZONE", "America/Los_Angeles"),
         mqtt_host=os.environ.get("MQTT_HOST"),
         mqtt_port=env_int("MQTT_PORT", 1883),
@@ -236,6 +247,128 @@ def split_facts(text: str | None) -> list[str]:
     normalized = re.sub(r"\s+", " ", text).strip()
     sentences = re.split(r"(?<=[.!?])\s+", normalized)
     return [sentence.strip() for sentence in sentences if 20 <= len(sentence.strip()) <= 240]
+
+
+def load_font(size: int, bold: bool = False, italic: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    candidates = []
+    if bold:
+        candidates.extend([
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/local/share/fonts/DejaVuSans-Bold.ttf",
+        ])
+    elif italic:
+        candidates.extend([
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf",
+            "/usr/local/share/fonts/DejaVuSans-Oblique.ttf",
+        ])
+    candidates.extend([
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/local/share/fonts/DejaVuSans.ttf",
+    ])
+    for candidate in candidates:
+        try:
+            return ImageFont.truetype(candidate, size=size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
+def text_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> int:
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0]
+
+
+def wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, max_width: int) -> list[str]:
+    words = text.split()
+    lines: list[str] = []
+    line = ""
+    for word in words:
+        candidate = word if not line else f"{line} {word}"
+        if text_width(draw, candidate, font) <= max_width:
+            line = candidate
+        else:
+            if line:
+                lines.append(line)
+            line = word
+    if line:
+        lines.append(line)
+    return lines
+
+
+def draw_wrapped(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    xy: tuple[int, int],
+    font: ImageFont.ImageFont,
+    fill: str,
+    max_width: int,
+    line_gap: int = 8,
+) -> int:
+    x, y = xy
+    line_height = draw.textbbox((0, 0), "Ag", font=font)[3] + line_gap
+    for line in wrap_text(draw, text, font, max_width):
+        draw.text((x, y), line, font=font, fill=fill)
+        y += line_height
+    return y
+
+
+def crop_cover(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+    return ImageOps.fit(image.convert("RGB"), size, method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
+
+
+def fetch_image_asset(
+    session: requests.Session,
+    config: Config,
+    url: str,
+) -> tuple[Image.Image, bytes, str | None]:
+    response = session.get(url, stream=True, timeout=config.http_timeout_seconds)
+    response.raise_for_status()
+    content_length = response.headers.get("Content-Length")
+    if content_length and int(content_length) > config.max_card_source_image_bytes:
+        raise RuntimeError(f"source image is too large: {content_length} bytes")
+
+    chunks: list[bytes] = []
+    total = 0
+    for chunk in response.iter_content(chunk_size=1024 * 256):
+        if not chunk:
+            continue
+        total += len(chunk)
+        if total > config.max_card_source_image_bytes:
+            raise RuntimeError(f"source image exceeded {config.max_card_source_image_bytes} bytes")
+        chunks.append(chunk)
+
+    payload = b"".join(chunks)
+    image = Image.open(BytesIO(payload))
+    image.load()
+    return image, payload, response.headers.get("Content-Type")
+
+
+def media_write(config: Config, relative_path: str, payload: bytes) -> str | None:
+    if not config.media_export_dir:
+        return None
+    target = Path(config.media_export_dir) / relative_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(target.suffix + ".tmp")
+    temporary.write_bytes(payload)
+    temporary.replace(target)
+    return relative_path
+
+
+def image_extension(content_type: str | None, fallback_url: str | None = None) -> str:
+    if content_type == "image/png":
+        return "png"
+    if content_type in {"image/jpeg", "image/jpg"}:
+        return "jpg"
+    if fallback_url:
+        suffix = Path(fallback_url.split("?", 1)[0]).suffix.lower().lstrip(".")
+        if suffix in {"jpg", "jpeg", "png"}:
+            return "jpg" if suffix == "jpeg" else suffix
+    return "jpg"
+
+
+def slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "species"
 
 
 def init_schema(conn: psycopg.Connection[Any]) -> None:
@@ -367,6 +500,7 @@ def init_schema(conn: psycopg.Connection[Any]) -> None:
               source_url text NOT NULL,
               photo_url text NOT NULL,
               thumbnail_url text,
+              local_media_path text,
               photographer text,
               license text,
               attribution text,
@@ -378,6 +512,9 @@ def init_schema(conn: psycopg.Connection[Any]) -> None:
               updated_at timestamptz NOT NULL DEFAULT now(),
               UNIQUE (species_id, photo_url)
             );
+
+            ALTER TABLE species_photos
+              ADD COLUMN IF NOT EXISTS local_media_path text;
 
             CREATE INDEX IF NOT EXISTS species_photos_species_rank_idx
               ON species_photos (species_id, display_rank, id);
@@ -1124,6 +1261,346 @@ def refresh_species_stats(conn: psycopg.Connection[Any], config: Config) -> None
     conn.commit()
 
 
+def species_for_daily_cards(
+    conn: psycopg.Connection[Any],
+    config: Config,
+) -> list[dict[str, Any]]:
+    tz = ZoneInfo(config.station_timezone)
+    local_date = datetime.now(tz).date()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT
+              s.id,
+              s.common_name,
+              s.scientific_name,
+              sum(h.detections)::integer AS detections_today,
+              min(h.first_detected_at) AS first_detected_at,
+              max(h.latest_detected_at) AS latest_detected_at,
+              array_agg(h.local_hour ORDER BY h.local_hour) AS hours_today
+            FROM species_hourly_stats h
+            JOIN species s ON s.id = h.species_id
+            WHERE h.local_date = %s
+            GROUP BY s.id, s.common_name, s.scientific_name
+            ORDER BY detections_today DESC, s.common_name ASC
+            LIMIT %s
+            """,
+            (local_date, config.max_cards_per_poll),
+        )
+        rows = cur.fetchall()
+    return [
+        {
+            "species_id": row[0],
+            "common_name": row[1],
+            "scientific_name": row[2],
+            "detections_today": row[3],
+            "first_detected_at": row[4],
+            "latest_detected_at": row[5],
+            "hours_today": row[6] or [],
+            "local_date": local_date,
+        }
+        for row in rows
+    ]
+
+
+def card_context(
+    conn: psycopg.Connection[Any],
+    species: dict[str, Any],
+) -> dict[str, Any]:
+    species_id = species["species_id"]
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT fact, category, source_name, source_url
+            FROM species_facts
+            WHERE species_id = %s
+            ORDER BY category NULLS LAST, id
+            LIMIT 5
+            """,
+            (species_id,),
+        )
+        facts = [
+            {
+                "fact": row[0],
+                "category": row[1],
+                "source_name": row[2],
+                "source_url": row[3],
+            }
+            for row in cur.fetchall()
+        ]
+
+        cur.execute(
+            """
+            SELECT
+              id, photo_url, thumbnail_url, local_media_path, photographer, license, attribution,
+              source_name, source_url, width, height
+            FROM species_photos
+            WHERE species_id = %s
+            ORDER BY display_rank, id
+            LIMIT 1
+            """,
+            (species_id,),
+        )
+        photo_row = cur.fetchone()
+
+        cur.execute(
+            """
+            SELECT local_hour, detections
+            FROM species_monthly_stats
+            WHERE species_id = %s
+            ORDER BY detections DESC, local_hour ASC
+            LIMIT 4
+            """,
+            (species_id,),
+        )
+        common_hours = [{"hour": row[0], "detections": row[1]} for row in cur.fetchall()]
+
+        cur.execute(
+            """
+            SELECT month, sum(detections)::integer AS detections
+            FROM species_monthly_stats
+            WHERE species_id = %s
+            GROUP BY month
+            ORDER BY detections DESC, month ASC
+            LIMIT 4
+            """,
+            (species_id,),
+        )
+        common_months = [{"month": row[0], "detections": row[1]} for row in cur.fetchall()]
+
+    photo = None
+    if photo_row:
+        photo = {
+            "id": photo_row[0],
+            "photo_url": photo_row[1],
+            "thumbnail_url": photo_row[2],
+            "local_media_path": photo_row[3],
+            "photographer": photo_row[4],
+            "license": photo_row[5],
+            "attribution": photo_row[6],
+            "source_name": photo_row[7],
+            "source_url": photo_row[8],
+            "width": photo_row[9],
+            "height": photo_row[10],
+        }
+
+    return {
+        **species,
+        "facts": facts,
+        "photo": photo,
+        "common_hours": common_hours,
+        "common_months": common_months,
+    }
+
+
+def update_species_photo_media_path(
+    cur: psycopg.Cursor[Any],
+    photo_id: int,
+    local_media_path: str,
+) -> None:
+    cur.execute(
+        """
+        UPDATE species_photos
+        SET local_media_path = %s,
+            updated_at = now()
+        WHERE id = %s
+        """,
+        (local_media_path, photo_id),
+    )
+
+
+def format_hours(hours: list[int]) -> str:
+    if not hours:
+        return "none yet"
+    return ", ".join(f"{hour:02d}:00" for hour in hours)
+
+
+def format_months(months: list[dict[str, Any]]) -> str:
+    names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    if not months:
+        return "not enough history"
+    return ", ".join(names[item["month"] - 1] for item in months)
+
+
+def render_daily_card(
+    session: requests.Session,
+    config: Config,
+    context: dict[str, Any],
+) -> tuple[bytes, dict[str, Any], str | None]:
+    width, height = 1600, 1000
+    image_panel_width = 660
+    card = Image.new("RGB", (width, height), "#f4efe6")
+    draw = ImageDraw.Draw(card)
+
+    title_font = load_font(70, bold=True)
+    subtitle_font = load_font(34, italic=True)
+    section_font = load_font(30, bold=True)
+    body_font = load_font(29)
+    small_font = load_font(22)
+    chip_font = load_font(25, bold=True)
+
+    photo = context.get("photo")
+    source_media_path = photo.get("local_media_path") if photo else None
+    if photo:
+        try:
+            source_image, source_payload, source_content_type = fetch_image_asset(session, config, photo["photo_url"])
+            if not source_media_path:
+                extension = image_extension(source_content_type, photo["photo_url"])
+                source_media_path = media_write(
+                    config,
+                    f"source-photos/{context['species_id']}/{photo['id']}.{extension}",
+                    source_payload,
+                )
+            card.paste(crop_cover(source_image, (image_panel_width, height)), (0, 0))
+        except Exception as exc:
+            LOG.warning("failed to fetch card photo for species_id=%s: %s", context["species_id"], safe_error(exc, config))
+            draw.rectangle((0, 0, image_panel_width, height), fill="#34443b")
+    else:
+        draw.rectangle((0, 0, image_panel_width, height), fill="#34443b")
+
+    overlay = Image.new("RGBA", (image_panel_width, height), (0, 0, 0, 0))
+    overlay_draw = ImageDraw.Draw(overlay)
+    overlay_draw.rectangle((0, height - 170, image_panel_width, height), fill=(0, 0, 0, 145))
+    card.paste(overlay, (0, 0), overlay)
+
+    x = image_panel_width + 58
+    y = 58
+    max_text_width = width - x - 70
+
+    draw.text((x, y), context["common_name"], font=title_font, fill="#1f3029")
+    y += 84
+    if context.get("scientific_name"):
+        draw.text((x, y), context["scientific_name"], font=subtitle_font, fill="#58665e")
+        y += 58
+
+    chip_text = f"{context['detections_today']} detections today"
+    chip_bbox = draw.textbbox((0, 0), chip_text, font=chip_font)
+    chip_width = chip_bbox[2] - chip_bbox[0] + 46
+    draw.rounded_rectangle((x, y, x + chip_width, y + 54), radius=18, fill="#1f6f5b")
+    draw.text((x + 23, y + 12), chip_text, font=chip_font, fill="#ffffff")
+    y += 90
+
+    stats = [
+        ("Seen today", format_hours(context.get("hours_today") or [])),
+        ("Common hours", format_hours([item["hour"] for item in context.get("common_hours") or []])),
+        ("Common months", format_months(context.get("common_months") or [])),
+    ]
+    for label, value in stats:
+        draw.text((x, y), label, font=section_font, fill="#30443a")
+        y = draw_wrapped(draw, value, (x + 330, y + 1), body_font, "#1f3029", max_text_width - 330)
+        y += 14
+
+    y += 18
+    draw.line((x, y, width - 70, y), fill="#d5c8b5", width=3)
+    y += 34
+    draw.text((x, y), "Field Notes", font=section_font, fill="#30443a")
+    y += 48
+    for fact in (context.get("facts") or [])[:4]:
+        y = draw_wrapped(draw, f"- {fact['fact']}", (x, y), body_font, "#24342d", max_text_width, line_gap=8)
+        y += 16
+        if y > 850:
+            break
+
+    latest = context.get("latest_detected_at")
+    if latest:
+        latest_text = latest.astimezone(ZoneInfo(config.station_timezone)).strftime("Latest: %b %-d, %-I:%M %p")
+        draw.text((x, height - 72), latest_text, font=small_font, fill="#58665e")
+
+    if photo:
+        attribution = photo.get("photographer") or photo.get("attribution") or photo.get("source_name")
+        license_name = photo.get("license")
+        credit = " / ".join(part for part in [attribution, license_name] if part)
+        if credit:
+            draw_wrapped(draw, credit, (28, height - 128), small_font, "#ffffff", image_panel_width - 56, line_gap=5)
+
+    out = BytesIO()
+    card.save(out, format="PNG", optimize=True)
+    payload = out.getvalue()
+    card_data = {
+        "species_id": context["species_id"],
+        "common_name": context["common_name"],
+        "scientific_name": context.get("scientific_name"),
+        "detections_today": context["detections_today"],
+        "hours_today": context.get("hours_today") or [],
+        "common_hours": context.get("common_hours") or [],
+        "common_months": context.get("common_months") or [],
+        "facts": context.get("facts") or [],
+        "photo": photo,
+        "source_media_path": source_media_path,
+        "width": width,
+        "height": height,
+    }
+    return payload, card_data, source_media_path
+
+
+def save_daily_card(
+    cur: psycopg.Cursor[Any],
+    config: Config,
+    context: dict[str, Any],
+    png: bytes,
+    card_data: dict[str, Any],
+) -> None:
+    media_path = f"daily-cards/{context['local_date']}/{context['species_id']}-{slugify(context['common_name'])}.png"
+    media_write(config, media_path, png)
+    cur.execute(
+        """
+        INSERT INTO daily_species_cards (
+          species_id, local_date, content_type, byte_size, sha256,
+          image, media_path, card_data, generated_at
+        )
+        VALUES (%s, %s, 'image/png', %s, %s, %s, %s, %s, now())
+        ON CONFLICT (species_id, local_date) DO UPDATE
+          SET content_type = excluded.content_type,
+              byte_size = excluded.byte_size,
+              sha256 = excluded.sha256,
+              image = excluded.image,
+              media_path = excluded.media_path,
+              card_data = excluded.card_data,
+              generated_at = excluded.generated_at
+        """,
+        (
+            context["species_id"],
+            context["local_date"],
+            len(png),
+            sha256(png).hexdigest(),
+            png,
+            media_path,
+            json_clean(card_data),
+        ),
+    )
+
+
+def generate_daily_cards(
+    conn: psycopg.Connection[Any],
+    session: requests.Session,
+    config: Config,
+) -> int:
+    if not config.generate_daily_cards:
+        return 0
+
+    generated = 0
+    for species in species_for_daily_cards(conn, config):
+        try:
+            context = card_context(conn, species)
+            png, card_data, source_media_path = render_daily_card(session, config, context)
+            with conn.cursor() as cur:
+                if source_media_path and context.get("photo"):
+                    update_species_photo_media_path(cur, context["photo"]["id"], source_media_path)
+                save_daily_card(cur, config, context, png, card_data)
+            conn.commit()
+            generated += 1
+        except Exception as exc:
+            conn.rollback()
+            LOG.warning(
+                "failed to generate daily card for species_id=%s common_name=%s: %s",
+                species["species_id"],
+                species["common_name"],
+                safe_error(exc, config),
+            )
+
+    return generated
+
+
 def today_summary(conn: psycopg.Connection[Any], config: Config) -> dict[str, Any]:
     tz = ZoneInfo(config.station_timezone)
     now_local = datetime.now(tz)
@@ -1357,6 +1834,9 @@ def poll_once(
     species_enriched = enrich_species(conn, session, config)
     if species_enriched:
         LOG.info("enriched %s species", species_enriched)
+    cards_generated = generate_daily_cards(conn, session, config)
+    if cards_generated:
+        LOG.info("generated %s daily species cards", cards_generated)
     publish_home_assistant_state(conn, config)
     return len(detections), inserted
 

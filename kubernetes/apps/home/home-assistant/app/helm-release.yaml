@@ -72,6 +72,10 @@ spec:
       config:
         enabled: true
         existingClaim: home-assistant-config-v1
+      birdweather-media:
+        enabled: true
+        existingClaim: birdweather-media
+        mountPath: /media/birdweather
     podAnnotations:
       secret.reloader.stakater.com/reload: "home-assistant"
     addons:

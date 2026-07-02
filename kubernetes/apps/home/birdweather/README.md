@@ -19,6 +19,7 @@ BirdWeather ingestion and Home Assistant display pipeline for the PUC station.
 - Container source: `apps/birdweather-ingester/`
 - Image: `ghcr.io/boundcorp/birdweather-ingester:latest`
 - Database user/database: `birdweather`, declared in `kubernetes/apps/database/crunchy/cluster.yaml`
+- Media PVC: `birdweather-media`, mounted at `/media/birdweather` in Home Assistant and the ingester.
 
 The GHCR package is private right now. The live cluster uses an image pull secret named `ghcr-boundcorp-pull` in the `home` namespace.
 
@@ -66,6 +67,14 @@ Species enrichment:
 - Summary facts are sourced from Wikipedia page summaries.
 - Photos are sourced from Wikimedia page image metadata where attribution/license metadata is available.
 - Enrichment is controlled by `ENRICH_SPECIES`, `MAX_SPECIES_ENRICHMENTS_PER_POLL`, and `MAX_PHOTOS_PER_SPECIES`.
+
+Media export:
+
+- Source photos are exported under `/media/birdweather/source-photos/<species_id>/`.
+- Composed cards are exported under `/media/birdweather/daily-cards/<local_date>/`.
+- The same files are visible in Home Assistant's media browser under the `birdweather` folder.
+- The PVC uses `nfs-titan-nvme`, so the backing files are also inspectable on Titan's NFS storage.
+- Postgres remains the source of truth for metadata and also stores the composed PNG bytes.
 
 Audio storage details:
 
@@ -195,10 +204,10 @@ Bird Card content:
 
 Compositor approach:
 
-- Python image compositor, likely Pillow.
+- Python image compositor using Pillow.
 - Fixed output aspect ratios for screensaver surfaces.
 - Keep templates deterministic and readable before adding many styles.
-- Generate cards into a local work directory, then atomically replace the HA media files.
+- Generate cards into `daily_species_cards` and atomically replace the HA media files.
 
 Suggested future tables:
 

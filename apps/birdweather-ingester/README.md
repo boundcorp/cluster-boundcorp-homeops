@@ -25,6 +25,10 @@ Optional environment:
 - `ENRICH_SPECIES` default `true`
 - `MAX_SPECIES_ENRICHMENTS_PER_POLL` default `5`
 - `MAX_PHOTOS_PER_SPECIES` default `8`
+- `GENERATE_DAILY_CARDS` default `true`
+- `MAX_CARDS_PER_POLL` default `25`
+- `MAX_CARD_SOURCE_IMAGE_BYTES` default `15728640`
+- `MEDIA_EXPORT_DIR` writes browsable source photos and daily cards to a filesystem path
 - `STATION_TIMEZONE` default `America/Los_Angeles`
 - `MQTT_HOST` enables Home Assistant MQTT discovery/state publishing
 - `MQTT_PORT` default `1883`
