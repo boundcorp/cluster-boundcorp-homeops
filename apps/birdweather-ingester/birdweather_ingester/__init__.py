@@ -1,0 +1,1 @@
+"""BirdWeather PostgreSQL ingester."""

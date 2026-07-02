@@ -1,0 +1,126 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: birdweather-ingester
+  namespace: home
+  labels:
+    app: birdweather-ingester
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: birdweather-ingester
+  template:
+    metadata:
+      labels:
+        app: birdweather-ingester
+      annotations:
+        reloader.stakater.com/auto: "true"
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: birdweather-ingester
+          image: ghcr.io/boundcorp/birdweather-ingester:latest
+          imagePullPolicy: Always
+          env:
+            - name: TZ
+              value: "${TIMEZONE}"
+            - name: LOG_LEVEL
+              value: INFO
+            - name: POLL_INTERVAL_SECONDS
+              value: "300"
+            - name: INITIAL_BACKFILL_HOURS
+              value: "24"
+            - name: DETECTION_OVERLAP_MINUTES
+              value: "10"
+            - name: DOWNLOAD_AUDIO
+              value: "true"
+            - name: MAX_AUDIO_BYTES
+              value: "26214400"
+            - name: MAX_AUDIO_DOWNLOADS_PER_POLL
+              value: "20"
+            - name: STATION_TIMEZONE
+              value: America/Los_Angeles
+            - name: MQTT_HOST
+              value: mosquitto.home.svc.cluster.local
+            - name: MQTT_PORT
+              value: "1883"
+            - name: MQTT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: home-assistant
+                  key: HASS_MQTT_USERNAME
+            - name: MQTT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: home-assistant
+                  key: HASS_MQTT_PASSWORD
+            - name: BIRDWEATHER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: birdweather-ingester
+                  key: token
+            - name: BIRDWEATHER_STATION_ID
+              valueFrom:
+                secretKeyRef:
+                  name: birdweather-ingester
+                  key: station-id
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-birdweather
+                  key: host
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-birdweather
+                  key: pgbouncer-port
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-birdweather
+                  key: user
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-birdweather
+                  key: dbname
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-birdweather
+                  key: password
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import os; os._exit(0)"
+            initialDelaySeconds: 30
+            periodSeconds: 60
+          readinessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import os; os._exit(0)"
+            initialDelaySeconds: 10
+            periodSeconds: 60

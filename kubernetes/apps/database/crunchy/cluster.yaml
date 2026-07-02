@@ -69,6 +69,11 @@ spec:
         - sonarr
       password:
         type: AlphaNumeric
+    - name: birdweather
+      databases:
+        - birdweather
+      password:
+        type: AlphaNumeric
 
 
   backups:
