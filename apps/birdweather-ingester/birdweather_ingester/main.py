@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import random
 import re
 import signal
 import sys
@@ -421,18 +422,6 @@ def media_prune_directory(config: Config, relative_dir: str, keep_paths: set[str
     for path in target_dir.iterdir():
         relative_path = f"{relative_dir}/{path.name}"
         if path.is_file() and relative_path not in keep_paths:
-            path.unlink()
-
-
-def media_prune_bird_cards(config: Config, active_species_ids: set[int]) -> None:
-    if not config.media_export_dir:
-        return
-    target_dir = Path(config.media_export_dir) / "bird-cards"
-    if not target_dir.exists():
-        return
-    active_prefixes = tuple(f"{species_id}-" for species_id in active_species_ids)
-    for path in target_dir.iterdir():
-        if path.is_file() and not path.name.startswith(active_prefixes):
             path.unlink()
 
 
@@ -1550,6 +1539,7 @@ def interesting_facts(facts: list[dict[str, Any]]) -> list[str]:
         if any(re.search(pattern, lowered) for pattern in boring_patterns):
             continue
         selected.append(text)
+    random.shuffle(selected)
     return selected[:3]
 
 
@@ -1912,7 +1902,7 @@ def save_daily_card(
     card_data: dict[str, Any],
 ) -> str:
     digest = sha256(png).hexdigest()
-    media_path = f"bird-cards/{context['species_id']}-{slugify(context['common_name'])}-{digest[:12]}.png"
+    media_path = f"bird-cards/{context['species_id']}-{slugify(context['common_name'])}.png"
     media_write(config, media_path, png)
     cur.execute(
         """
@@ -1952,17 +1942,17 @@ def generate_daily_cards(
         return 0
 
     generated = 0
-    active_species_ids: set[int] = set()
+    generated_paths: set[str] = set()
     for species in species_for_daily_cards(conn, config):
-        active_species_ids.add(int(species["species_id"]))
         try:
             context = card_context(conn, species)
             png, card_data, source_media_path = render_daily_card(session, config, context)
             with conn.cursor() as cur:
                 if source_media_path and context.get("photo"):
                     update_species_photo_media_path(cur, context["photo"]["id"], source_media_path)
-                save_daily_card(cur, config, context, png, card_data)
+                media_path = save_daily_card(cur, config, context, png, card_data)
             conn.commit()
+            generated_paths.add(media_path)
             generated += 1
         except Exception as exc:
             conn.rollback()
@@ -1973,7 +1963,7 @@ def generate_daily_cards(
                 safe_error(exc, config),
             )
 
-    media_prune_bird_cards(config, active_species_ids)
+    media_prune_directory(config, "bird-cards", generated_paths)
     return generated
 
 
