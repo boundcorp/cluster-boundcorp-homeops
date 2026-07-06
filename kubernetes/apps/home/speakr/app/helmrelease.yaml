@@ -37,7 +37,11 @@ spec:
               TZ: "${TIMEZONE}"
               LOG_LEVEL: INFO
               ADMIN_USERNAME: admin
-              ADMIN_EMAIL: speakr@home.boundcorp.net
+              ADMIN_EMAIL:
+                valueFrom:
+                  secretKeyRef:
+                    name: speakr
+                    key: ADMIN_EMAIL
               ADMIN_PASSWORD:
                 valueFrom:
                   secretKeyRef:

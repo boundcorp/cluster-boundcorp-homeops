@@ -15,6 +15,7 @@ CUDA WhisperX deployment if an NVIDIA node is added later.
 
 Runtime secrets live in `app/secret.sops.yaml`:
 
+- `ADMIN_EMAIL` reuses the existing cluster ACME email.
 - `ADMIN_PASSWORD` was generated during setup.
 - `SECRET_KEY` was generated during setup.
 - `TEXT_MODEL_BASE_URL` is `https://api.openai.com/v1`.
