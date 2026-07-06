@@ -23,6 +23,5 @@ resources:
   - ./prometheus-community.yaml
   - ./rook-ceph-charts.yaml
   - ./stakater.yaml
-  - ./tailscale-relay.yaml
   - ./vector.yaml
   - ./weave-gitops.yaml

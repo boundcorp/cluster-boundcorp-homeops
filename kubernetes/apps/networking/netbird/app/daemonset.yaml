@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: netbird
+  namespace: netbird
+  labels:
+    app: netbird
+spec:
+  selector:
+    matchLabels:
+      app: netbird
+  template:
+    metadata:
+      labels:
+        app: netbird
+    spec:
+      hostNetwork: true
+      containers:
+        - name: netbird
+          image: netbirdio/netbird:latest
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: NB_SETUP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: netbird-secret
+                  key: NB_SETUP_KEY
+            - name: NB_HOSTNAME
+              value: "homeops-$(NODE_NAME)"
+            - name: NB_LOG_LEVEL
+              value: "info"
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_RESOURCE
+                - SYS_ADMIN
+            privileged: true
+          volumeMounts:
+            - name: netbird-state
+              mountPath: /var/lib/netbird
+      volumes:
+        - name: netbird-state
+          hostPath:
+            path: /opt/netbird
+            type: DirectoryOrCreate
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule

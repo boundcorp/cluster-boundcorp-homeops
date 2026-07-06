@@ -1,6 +1,8 @@
 ---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: networking
+namespace: netbird
 resources:
-  - helmrelease.yaml
+  - ./namespace.yaml
+  - ./secret.yaml
+  - ./daemonset.yaml
