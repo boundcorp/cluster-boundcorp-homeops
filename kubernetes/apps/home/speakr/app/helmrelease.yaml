@@ -1,0 +1,219 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: speakr
+  namespace: home
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.1.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      strategy: rollback
+      retries: 3
+  values:
+    controllers:
+      speakr:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: learnedmachine/speakr
+              tag: lite
+              pullPolicy: IfNotPresent
+            env:
+              TZ: "${TIMEZONE}"
+              LOG_LEVEL: INFO
+              ADMIN_USERNAME: admin
+              ADMIN_EMAIL: speakr@home.boundcorp.net
+              ADMIN_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: speakr
+                    key: ADMIN_PASSWORD
+              SECRET_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: speakr
+                    key: SECRET_KEY
+              ALLOW_REGISTRATION: "false"
+              SESSION_COOKIE_SECURE: "true"
+              TRUSTED_PROXY_HOPS: "1"
+              TEXT_MODEL_BASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: speakr
+                    key: TEXT_MODEL_BASE_URL
+              TEXT_MODEL_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: speakr
+                    key: TEXT_MODEL_API_KEY
+              TEXT_MODEL_NAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: speakr
+                    key: TEXT_MODEL_NAME
+              ASR_BASE_URL: http://speakr-whisper-asr.home.svc.cluster.local:9000
+              ASR_DIARIZE: "false"
+              ASR_RETURN_SPEAKER_EMBEDDINGS: "false"
+              AUDIO_COMPRESS_UPLOADS: "true"
+              AUDIO_CODEC: mp3
+              AUDIO_BITRATE: 128k
+              ENABLE_INQUIRE_MODE: "false"
+              ENABLE_PUBLIC_SHARING: "false"
+              ENABLE_INTERNAL_SHARING: "false"
+              FILE_STORAGE_BACKEND: local
+              UPLOAD_FOLDER: /data/uploads
+              SQLALCHEMY_DATABASE_URI:
+                valueFrom:
+                  secretKeyRef:
+                    name: postgres-pguser-speakr
+                    key: uri
+            probes:
+              liveness: &speakr-probe
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: &speakr-port 8899
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness: *speakr-probe
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: *speakr-port
+                  initialDelaySeconds: 15
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 30
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                memory: 2Gi
+      whisper-asr:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: onerahmet/openai-whisper-asr-webservice
+              tag: latest
+              pullPolicy: IfNotPresent
+            env:
+              ASR_ENGINE: openai_whisper
+              ASR_MODEL: base
+              ASR_DEVICE: cpu
+              MODEL_IDLE_TIMEOUT: "900"
+            probes:
+              liveness: &asr-probe
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: &asr-port 9000
+                  initialDelaySeconds: 30
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+              readiness: *asr-probe
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /
+                    port: *asr-port
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                  failureThreshold: 60
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities: { drop: ["ALL"] }
+            resources:
+              requests:
+                cpu: 500m
+                memory: 2Gi
+              limits:
+                memory: 8Gi
+    service:
+      speakr:
+        controller: speakr
+        ports:
+          http:
+            port: 8899
+      whisper-asr:
+        controller: whisper-asr
+        ports:
+          http:
+            port: 9000
+    ingress:
+      main:
+        enabled: true
+        className: nginx
+        annotations:
+          hajimari.io/icon: mdi:microphone-message
+        hosts:
+          - host: &host speakr.home.boundcorp.net
+            paths:
+              - path: /
+                service:
+                  identifier: speakr
+                  port: http
+        tls:
+          - hosts:
+              - *host
+    persistence:
+      uploads:
+        enabled: true
+        storageClass: nfs-titan-nvme
+        size: 100Gi
+        accessMode: ReadWriteOnce
+        advancedMounts:
+          speakr:
+            app:
+              - path: /data/uploads
+      instance:
+        enabled: true
+        storageClass: nfs-titan-nvme
+        size: 10Gi
+        accessMode: ReadWriteOnce
+        advancedMounts:
+          speakr:
+            app:
+              - path: /data/instance
+      whisper-cache:
+        enabled: true
+        storageClass: nfs-titan-nvme
+        size: 20Gi
+        accessMode: ReadWriteOnce
+        advancedMounts:
+          whisper-asr:
+            app:
+              - path: /root/.cache

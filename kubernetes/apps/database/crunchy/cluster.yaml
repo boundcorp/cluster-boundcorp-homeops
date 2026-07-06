@@ -74,6 +74,11 @@ spec:
         - birdweather
       password:
         type: AlphaNumeric
+    - name: speakr
+      databases:
+        - speakr
+      password:
+        type: AlphaNumeric
 
 
   backups:
