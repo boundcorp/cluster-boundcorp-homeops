@@ -21,3 +21,19 @@ Runtime secrets live in `app/secret.sops.yaml`:
 - `TEXT_MODEL_BASE_URL` is `https://api.openai.com/v1`.
 - `TEXT_MODEL_API_KEY` reuses the existing Birdweather OpenAI key.
 - `TEXT_MODEL_NAME` is `gpt-5.4-mini`.
+
+## Database Bootstrap
+
+The Crunchy `postgres-pguser-speakr` secret is generated in the `database`
+namespace. A copy must exist in `home`:
+
+```sh
+bash kubernetes/apps/database/copy-secrets-from-database-ns.sh home speakr
+```
+
+Speakr creates tables in the `public` schema, so the `speakr` database needs:
+
+```sql
+GRANT CREATE ON SCHEMA public TO speakr;
+ALTER SCHEMA public OWNER TO speakr;
+```

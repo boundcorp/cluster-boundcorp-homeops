@@ -196,6 +196,7 @@ spec:
     persistence:
       uploads:
         enabled: true
+        retain: true
         storageClass: nfs-titan-nvme
         size: 100Gi
         accessMode: ReadWriteOnce
@@ -205,6 +206,7 @@ spec:
               - path: /data/uploads
       instance:
         enabled: true
+        retain: true
         storageClass: nfs-titan-nvme
         size: 10Gi
         accessMode: ReadWriteOnce
@@ -214,6 +216,7 @@ spec:
               - path: /data/instance
       whisper-cache:
         enabled: true
+        retain: true
         storageClass: nfs-titan-nvme
         size: 20Gi
         accessMode: ReadWriteOnce
