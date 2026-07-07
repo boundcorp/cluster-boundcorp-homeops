@@ -37,7 +37,7 @@ spec:
     cleanPrometheusOperatorObjectNames: true
     alertmanager:
       alertmanagerSpec:
-        replicas: 0  # Scaled to 0 - not currently in use
+        replicas: 1
         storage:
           volumeClaimTemplate:
             spec:
@@ -51,38 +51,37 @@ spec:
           slack_api_url: "https://hooks.slack.com/services/${SECRET_SLACK_WEBHOOK_SERVICE_BOUNDCORP_OPS}"
         receivers:
           - name: "null"
-          - name: "slack"
+          - name: "slack-alerts"
             slack_configs:
-              - channel: "#boundcorp-ops"
+              - channel: "#home"
                 icon_url: https://avatars3.githubusercontent.com/u/3380462
                 username: "Prometheus"
                 send_resolved: true
-                title: |-
-                  [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ if ne .CommonAnnotations.summary ""}}{{ .CommonAnnotations.summary }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}
+                title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
                 text: >-
                   {{ range .Alerts -}}
-                    **Alert:** {{ .Annotations.title }}{{ if .Labels.severity }} - `{{ .Labels.severity }}`{{ end }}
+                  *Alert:* {{ if .Annotations.summary }}{{ .Annotations.summary }}{{ else }}{{ .Labels.alertname }}{{ end }}
 
-                  **Description:** {{ if ne .Annotations.description ""}}{{ .Annotations.description }}{{else}}N/A{{ end }}
+                  *Severity:* `{{ .Labels.severity }}`
 
-                  **Details:**
-                    {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
-                    {{ end }}
+                  *Namespace:* `{{ if .Labels.namespace }}{{ .Labels.namespace }}{{ else }}cluster{{ end }}`
+
+                  {{ if .Annotations.description }}*Details:* {{ .Annotations.description }}{{ end }}
+
                   {{ end }}
         route:
-          group_by: [ "alertname", "job" ]
+          group_by: [ "alertname", "namespace" ]
           group_wait: 30s
           group_interval: 5m
-          repeat_interval: 6h
-          receiver: "null"
+          repeat_interval: 4h
+          receiver: "slack-alerts"
           routes:
             - receiver: "null"
               matchers:
-                - alertname =~ "InfoInhibitor"
-            - receiver: "slack"
+                - alertname =~ "InfoInhibitor|Watchdog"
+            - receiver: "null"
               matchers:
-                - severity = "critical"
-              continue: true
+                - alertname =~ "KubeControllerManagerDown|KubeSchedulerDown|KubeProxyDown"
         inhibit_rules:
           - source_matchers:
               - severity = "critical"
@@ -190,7 +189,7 @@ spec:
           - hosts:
               - *host
       prometheusSpec:
-        replicas: 0  # Scaled to 0 - not currently in use
+        replicas: 1
         ruleSelectorNilUsesHelmValues: false
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false

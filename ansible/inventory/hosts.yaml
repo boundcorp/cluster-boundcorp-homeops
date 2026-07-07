@@ -22,13 +22,6 @@ kubernetes:
           rook_devices: [
             '/dev/sdc', # 4tb.A.3
           ]
-        nova:
-          ansible_user: setup
-          ansible_host: 10.20.30.114
-          rook_devices: [
-            '/dev/sda', # 4tb.B.1
-            '/dev/sdb', # 4tb.B.2
-          ]
         # iota:
         #   ansible_user: setup
         #   ansible_host: 10.20.30.115

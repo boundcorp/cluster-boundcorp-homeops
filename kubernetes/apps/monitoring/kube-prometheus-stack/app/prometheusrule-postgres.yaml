@@ -1,0 +1,39 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: homeops-postgres-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: homeops-postgres
+      rules:
+        - alert: PostgresContainerNotReady
+          expr: |
+            kube_pod_container_status_ready{namespace="database", pod=~"postgres-postgres-.*", container="database"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Postgres container is not ready: {{ $labels.pod }}"
+            description: "The main Postgres database container has been unready for 5+ minutes."
+        - alert: PostgresPgBackRestJobFailed
+          expr: |
+            kube_job_failed{namespace="database", job_name=~"postgres-repo1-.*"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Postgres pgBackRest job failed: {{ $labels.job_name }}"
+            description: "A scheduled pgBackRest backup job has failed in the database namespace."
+        - alert: PostgresPgBackRestBackupStale
+          expr: |
+            time() - kube_cronjob_status_last_successful_time{namespace="database", cronjob=~"postgres-repo1-(full|incr)"} > 36 * 60 * 60
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Postgres pgBackRest backups are stale: {{ $labels.cronjob }}"
+            description: "CronJob {{ $labels.cronjob }} has not completed successfully in more than 36 hours."
