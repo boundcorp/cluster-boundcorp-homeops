@@ -24,6 +24,8 @@ spec:
     dynamicConfiguration:
       postgresql:
         max_wal_size: 5GB
+        parameters:
+          archive_timeout: 30min
         pg_hba:
           - hostssl all all all scram-sha-256
         shared_preload_libraries: "pgvector"
