@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: immich-database-init-v1
+  name: immich-database-init-v2
   namespace: database
 spec:
   backoffLimit: 30
@@ -21,6 +21,8 @@ spec:
                 secretKeyRef:
                   name: postgres-pguser-postgres
                   key: uri
+            - name: PGSSLMODE
+              value: require
           command:
             - bash
             - -ceu

@@ -29,7 +29,7 @@ spec:
         max_wal_size: 5GB
         parameters:
           archive_timeout: 30min
-          shared_preload_libraries: "pgaudit,pg_stat_statements,pgnodemx,vchord.so"
+          shared_preload_libraries: "vchord.so"
         pg_hba:
           - hostssl all all all scram-sha-256
 

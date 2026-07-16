@@ -52,11 +52,32 @@ spec:
           containers:
             main:
               env:
-                DB_URL:
+                DB_HOSTNAME:
                   valueFrom:
                     secretKeyRef:
                       name: postgres-pguser-immich
-                      key: uri
+                      key: host
+                DB_PORT:
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-pguser-immich
+                      key: port
+                DB_USERNAME:
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-pguser-immich
+                      key: user
+                DB_PASSWORD:
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-pguser-immich
+                      key: password
+                DB_DATABASE_NAME:
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-pguser-immich
+                      key: dbname
+                DB_SSL_MODE: require
                 DB_VECTOR_EXTENSION: vectorchord
               resources:
                 requests:
