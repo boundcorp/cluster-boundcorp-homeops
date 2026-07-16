@@ -30,10 +30,18 @@ spec:
             description: "A scheduled pgBackRest backup job has failed in the database namespace."
         - alert: PostgresPgBackRestBackupStale
           expr: |
-            time() - kube_cronjob_status_last_successful_time{namespace="database", cronjob=~"postgres-repo1-(full|incr)"} > 36 * 60 * 60
+            (
+              time() - kube_cronjob_status_last_successful_time{namespace="database", cronjob="postgres-repo1-full"}
+              > 8 * 24 * 60 * 60
+            )
+            or
+            (
+              time() - kube_cronjob_status_last_successful_time{namespace="database", cronjob="postgres-repo1-incr"}
+              > 4 * 24 * 60 * 60
+            )
           for: 15m
           labels:
             severity: critical
           annotations:
             summary: "Postgres pgBackRest backups are stale: {{ $labels.cronjob }}"
-            description: "CronJob {{ $labels.cronjob }} has not completed successfully in more than 36 hours."
+            description: "CronJob {{ $labels.cronjob }} has exceeded its backup freshness threshold (8 days for full backups; 4 days for incremental backups)."
