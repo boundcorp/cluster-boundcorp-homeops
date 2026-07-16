@@ -1,0 +1,45 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: immich-database-init-v1
+  namespace: database
+spec:
+  backoffLimit: 30
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: ghcr-boundcorp-pull
+      containers:
+        - name: init
+          image: ghcr.io/boundcorp/crunchy-postgres-vectorchord:pg16-vchord1.1.1@sha256:cf62de878398bac2fc7021aa3538de805a2992eada0ec691a152aab32b54eb11
+          env:
+            - name: POSTGRES_URI
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-pguser-postgres
+                  key: uri
+          command:
+            - bash
+            - -ceu
+            - |
+              until psql "${POSTGRES_URI}" -d immich -c 'select 1' >/dev/null 2>&1; do
+                echo "waiting for the Immich database"
+                sleep 10
+              done
+
+              until psql "${POSTGRES_URI}" -d immich -Atc \
+                "SELECT 1 FROM pg_available_extensions WHERE name = 'vchord'" | grep -qx 1; do
+                echo "waiting for VectorChord on the database primary"
+                sleep 10
+              done
+
+              psql "${POSTGRES_URI}" -d immich -v ON_ERROR_STOP=1 <<'SQL'
+              CREATE EXTENSION IF NOT EXISTS vector;
+              CREATE EXTENSION IF NOT EXISTS vchord CASCADE;
+              CREATE EXTENSION IF NOT EXISTS earthdistance CASCADE;
+              ALTER DATABASE immich OWNER TO immich;
+              GRANT ALL ON SCHEMA public TO immich;
+              SQL

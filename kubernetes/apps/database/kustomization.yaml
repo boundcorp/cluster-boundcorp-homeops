@@ -7,5 +7,8 @@ resources:
   - ./namespace.yaml
   # Flux-Kustomizations
   - ./crunchy/secret.sops.yaml
+  - ./crunchy/ghcr-secret.sops.yaml
   - ./crunchy/helmrelease.yaml
   - ./crunchy/cluster.yaml
+  - ./crunchy/immich-init.yaml
+  - ./immich/ks.yaml
