@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: immich-database-init-v2
+  name: immich-database-init-v3
   namespace: database
 spec:
   backoffLimit: 30
@@ -27,18 +27,20 @@ spec:
             - bash
             - -ceu
             - |
-              until psql "${POSTGRES_URI}" -d immich -c 'select 1' >/dev/null 2>&1; do
+              IMMICH_URI="${POSTGRES_URI%/*}/immich"
+
+              until psql "${IMMICH_URI}" -c 'select 1' >/dev/null 2>&1; do
                 echo "waiting for the Immich database"
                 sleep 10
               done
 
-              until psql "${POSTGRES_URI}" -d immich -Atc \
+              until psql "${IMMICH_URI}" -Atc \
                 "SELECT 1 FROM pg_available_extensions WHERE name = 'vchord'" | grep -qx 1; do
                 echo "waiting for VectorChord on the database primary"
                 sleep 10
               done
 
-              psql "${POSTGRES_URI}" -d immich -v ON_ERROR_STOP=1 <<'SQL'
+              psql "${IMMICH_URI}" -v ON_ERROR_STOP=1 <<'SQL'
               CREATE EXTENSION IF NOT EXISTS vector;
               CREATE EXTENSION IF NOT EXISTS vchord CASCADE;
               CREATE EXTENSION IF NOT EXISTS earthdistance CASCADE;
