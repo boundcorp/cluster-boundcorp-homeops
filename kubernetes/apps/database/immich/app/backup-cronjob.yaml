@@ -34,14 +34,14 @@ spec:
 
                   errors=0
                   for directory in library upload profile; do
-                    if [ ! -d "/data/${directory}" ]; then
-                      echo "${directory}: not present yet"
+                    if [ ! -d "/data/$directory" ]; then
+                      echo "$directory: not present yet"
                       continue
                     fi
-                    aws s3 sync "/data/${directory}/" "${S3_BUCKET}/immich-${directory}/" \
+                    aws s3 sync "/data/$directory/" "$S3_BUCKET/immich-$directory/" \
                       --delete --only-show-errors || errors=$((errors + 1))
                   done
-                  [ "${errors}" -eq 0 ]
+                  [ "$errors" -eq 0 ]
               volumeMounts:
                 - name: library
                   mountPath: /data
