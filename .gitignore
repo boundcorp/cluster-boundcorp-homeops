@@ -11,9 +11,14 @@ kubeconfig
 *.key
 # Backups and secrets
 .backups/
+backups/
 *.pem
 *.ppk
 id_ssh-*
+# Local build and device artifacts
+**/__pycache__/
+*.deb
+tmp-esphome-*.yaml
 # Ansible
 xanmanning.k3s*
 restore

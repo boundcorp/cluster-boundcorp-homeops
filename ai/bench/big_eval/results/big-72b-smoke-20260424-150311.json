@@ -1,0 +1,71 @@
+{
+  "tag": "72b-smoke",
+  "model": "Qwen/Qwen2.5-72B-Instruct-AWQ",
+  "endpoint": "https://cucwhvznqnzh0a-8000.proxy.runpod.net",
+  "started_at": "20260424-150311",
+  "humaneval": {
+    "total": 3,
+    "pass": 3,
+    "fail": 0,
+    "error": 0,
+    "items": [
+      {
+        "task_id": "HumanEval/0",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 66,
+        "elapsed_s": 3.57,
+        "response": "```python\nfrom typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    numbers.sort()\n    for i in range(len(numbers) - 1):\n        if abs(numbers[i] - numbers[i + 1]) < threshold:\n            return True\n    return False\n```"
+      },
+      {
+        "task_id": "HumanEval/1",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 102,
+        "elapsed_s": 3.5,
+        "response": "```python\nfrom typing import List\n\ndef separate_paren_groups(paren_string: str) -> List[str]:\n    paren_string = paren_string.replace(' ', '')\n    stack = []\n    result = []\n    current = ''\n    for char in paren_string:\n        if char == '(':\n            stack.append(char)\n            current += char\n        elif char == ')':\n            stack.pop()\n            current += char\n            if not stack:\n                result.append(current)\n                current = ''\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/2",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 22,
+        "elapsed_s": 1.09,
+        "response": "```python\ndef truncate_number(number: float) -> float:\n    return number - int(number)\n```"
+      }
+    ]
+  },
+  "gsm8k": {
+    "total": 3,
+    "pass": 2,
+    "fail": 1,
+    "error": 0,
+    "items": [
+      {
+        "gold": 2280.0,
+        "pred": 2180.0,
+        "pass": false,
+        "completion_tokens": 151,
+        "elapsed_s": 4.77,
+        "response": "First, let's find out how much each person raised:\n\n1. Alexandra raised $430.\n2. Kim raised $320 more than Alexandra, so Kim raised \\( 430 + 320 = 750 \\) dollars.\n3. Sarah raised $300.\n4. Maryam raised $400 more than Sarah, so Maryam raised \\( 300 + 400 = 700 \\) dollars.\n\nNow, we can add up the amounts raised by all four girls:\n\n\\[\n430 + 750 + 300 + 700 = 2180\n\\]\n\nAnswer: 2180"
+      },
+      {
+        "gold": 1.0,
+        "pred": 1.0,
+        "pass": true,
+        "completion_tokens": 266,
+        "elapsed_s": 8.1,
+        "response": "To determine how long it will take Kalinda and her mom to complete the 360-piece puzzle, we need to follow these steps:\n\n1. **Determine the rate at which each person places pieces:**\n   - Kalinda places 4 pieces per minute.\n   - Her mom places half as many pieces per minute as Kalinda, so her mom places \\( \\frac{4}{2} = 2 \\) pieces per minute.\n\n2. **Calculate their combined rate:**\n   - Together, they place \\( 4 + 2 = 6 \\) pieces per minute.\n\n3. **Determine the total number of pieces to be placed:**\n   - The puzzle has 360 pieces.\n\n4. **Calculate the total time required to place all the pieces:**\n   - Time (in minutes) = Total pieces / Combined rate\n   - Time = \\( \\frac{360}{6} = 60 \\) minutes\n\n5. **Convert the time from minutes to hours:**\n   - There are 60 minutes in an hour.\n   - Time (in hours) = \\( \\frac{60}{60} = 1 \\) hour\n\nTherefore, it will take them 1 hour to complete the puzzle.\n\nAnswer: 1"
+      },
+      {
+        "gold": 5.0,
+        "pred": 5.0,
+        "pass": true,
+        "completion_tokens": 201,
+        "elapsed_s": 6.36,
+        "response": "To solve this problem, we need to determine the distance Tom travels and then use that distance to find out how long it takes him to return.\n\n1. **Calculate the total time Tom sails from 1 to 4 PM:**\n   - From 1 PM to 4 PM is 3 hours.\n\n2. **Determine the distance Tom travels in those 3 hours:**\n   - Speed = 10 miles per hour\n   - Time = 3 hours\n   - Distance = Speed \u00d7 Time = 10 miles/hour \u00d7 3 hours = 30 miles\n\n3. **Calculate the time it takes for Tom to travel back at 6 miles per hour:**\n   - Distance = 30 miles\n   - Speed = 6 miles per hour\n   - Time = Distance / Speed = 30 miles / 6 miles per hour = 5 hours\n\nSo, it takes Tom 5 hours to get back.\n\nAnswer: 5"
+      }
+    ]
+  },
+  "total_elapsed_s": 27.4
+}

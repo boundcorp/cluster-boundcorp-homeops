@@ -1,0 +1,2135 @@
+{
+  "tag": "32b-awq-A40",
+  "model": "Qwen/Qwen2.5-32B-Instruct-AWQ",
+  "endpoint": "https://lrrkrvlstxu81t-8000.proxy.runpod.net",
+  "started_at": "20260424-162100",
+  "humaneval": {
+    "total": 164,
+    "pass": 135,
+    "fail": 29,
+    "error": 0,
+    "items": [
+      {
+        "task_id": "HumanEval/0",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 65,
+        "elapsed_s": 4.1,
+        "response": "```python\nfrom typing import List\n\n\ndef has_close_elements(numbers: List[float], threshold: float) -> bool:\n    numbers.sort()\n    for i in range(len(numbers) - 1):\n        if numbers[i + 1] - numbers[i] < threshold:\n            return True\n    return False\n```"
+      },
+      {
+        "task_id": "HumanEval/1",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 95,
+        "elapsed_s": 3.81,
+        "response": "```python\nfrom typing import List\n\n\ndef separate_paren_groups(paren_string: str) -> List[str]:\n    groups = []\n    stack = []\n    for char in paren_string.replace(\" \", \"\"):\n        if char == '(':\n            stack.append(char)\n        elif char == ')':\n            if stack:\n                group = stack.pop(0)\n                while stack:\n                    group += stack.pop(0)\n                groups.append(group + char)\n    return groups\n```"
+      },
+      {
+        "task_id": "HumanEval/2",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 22,
+        "elapsed_s": 1.69,
+        "response": "```python\ndef truncate_number(number: float) -> float:\n    return number - int(number)\n```"
+      },
+      {
+        "task_id": "HumanEval/3",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 54,
+        "elapsed_s": 2.43,
+        "response": "```python\nfrom typing import List\n\n\ndef below_zero(operations: List[int]) -> bool:\n    balance = 0\n    for op in operations:\n        balance += op\n        if balance < 0:\n            return True\n    return False\n```"
+      },
+      {
+        "task_id": "HumanEval/4",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 55,
+        "elapsed_s": 2.23,
+        "response": "```python\nfrom typing import List\nimport math\n\ndef mean_absolute_deviation(numbers: List[float]) -> float:\n    mean_value = sum(numbers) / len(numbers)\n    return sum(abs(x - mean_value) for x in numbers) / len(numbers)\n```"
+      },
+      {
+        "task_id": "HumanEval/5",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 64,
+        "elapsed_s": 2.52,
+        "response": "```python\nfrom typing import List\n\n\ndef intersperse(numbers: List[int], delimeter: int) -> List[int]:\n    if not numbers:\n        return []\n    result = [numbers[0]]\n    for number in numbers[1:]:\n        result.extend([delimeter, number])\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/6",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 108,
+        "elapsed_s": 4.23,
+        "response": "```python\nfrom typing import List\n\n\ndef parse_nested_parens(paren_string: str) -> List[int]:\n    groups = paren_string.split()\n    result = []\n    for group in groups:\n        max_depth, current_depth = 0, 0\n        for char in group:\n            if char == '(':\n                current_depth += 1\n                max_depth = max(max_depth, current_depth)\n            elif char == ')':\n                current_depth -= 1\n        result.append(max_depth)\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/7",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 41,
+        "elapsed_s": 2.43,
+        "response": "```python\nfrom typing import List\n\n\ndef filter_by_substring(strings: List[str], substring: str) -> List[str]:\n    return [s for s in strings if substring in s]\n```"
+      },
+      {
+        "task_id": "HumanEval/8",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 67,
+        "elapsed_s": 3.19,
+        "response": "```python\nfrom typing import List, Tuple\n\n\ndef sum_product(numbers: List[int]) -> Tuple[int, int]:\n    total_sum = 0\n    total_product = 1\n    for number in numbers:\n        total_sum += number\n        total_product *= number\n    return (total_sum, total_product)\n```"
+      },
+      {
+        "task_id": "HumanEval/9",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 73,
+        "elapsed_s": 3.38,
+        "response": "```python\nfrom typing import List, Tuple\n\ndef rolling_max(numbers: List[int]) -> List[int]:\n    max_list = []\n    current_max = numbers[0] if numbers else None\n    for number in numbers:\n        if number > current_max:\n            current_max = number\n        max_list.append(current_max)\n    return max_list\n```"
+      },
+      {
+        "task_id": "HumanEval/10",
+        "pass": false,
+        "err": "NameError: name 'is_palindrome' is not defined",
+        "completion_tokens": 159,
+        "elapsed_s": 6.45,
+        "response": "```python\ndef make_palindrome(string: str) -> str:\n    \"\"\" Find the shortest palindrome that begins with a supplied string.\n    Algorithm idea is simple:\n    - Find the longest postfix of supplied string that is a palindrome.\n    - Append to the end of the string reverse of a string prefix that comes before the palindromic suffix.\n    >>> make_palindrome('')\n    ''\n    >>> make_palindrome('cat')\n    'catac'\n    >>> make_palindrome('cata')\n    'catac'\n    \"\"\"\n    if string == \"\":\n        return \"\"\n    for i in range(len(string)):\n        if is_palindrome(string[i:]):\n            return string + string[:i][::-1]\n    return string + string[:-1][::-1]\n```"
+      },
+      {
+        "task_id": "HumanEval/11",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 46,
+        "elapsed_s": 2.11,
+        "response": "```python\nfrom typing import List\n\ndef string_xor(a: str, b: str) -> str:\n    return ''.join(str(int(x) ^ int(y)) for x, y in zip(a, b))\n```"
+      },
+      {
+        "task_id": "HumanEval/12",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 68,
+        "elapsed_s": 3.18,
+        "response": "```python\nfrom typing import List, Optional\n\n\ndef longest(strings: List[str]) -> Optional[str]:\n    if not strings:\n        return None\n    longest_str = strings[0]\n    for s in strings:\n        if len(s) > len(longest_str):\n            longest_str = s\n    return longest_str\n```"
+      },
+      {
+        "task_id": "HumanEval/13",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 40,
+        "elapsed_s": 2.27,
+        "response": "```python\ndef greatest_common_divisor(a: int, b: int) -> int:\n    while b:\n        a, b = b, a % b\n    return a\n```"
+      },
+      {
+        "task_id": "HumanEval/14",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 43,
+        "elapsed_s": 2.35,
+        "response": "```python\nfrom typing import List\n\n\ndef all_prefixes(string: str) -> List[str]:\n    return [string[:i] for i in range(1, len(string) + 1)]\n```"
+      },
+      {
+        "task_id": "HumanEval/15",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 32,
+        "elapsed_s": 1.64,
+        "response": "```python\ndef string_sequence(n: int) -> str:\n    return ' '.join(str(i) for i in range(n + 1))\n```"
+      },
+      {
+        "task_id": "HumanEval/16",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 24,
+        "elapsed_s": 1.72,
+        "response": "```python\ndef count_distinct_characters(string: str) -> int:\n    return len(set(string.lower()))\n```"
+      },
+      {
+        "task_id": "HumanEval/17",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 84,
+        "elapsed_s": 3.48,
+        "response": "```python\nfrom typing import List\n\n\ndef parse_music(music_string: str) -> List[int]:\n    notes = music_string.split()\n    beats = []\n    for note in notes:\n        if note == 'o':\n            beats.append(4)\n        elif note == 'o|':\n            beats.append(2)\n        elif note == '.|':\n            beats.append(1)\n    return beats\n```"
+      },
+      {
+        "task_id": "HumanEval/18",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 80,
+        "elapsed_s": 3.08,
+        "response": "```python\ndef how_many_times(string: str, substring: str) -> int:\n    count = 0\n    start = 0\n    while start < len(string):\n        pos = string.find(substring, start)\n        if pos != -1:\n            count += 1\n            start = pos + 1\n        else:\n            break\n    return count\n```"
+      },
+      {
+        "task_id": "HumanEval/19",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 145,
+        "elapsed_s": 5.57,
+        "response": "```python\nfrom typing import List\n\n\ndef sort_numbers(numbers: str) -> str:\n    numeral_to_int = {\n        \"zero\": 0,\n        \"one\": 1,\n        \"two\": 2,\n        \"three\": 3,\n        \"four\": 4,\n        \"five\": 5,\n        \"six\": 6,\n        \"seven\": 7,\n        \"eight\": 8,\n        \"nine\": 9,\n    }\n    int_to_numeral = {v: k for k, v in numeral_to_int.items()}\n    return ' '.join(int_to_numeral[i] for i in sorted(numeral_to_int[num] for num in numbers.split()))\n```"
+      },
+      {
+        "task_id": "HumanEval/20",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 106,
+        "elapsed_s": 4.63,
+        "response": "```python\nfrom typing import List, Tuple\n\ndef find_closest_elements(numbers: List[float]) -> Tuple[float, float]:\n    numbers.sort()\n    min_diff = float('inf')\n    closest_pair = (None, None)\n    for i in range(len(numbers) - 1):\n        diff = numbers[i + 1] - numbers[i]\n        if diff < min_diff:\n            min_diff = diff\n            closest_pair = (numbers[i], numbers[i + 1])\n    return closest_pair\n```"
+      },
+      {
+        "task_id": "HumanEval/21",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 64,
+        "elapsed_s": 3.15,
+        "response": "```python\nfrom typing import List\n\n\ndef rescale_to_unit(numbers: List[float]) -> List[float]:\n    min_num = min(numbers)\n    max_num = max(numbers)\n    range_num = max_num - min_num\n    return [(x - min_num) / range_num for x in numbers]\n```"
+      },
+      {
+        "task_id": "HumanEval/22",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 39,
+        "elapsed_s": 2.23,
+        "response": "```python\nfrom typing import List, Any\n\ndef filter_integers(values: List[Any]) -> List[int]:\n    return [x for x in values if isinstance(x, int)]\n```"
+      },
+      {
+        "task_id": "HumanEval/23",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 64,
+        "elapsed_s": 2.55,
+        "response": "```python\ndef strlen(string: str) -> int:\n    \"\"\" Return length of given string\n    >>> strlen('')\n    0\n    >>> strlen('abc')\n    3\n    \"\"\"\n    length = 0\n    for _ in string:\n        length += 1\n    return length\n```"
+      },
+      {
+        "task_id": "HumanEval/24",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 45,
+        "elapsed_s": 2.06,
+        "response": "```python\ndef largest_divisor(n: int) -> int:\n    for i in range(n // 2, 0, -1):\n        if n % i == 0:\n            return i\n```"
+      },
+      {
+        "task_id": "HumanEval/25",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 68,
+        "elapsed_s": 3.26,
+        "response": "```python\nfrom typing import List\n\n\ndef factorize(n: int) -> List[int]:\n    factors = []\n    divisor = 2\n    while n > 1:\n        while n % divisor == 0:\n            factors.append(divisor)\n            n //= divisor\n        divisor += 1\n    return factors\n```"
+      },
+      {
+        "task_id": "HumanEval/26",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 58,
+        "elapsed_s": 2.87,
+        "response": "```python\nfrom typing import List\n\n\ndef remove_duplicates(numbers: List[int]) -> List[int]:\n    seen = set()\n    unique = []\n    for number in numbers:\n        if number not in seen:\n            unique.append(number)\n            seen.add(number)\n    return unique\n```"
+      },
+      {
+        "task_id": "HumanEval/27",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 36,
+        "elapsed_s": 2.1,
+        "response": "```python\ndef flip_case(string: str) -> str:\n    return ''.join(c.lower() if c.isupper() else c.upper() for c in string)\n```"
+      },
+      {
+        "task_id": "HumanEval/28",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 26,
+        "elapsed_s": 1.4,
+        "response": "```python\nfrom typing import List\n\n\ndef concatenate(strings: List[str]) -> str:\n    return ''.join(strings)\n```"
+      },
+      {
+        "task_id": "HumanEval/29",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 40,
+        "elapsed_s": 1.73,
+        "response": "```python\nfrom typing import List\n\n\ndef filter_by_prefix(strings: List[str], prefix: str) -> List[str]:\n    return [s for s in strings if s.startswith(prefix)]\n```"
+      },
+      {
+        "task_id": "HumanEval/30",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 26,
+        "elapsed_s": 2.21,
+        "response": "```python\ndef get_positive(l: list):\n    return [x for x in l if x > 0]\n```"
+      },
+      {
+        "task_id": "HumanEval/31",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 103,
+        "elapsed_s": 4.39,
+        "response": "```python\ndef is_prime(n):\n    if n <= 1:\n        return False\n    if n <= 3:\n        return True\n    if n % 2 == 0 or n % 3 == 0:\n        return False\n    i = 5\n    while i * i <= n:\n        if n % i == 0 or n % (i + 2) == 0:\n            return False\n        i += 6\n    return True\n```"
+      },
+      {
+        "task_id": "HumanEval/32",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 364,
+        "elapsed_s": 12.97,
+        "response": "```python\nimport math\n\ndef poly(xs: list, x: float):\n    \"\"\"\n    Evaluates polynomial with coefficients xs at point x.\n    return xs[0] + xs[1] * x + xs[1] * x^2 + .... xs[n] * x^n\n    \"\"\"\n    return sum([coeff * math.pow(x, i) for i, coeff in enumerate(xs)])\n\ndef find_zero(xs: list):\n    \"\"\" xs are coefficients of a polynomial.\n    find_zero find x such that poly(x) = 0.\n    find_zero returns only only zero point, even if there are many.\n    Moreover, find_zero only takes list xs having even number of coefficients\n    and largest non zero coefficient as it guarantees\n    a solution.\n    >>> round(find_zero([1, 2]), 2) # f(x) = 1 + 2x\n    -0.5\n    >>> round(find_zero([-6, 11, -6, 1]), 2) # (x - 1) * (x - 2) * (x - 3) = -6 + 11x - 6x^2 + x^3\n    1.0\n    \"\"\"\n    low, high = -1000, 1000\n    while high - low > 0.0001:\n        mid = (low + high) / 2\n        if poly(xs, mid) == 0:\n            return mid\n        elif (poly(xs, mid) < 0) == (poly(xs, low) < 0):\n            low = mid\n        else:\n            high = mid\n    return (low + high) / 2\n```"
+      },
+      {
+        "task_id": "HumanEval/33",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 84,
+        "elapsed_s": 3.6,
+        "response": "```python\ndef sort_third(l: list):\n    third_indices = [i for i in range(len(l)) if i % 3 == 0]\n    values_at_third_indices = [l[i] for i in third_indices]\n    values_at_third_indices.sort()\n    for i, val in zip(third_indices, values_at_third_indices):\n        l[i] = val\n    return l\n```"
+      },
+      {
+        "task_id": "HumanEval/34",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 82,
+        "elapsed_s": 3.63,
+        "response": "```python\ndef unique(l: list):\n    \"\"\"Return sorted unique elements in a list\n    >>> unique([5, 3, 5, 2, 3, 3, 9, 0, 123])\n    [0, 2, 3, 5, 9, 123]\n    \"\"\"\n    return sorted(set(l))\n```"
+      },
+      {
+        "task_id": "HumanEval/35",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 91,
+        "elapsed_s": 3.42,
+        "response": "```python\ndef max_element(l: list):\n    \"\"\"Return maximum element in the list.\n    >>> max_element([1, 2, 3])\n    3\n    >>> max_element([5, 3, -5, 2, -3, 3, 9, 0, 123, 1, -10])\n    123\n    \"\"\"\n    return max(l)\n```"
+      },
+      {
+        "task_id": "HumanEval/36",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 72,
+        "elapsed_s": 2.79,
+        "response": "```python\ndef fizz_buzz(n: int):\n    count = 0\n    for i in range(1, n):\n        if (i % 11 == 0 or i % 13 == 0) and '7' in str(i):\n            count += str(i).count('7')\n    return count\n```"
+      },
+      {
+        "task_id": "HumanEval/37",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 63,
+        "elapsed_s": 3.22,
+        "response": "```python\ndef sort_even(l: list):\n    even_indices_values = sorted(l[i] for i in range(0, len(l), 2))\n    return [even_indices_values.pop(0) if i % 2 == 0 else l[i] for i in range(len(l))]\n```"
+      },
+      {
+        "task_id": "HumanEval/38",
+        "pass": false,
+        "err": "NameError: name 'encode_cyclic' is not defined",
+        "completion_tokens": 104,
+        "elapsed_s": 3.93,
+        "response": "```python\ndef decode_cyclic(s: str):\n    \"\"\"\n    takes as input string encoded with encode_cyclic function. Returns decoded string.\n    \"\"\"\n    groups = [s[(3 * i):min((3 * i + 3), len(s))] for i in range((len(s) + 2) // 3)]\n    groups = [(group[-1] + group[:-1]) if len(group) == 3 else group for group in groups]\n    return \"\".join(groups)\n```"
+      },
+      {
+        "task_id": "HumanEval/39",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 147,
+        "elapsed_s": 5.83,
+        "response": "```python\ndef prime_fib(n: int):\n    def is_prime(num):\n        if num <= 1:\n            return False\n        for i in range(2, int(num**0.5) + 1):\n            if num % i == 0:\n                return False\n        return True\n\n    def fib():\n        a, b = 0, 1\n        while True:\n            yield a\n            a, b = b, a + b\n\n    prime_count = 0\n    for fib_num in fib():\n        if fib_num > 1 and is_prime(fib_num):\n            prime_count += 1\n            if prime_count == n:\n                return fib_num\n```"
+      },
+      {
+        "task_id": "HumanEval/40",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 49,
+        "elapsed_s": 2.25,
+        "response": "```python\ndef triples_sum_to_zero(l: list):\n    from itertools import combinations\n    for triplet in combinations(l, 3):\n        if sum(triplet) == 0:\n            return True\n    return False\n```"
+      },
+      {
+        "task_id": "HumanEval/41",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 19,
+        "elapsed_s": 1.57,
+        "response": "```python\ndef car_race_collision(n: int):\n    return n * n\n```"
+      },
+      {
+        "task_id": "HumanEval/42",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 24,
+        "elapsed_s": 1.73,
+        "response": "```python\ndef incr_list(l: list):\n    return [x + 1 for x in l]\n```"
+      },
+      {
+        "task_id": "HumanEval/43",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 43,
+        "elapsed_s": 2.11,
+        "response": "```python\ndef pairs_sum_to_zero(l):\n    seen = set()\n    for num in l:\n        if -num in seen:\n            return True\n        seen.add(num)\n    return False\n```"
+      },
+      {
+        "task_id": "HumanEval/44",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 57,
+        "elapsed_s": 2.79,
+        "response": "```python\ndef change_base(x: int, base: int):\n    if x == 0:\n        return \"0\"\n    digits = []\n    while x:\n        digits.append(str(x % base))\n        x //= base\n    return ''.join(digits[::-1])\n```"
+      },
+      {
+        "task_id": "HumanEval/45",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 56,
+        "elapsed_s": 2.84,
+        "response": "```python\ndef triangle_area(a, h):\n    \"\"\"Given length of a side and high return area for a triangle.\n    >>> triangle_area(5, 3)\n    7.5\n    \"\"\"\n    return 0.5 * a * h\n```"
+      },
+      {
+        "task_id": "HumanEval/46",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 114,
+        "elapsed_s": 4.47,
+        "response": "```python\ndef fib4(n: int):\n    if n == 0 or n == 1:\n        return 0\n    if n == 2:\n        return 2\n    if n == 3:\n        return 0\n    a, b, c, d = 0, 2, 0, 4\n    for _ in range(4, n + 1):\n        a, b, c, d = b, c, d, a + b + c + d\n    return d\n```"
+      },
+      {
+        "task_id": "HumanEval/47",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 62,
+        "elapsed_s": 2.63,
+        "response": "```python\ndef median(l: list):\n    l.sort()\n    n = len(l)\n    if n % 2 == 0:\n        return (l[n//2 - 1] + l[n//2]) / 2\n    else:\n        return l[n//2]\n```"
+      },
+      {
+        "task_id": "HumanEval/48",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 21,
+        "elapsed_s": 1.41,
+        "response": "```python\ndef is_palindrome(text: str):\n    return text == text[::-1]\n```"
+      },
+      {
+        "task_id": "HumanEval/49",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 42,
+        "elapsed_s": 2.01,
+        "response": "```python\ndef modp(n: int, p: int):\n    \"\"\"Return 2^n modulo p (be aware of numerics).\"\"\"\n    return pow(2, n, p)\n```"
+      },
+      {
+        "task_id": "HumanEval/50",
+        "pass": false,
+        "err": "NameError: name 'encode_shift' is not defined",
+        "completion_tokens": 64,
+        "elapsed_s": 3.06,
+        "response": "```python\ndef decode_shift(s: str):\n    \"\"\"\n    takes as input string encoded with encode_shift function. Returns decoded string.\n    \"\"\"\n    return \"\".join([chr(((ord(ch) - 5 - ord(\"a\")) % 26) + ord(\"a\")) for ch in s])\n```"
+      },
+      {
+        "task_id": "HumanEval/51",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 42,
+        "elapsed_s": 2.0,
+        "response": "```python\ndef remove_vowels(text):\n    return ''.join(char for char in text if char.lower() not in ('a', 'e', 'i', 'o', 'u'))\n```"
+      },
+      {
+        "task_id": "HumanEval/52",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 27,
+        "elapsed_s": 1.78,
+        "response": "```python\ndef below_threshold(l: list, t: int):\n    return all(x < t for x in l)\n```"
+      },
+      {
+        "task_id": "HumanEval/53",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 59,
+        "elapsed_s": 2.34,
+        "response": "```python\ndef add(x: int, y: int):\n    \"\"\"Add two numbers x and y\n    >>> add(2, 3)\n    5\n    >>> add(5, 7)\n    12\n    \"\"\"\n    return x + y\n```"
+      },
+      {
+        "task_id": "HumanEval/54",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 29,
+        "elapsed_s": 2.02,
+        "response": "```python\ndef same_chars(s0: str, s1: str):\n    return set(s0) == set(s1)\n```"
+      },
+      {
+        "task_id": "HumanEval/55",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 44,
+        "elapsed_s": 2.04,
+        "response": "```python\ndef fib(n: int):\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a\n```"
+      },
+      {
+        "task_id": "HumanEval/56",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 66,
+        "elapsed_s": 3.19,
+        "response": "```python\ndef correct_bracketing(brackets: str):\n    balance = 0\n    for char in brackets:\n        if char == '<':\n            balance += 1\n        else:\n            balance -= 1\n        if balance < 0:\n            return False\n    return balance == 0\n```"
+      },
+      {
+        "task_id": "HumanEval/57",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 70,
+        "elapsed_s": 3.26,
+        "response": "```python\ndef monotonic(l: list):\n    \"\"\"Return True is list elements are monotonically increasing or decreasing.\n    \"\"\"\n    return all(l[i] <= l[i+1] for i in range(len(l)-1)) or all(l[i] >= l[i+1] for i in range(len(l)-1))\n```"
+      },
+      {
+        "task_id": "HumanEval/58",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 43,
+        "elapsed_s": 1.87,
+        "response": "```python\ndef common(l1: list, l2: list):\n    \"\"\"Return sorted unique common elements for two lists.\n    \"\"\"\n    return sorted(list(set(l1) & set(l2)))\n```"
+      },
+      {
+        "task_id": "HumanEval/59",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 124,
+        "elapsed_s": 4.75,
+        "response": "```python\ndef largest_prime_factor(n: int):\n    \"\"\"Return the largest prime factor of n. Assume n > 1 and is not a prime.\"\"\"\n    max_prime = 2\n    while n % 2 == 0:\n        n //= 2\n    factor = 3\n    while factor * factor <= n:\n        if n % factor == 0:\n            max_prime = factor\n            while n % factor == 0:\n                n //= factor\n        factor += 2\n    if n > 1:\n        max_prime = n\n    return max_prime\n```"
+      },
+      {
+        "task_id": "HumanEval/60",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 117,
+        "elapsed_s": 4.84,
+        "response": "```python\ndef sum_to_n(n: int):\n    \"\"\"sum_to_n is a function that sums numbers from 1 to n.\n    >>> sum_to_n(30)\n    465\n    >>> sum_to_n(100)\n    5050\n    >>> sum_to_n(5)\n    15\n    >>> sum_to_n(10)\n    55\n    >>> sum_to_n(1)\n    1\n    \"\"\"\n    return n * (n + 1) // 2\n```"
+      },
+      {
+        "task_id": "HumanEval/61",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 66,
+        "elapsed_s": 3.08,
+        "response": "```python\ndef correct_bracketing(brackets: str):\n    balance = 0\n    for bracket in brackets:\n        if bracket == '(':\n            balance += 1\n        else:\n            balance -= 1\n        if balance < 0:\n            return False\n    return balance == 0\n```"
+      },
+      {
+        "task_id": "HumanEval/62",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 29,
+        "elapsed_s": 1.4,
+        "response": "```python\ndef derivative(xs: list):\n    return [i * xs[i] for i in range(1, len(xs))]\n```"
+      },
+      {
+        "task_id": "HumanEval/63",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 71,
+        "elapsed_s": 3.35,
+        "response": "```python\ndef fibfib(n: int):\n    if n < 2:\n        return 0\n    a, b, c = 0, 0, 1\n    for _ in range(n - 2):\n        a, b, c = b, c, a + b + c\n    return c\n```"
+      },
+      {
+        "task_id": "HumanEval/64",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 56,
+        "elapsed_s": 2.53,
+        "response": "```python\ndef vowels_count(s):\n    vowels = 'aeiouAEIOU'\n    count = sum(1 for char in s if char in vowels)\n    if s[-1] in 'yY':\n        count += 1\n    return count\n```"
+      },
+      {
+        "task_id": "HumanEval/65",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 96,
+        "elapsed_s": 3.77,
+        "response": "```python\ndef circular_shift(x, shift):\n    \"\"\"Circular shift the digits of the integer x, shift the digits right by shift\n    and return the result as a string.\n    If shift > number of digits, return digits reversed.\n    \"\"\"\n    s = str(x)\n    len_s = len(s)\n    if shift >= len_s:\n        return s[::-1]\n    shift %= len_s\n    return s[-shift:] + s[:-shift]\n```"
+      },
+      {
+        "task_id": "HumanEval/66",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 25,
+        "elapsed_s": 1.75,
+        "response": "```python\ndef digitSum(s):\n    return sum(ord(c) for c in s if c.isupper())\n```"
+      },
+      {
+        "task_id": "HumanEval/67",
+        "pass": false,
+        "err": "ValueError: invalid literal for int() with base 10: 'oranges'",
+        "completion_tokens": 42,
+        "elapsed_s": 2.51,
+        "response": "```python\ndef fruit_distribution(s, n):\n    parts = s.split()\n    apples = int(parts[0])\n    oranges = int(parts[4])\n    return n - apples - oranges\n```"
+      },
+      {
+        "task_id": "HumanEval/68",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 84,
+        "elapsed_s": 3.88,
+        "response": "```python\ndef pluck(arr):\n    min_even = float('inf')\n    min_index = -1\n    for i, val in enumerate(arr):\n        if val % 2 == 0 and val < min_even:\n            min_even = val\n            min_index = i\n    if min_index == -1:\n        return []\n    else:\n        return [min_even, min_index]\n```"
+      },
+      {
+        "task_id": "HumanEval/69",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 78,
+        "elapsed_s": 3.72,
+        "response": "```python\ndef search(lst):\n    freq = {}\n    for num in lst:\n        if num in freq:\n            freq[num] += 1\n        else:\n            freq[num] = 1\n    result = -1\n    for key, value in freq.items():\n        if key <= value and key > result:\n            result = key\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/70",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 69,
+        "elapsed_s": 2.76,
+        "response": "```python\ndef strange_sort_list(lst):\n    sorted_lst = []\n    while lst:\n        min_val = min(lst)\n        sorted_lst.append(min_val)\n        lst.remove(min_val)\n        if lst:\n            max_val = max(lst)\n            sorted_lst.append(max_val)\n            lst.remove(max_val)\n    return sorted_lst\n```"
+      },
+      {
+        "task_id": "HumanEval/71",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 90,
+        "elapsed_s": 3.49,
+        "response": "```python\ndef triangle_area(a, b, c):\n    if a + b <= c or a + c <= b or b + c <= a:\n        return -1\n    s = (a + b + c) / 2\n    area = (s * (s - a) * (s - b) * (s - c)) ** 0.5\n    return round(area, 2)\n```"
+      },
+      {
+        "task_id": "HumanEval/72",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 28,
+        "elapsed_s": 1.44,
+        "response": "```python\ndef will_it_fly(q,w):\n    return q == q[::-1] and sum(q) <= w\n```"
+      },
+      {
+        "task_id": "HumanEval/73",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 56,
+        "elapsed_s": 2.83,
+        "response": "```python\ndef smallest_change(arr):\n    n = len(arr)\n    changes = 0\n    for i in range(n // 2):\n        if arr[i] != arr[n - 1 - i]:\n            changes += 1\n    return changes\n```"
+      },
+      {
+        "task_id": "HumanEval/74",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 50,
+        "elapsed_s": 2.34,
+        "response": "```python\ndef total_match(lst1, lst2):\n    if sum(len(s) for s in lst1) <= sum(len(s) for s in lst2):\n        return lst1\n    else:\n        return lst2\n```"
+      },
+      {
+        "task_id": "HumanEval/75",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 133,
+        "elapsed_s": 5.35,
+        "response": "```python\ndef is_multiply_prime(a):\n    def is_prime(n):\n        if n < 2:\n            return False\n        for i in range(2, int(n**0.5) + 1):\n            if n % i == 0:\n                return False\n        return True\n\n    if a < 2:\n        return False\n    primes = [i for i in range(2, 100) if is_prime(i)]\n    for i in primes:\n        for j in primes:\n            for k in primes:\n                if i * j * k == a:\n                    return True\n    return False\n```"
+      },
+      {
+        "task_id": "HumanEval/76",
+        "pass": false,
+        "err": "AssertionError: This prints if this assert fails 2 (also good for debugging!)",
+        "completion_tokens": 61,
+        "elapsed_s": 2.98,
+        "response": "```python\ndef is_simple_power(x, n):\n    if x == 1:\n        return n == 1\n    if n <= 1:\n        return False\n    power = 1\n    while power < x:\n        power *= n\n    return power == x\n```"
+      },
+      {
+        "task_id": "HumanEval/77",
+        "pass": false,
+        "err": "TypeError: type complex doesn't define __round__ method",
+        "completion_tokens": 27,
+        "elapsed_s": 1.8,
+        "response": "```python\ndef iscube(a):\n    return int(round(a ** (1/3))) ** 3 == a\n```"
+      },
+      {
+        "task_id": "HumanEval/78",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 39,
+        "elapsed_s": 1.9,
+        "response": "```python\ndef hex_key(num):\n    prime_hex_digits = set('2357BD')\n    return sum(1 for digit in num if digit in prime_hex_digits)\n```"
+      },
+      {
+        "task_id": "HumanEval/79",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 160,
+        "elapsed_s": 5.79,
+        "response": "```python\ndef decimal_to_binary(decimal):\n    \"\"\"You will be given a number in decimal form and your task is to convert it to\n    binary format. The function should return a string, with each character representing a binary\n    number. Each character in the string will be '0' or '1'.\n\n    There will be an extra couple of characters 'db' at the beginning and at the end of the string.\n    The extra characters are there to help with the format.\n\n    Examples:\n    decimal_to_binary(15)   # returns \"db1111db\"\n    decimal_to_binary(32)   # returns \"db100000db\"\n    \"\"\"\n    return f'db{bin(decimal)[2:]}db'\n```"
+      },
+      {
+        "task_id": "HumanEval/80",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 81,
+        "elapsed_s": 3.28,
+        "response": "```python\ndef is_happy(s):\n    if len(s) < 3:\n        return False\n    for i in range(len(s) - 2):\n        if s[i] == s[i + 1] or s[i] == s[i + 2] or s[i + 1] == s[i + 2]:\n            return False\n    return True\n```"
+      },
+      {
+        "task_id": "HumanEval/81",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 266,
+        "elapsed_s": 9.46,
+        "response": "```python\ndef numerical_letter_grade(grades):\n    letter_grades = []\n    for gpa in grades:\n        if gpa == 4.0:\n            letter_grades.append('A+')\n        elif gpa > 3.7:\n            letter_grades.append('A')\n        elif gpa > 3.3:\n            letter_grades.append('A-')\n        elif gpa > 3.0:\n            letter_grades.append('B+')\n        elif gpa > 2.7:\n            letter_grades.append('B')\n        elif gpa > 2.3:\n            letter_grades.append('B-')\n        elif gpa > 2.0:\n            letter_grades.append('C+')\n        elif gpa > 1.7:\n            letter_grades.append('C')\n        elif gpa > 1.3:\n            letter_grades.append('C-')\n        elif gpa > 1.0:\n            letter_grades.append('D+')\n        elif gpa > 0.7:\n            letter_grades.append('D')\n        elif gpa > 0.0:\n            letter_grades.append('D-')\n        else:\n            letter_grades.append('E')\n    return letter_grades\n```"
+      },
+      {
+        "task_id": "HumanEval/82",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 70,
+        "elapsed_s": 3.22,
+        "response": "```python\ndef prime_length(string):\n    def is_prime(n):\n        if n <= 1:\n            return False\n        for i in range(2, int(n**0.5) + 1):\n            if n % i == 0:\n                return False\n        return True\n    return is_prime(len(string))\n```"
+      },
+      {
+        "task_id": "HumanEval/83",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 49,
+        "elapsed_s": 2.51,
+        "response": "```python\n\ndef starts_one_ends(n):\n    if n == 1:\n        return 1\n    return 2 * (10 ** (n - 1)) - 10 ** (n - 2)\n\n```"
+      },
+      {
+        "task_id": "HumanEval/84",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 33,
+        "elapsed_s": 2.05,
+        "response": "```python\ndef solve(N):\n    digit_sum = sum(int(digit) for digit in str(N))\n    return bin(digit_sum)[2:]\n```"
+      },
+      {
+        "task_id": "HumanEval/85",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 38,
+        "elapsed_s": 1.65,
+        "response": "```python\ndef add(lst):\n    return sum(x for i, x in enumerate(lst) if i % 2 != 0 and x % 2 == 0)\n```"
+      },
+      {
+        "task_id": "HumanEval/86",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 41,
+        "elapsed_s": 2.32,
+        "response": "```python\ndef anti_shuffle(s):\n    words = s.split(\" \")\n    ordered_words = [\"\".join(sorted(word)) for word in words]\n    return \" \".join(ordered_words)\n```"
+      },
+      {
+        "task_id": "HumanEval/87",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 69,
+        "elapsed_s": 3.02,
+        "response": "```python\ndef get_row(lst, x):\n    result = []\n    for i, row in enumerate(lst):\n        for j, val in enumerate(row):\n            if val == x:\n                result.append((i, j))\n    result.sort(key=lambda coord: (coord[0], -coord[1]))\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/88",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 67,
+        "elapsed_s": 3.24,
+        "response": "```python\ndef sort_array(array):\n    if len(array) == 0:\n        return []\n    sorted_array = array[:]\n    if (sorted_array[0] + sorted_array[-1]) % 2 == 0:\n        return sorted(sorted_array, reverse=True)\n    else:\n        return sorted(sorted_array)\n```"
+      },
+      {
+        "task_id": "HumanEval/89",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 115,
+        "elapsed_s": 4.25,
+        "response": "```python\ndef encrypt(s):\n    result = \"\"\n    for char in s:\n        if char.isalpha():\n            shift = 2 * 2\n            if char.islower():\n                new_char = chr(((ord(char) - ord('a') + shift) % 26) + ord('a'))\n            else:\n                new_char = chr(((ord(char) - ord('A') + shift) % 26) + ord('A'))\n            result += new_char\n        else:\n            result += char\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/90",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 37,
+        "elapsed_s": 1.85,
+        "response": "```python\ndef next_smallest(lst):\n    unique_elements = sorted(set(lst))\n    return unique_elements[1] if len(unique_elements) >= 2 else None\n```"
+      },
+      {
+        "task_id": "HumanEval/91",
+        "pass": false,
+        "err": "NameError: name 're' is not defined",
+        "completion_tokens": 51,
+        "elapsed_s": 2.28,
+        "response": "```python\n\ndef is_bored(S):\n    sentences = [s.strip() for s in re.split('[.?!]', S) if s]\n    return sum(s.startswith('I ') or s == 'I' for s in sentences)\n\n```"
+      },
+      {
+        "task_id": "HumanEval/92",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 57,
+        "elapsed_s": 2.82,
+        "response": "```python\ndef any_int(x, y, z):\n    if isinstance(x, int) and isinstance(y, int) and isinstance(z, int):\n        return x + y == z or x + z == y or y + z == x\n    return False\n```"
+      },
+      {
+        "task_id": "HumanEval/93",
+        "pass": false,
+        "err": "AssertionError: This prints if this assert fails 1 (good for debugging!)",
+        "completion_tokens": 119,
+        "elapsed_s": 4.55,
+        "response": "```python\ndef encode(message):\n    vowels = {'a': 'c', 'e': 'g', 'i': 'k', 'o': 'q', 'u': 'w',\n              'A': 'C', 'E': 'G', 'I': 'K', 'O': 'Q', 'U': 'W'}\n    encoded_message = ''\n    for char in message:\n        if char.isalpha():\n            if char in vowels:\n                encoded_message += vowels[char]\n            else:\n                encoded_message += char.swapcase()\n    return encoded_message\n```"
+      },
+      {
+        "task_id": "HumanEval/94",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 121,
+        "elapsed_s": 5.15,
+        "response": "```python\ndef skjkasdkd(lst):\n    def is_prime(n):\n        if n <= 1:\n            return False\n        for i in range(2, int(n**0.5) + 1):\n            if n % i == 0:\n                return False\n        return True\n\n    max_prime = -1\n    for num in lst:\n        if is_prime(num) and num > max_prime:\n            max_prime = num\n\n    return sum(int(digit) for digit in str(max_prime)) if max_prime != -1 else 0\n```"
+      },
+      {
+        "task_id": "HumanEval/95",
+        "pass": false,
+        "err": "AttributeError: 'int' object has no attribute 'islower'",
+        "completion_tokens": 75,
+        "elapsed_s": 3.6,
+        "response": "```python\ndef check_dict_case(dict):\n    if not dict:\n        return False\n    lower_case = sum([k.islower() for k in dict.keys()])\n    upper_case = sum([k.isupper() for k in dict.keys()])\n    if lower_case == len(dict) or upper_case == len(dict):\n        return True\n    return False\n```"
+      },
+      {
+        "task_id": "HumanEval/96",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 93,
+        "elapsed_s": 3.74,
+        "response": "```python\ndef count_up_to(n):\n    def is_prime(num):\n        if num < 2:\n            return False\n        for i in range(2, int(num**0.5) + 1):\n            if num % i == 0:\n                return False\n        return True\n\n    primes = []\n    for i in range(2, n):\n        if is_prime(i):\n            primes.append(i)\n    return primes\n```"
+      },
+      {
+        "task_id": "HumanEval/97",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 28,
+        "elapsed_s": 1.83,
+        "response": "```python\ndef multiply(a, b):\n    return (a % 10) * (b % 10)\n```"
+      },
+      {
+        "task_id": "HumanEval/98",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 50,
+        "elapsed_s": 2.53,
+        "response": "```python\ndef count_upper(s):\n    upper_vowels = 'AEIOU'\n    return sum(1 for i, char in enumerate(s) if i % 2 == 0 and char in upper_vowels)\n```"
+      },
+      {
+        "task_id": "HumanEval/99",
+        "pass": false,
+        "err": "AssertionError: Test 2",
+        "completion_tokens": 79,
+        "elapsed_s": 3.09,
+        "response": "```python\ndef closest_integer(value):\n    value_float = float(value)\n    floor_value = int(value_float)\n    ceil_value = floor_value + 1 if value_float > 0 else floor_value - 1\n    return (\n        ceil_value\n        if abs(ceil_value - value_float) < abs(floor_value - value_float)\n        else floor_value\n    )\n```"
+      },
+      {
+        "task_id": "HumanEval/100",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 72,
+        "elapsed_s": 3.37,
+        "response": "```python\ndef make_a_pile(n):\n    pile = []\n    current_stones = n\n    for _ in range(n):\n        pile.append(current_stones)\n        if current_stones % 2 == 0:\n            current_stones += 2\n        else:\n            current_stones += 2\n    return pile\n```"
+      },
+      {
+        "task_id": "HumanEval/101",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 25,
+        "elapsed_s": 1.24,
+        "response": "```python\ndef words_string(s):\n    import re\n    return re.split(', |,| ', s)\n```"
+      },
+      {
+        "task_id": "HumanEval/102",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 57,
+        "elapsed_s": 2.47,
+        "response": "```python\n\ndef choose_num(x, y):\n    if x > y:\n        return -1\n    for num in range(y, x - 1, -1):\n        if num % 2 == 0:\n            return num\n    return -1\n\n```"
+      },
+      {
+        "task_id": "HumanEval/103",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 63,
+        "elapsed_s": 2.56,
+        "response": "```python\ndef rounded_avg(n, m):\n    if n > m:\n        return -1\n    total = (m - n + 1) * (n + m) // 2\n    avg = round(total / (m - n + 1))\n    return bin(avg)\n```"
+      },
+      {
+        "task_id": "HumanEval/104",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 66,
+        "elapsed_s": 3.1,
+        "response": "```python\ndef unique_digits(x):\n    def has_no_even_digits(n):\n        for char in str(n):\n            if int(char) % 2 == 0:\n                return False\n        return True\n\n    result = [n for n in x if has_no_even_digits(n)]\n    return sorted(result)\n```"
+      },
+      {
+        "task_id": "HumanEval/105",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 113,
+        "elapsed_s": 4.31,
+        "response": "```python\ndef by_length(arr):\n    numbers_to_words = {\n        1: \"One\", 2: \"Two\", 3: \"Three\", 4: \"Four\",\n        5: \"Five\", 6: \"Six\", 7: \"Seven\", 8: \"Eight\", 9: \"Nine\"\n    }\n    filtered_sorted_arr = sorted([num for num in arr if 1 <= num <= 9], reverse=True)\n    return [numbers_to_words[num] for num in filtered_sorted_arr]\n```"
+      },
+      {
+        "task_id": "HumanEval/106",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 111,
+        "elapsed_s": 4.63,
+        "response": "```python\ndef f(n):\n    def factorial(x):\n        result = 1\n        for i in range(1, x + 1):\n            result *= i\n        return result\n    \n    def sum_to_i(x):\n        return sum(range(1, x + 1))\n    \n    output = []\n    for i in range(1, n + 1):\n        if i % 2 == 0:\n            output.append(factorial(i))\n        else:\n            output.append(sum_to_i(i))\n    return output\n```"
+      },
+      {
+        "task_id": "HumanEval/107",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 108,
+        "elapsed_s": 4.11,
+        "response": "```python\ndef even_odd_palindrome(n):\n    def is_palindrome(x):\n        return str(x) == str(x)[::-1]\n    \n    even_count = sum(1 for x in range(1, n + 1) if x % 2 == 0 and is_palindrome(x))\n    odd_count = sum(1 for x in range(1, n + 1) if x % 2 != 0 and is_palindrome(x))\n    \n    return (even_count, odd_count)\n```"
+      },
+      {
+        "task_id": "HumanEval/108",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 62,
+        "elapsed_s": 2.52,
+        "response": "```python\ndef count_nums(arr):\n    def sum_of_digits(n):\n        return sum(int(digit) for digit in str(n).replace('-', '')) if n != 0 else 0\n    \n    return sum(1 for num in arr if sum_of_digits(num) > 0)\n```"
+      },
+      {
+        "task_id": "HumanEval/109",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 86,
+        "elapsed_s": 3.91,
+        "response": "```python\ndef move_one_ball(arr):\n    if not arr:\n        return True\n    n = len(arr)\n    count = 0\n    for i in range(1, n):\n        if arr[i - 1] > arr[i]:\n            count += 1\n    if arr[n - 1] > arr[0]:\n        count += 1\n    return count <= 1\n```"
+      },
+      {
+        "task_id": "HumanEval/110",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 78,
+        "elapsed_s": 3.71,
+        "response": "```python\ndef exchange(lst1, lst2):\n    odd_count_lst1 = sum(1 for x in lst1 if x % 2 != 0)\n    even_count_lst2 = sum(1 for x in lst2 if x % 2 == 0)\n    return \"YES\" if odd_count_lst1 <= even_count_lst2 else \"NO\"\n```"
+      },
+      {
+        "task_id": "HumanEval/111",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 217,
+        "elapsed_s": 8.33,
+        "response": "```python\ndef histogram(test):\n    \"\"\"Given a string representing a space separated lowercase letters, return a dictionary\n    of the letter with the most repetition and containing the corresponding count.\n    If several letters have the same occurrence, return all of them.\n    \n    Example:\n    histogram('a b c') == {'a': 1, 'b': 1, 'c': 1}\n    histogram('a b b a') == {'a': 2, 'b': 2}\n    histogram('a b c a b') == {'a': 2, 'b': 2}\n    histogram('b b b b a') == {'b': 4}\n    histogram('') == {}\n\n    \"\"\"\n    counts = {}\n    max_count = 0\n    for letter in test.split():\n        counts[letter] = counts.get(letter, 0) + 1\n        max_count = max(max_count, counts[letter])\n    return {letter: count for letter, count in counts.items() if count == max_count}\n```"
+      },
+      {
+        "task_id": "HumanEval/112",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 40,
+        "elapsed_s": 2.26,
+        "response": "```python\ndef reverse_delete(s, c):\n    result = ''.join([char for char in s if char not in c])\n    return (result, result == result[::-1])\n```"
+      },
+      {
+        "task_id": "HumanEval/113",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 82,
+        "elapsed_s": 3.19,
+        "response": "```python\ndef odd_count(lst):\n    result = []\n    for s in lst:\n        odd_digits = sum(1 for digit in s if int(digit) % 2 != 0)\n        result.append(f\"the number of odd elements {odd_digits}n the str{odd_digits}ng {odd_digits} of the {odd_digits}nput.\")\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/114",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 59,
+        "elapsed_s": 2.54,
+        "response": "```python\ndef minSubArraySum(nums):\n    current_sum = min_sum = nums[0]\n    for num in nums[1:]:\n        current_sum = min(num, current_sum + num)\n        min_sum = min(min_sum, current_sum)\n    return min_sum\n```"
+      },
+      {
+        "task_id": "HumanEval/115",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 41,
+        "elapsed_s": 2.47,
+        "response": "```python\ndef max_fill(grid, capacity):\n    import math\n    total_drops = sum(math.ceil(sum(row) / capacity) for row in grid)\n    return total_drops\n```"
+      },
+      {
+        "task_id": "HumanEval/116",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 29,
+        "elapsed_s": 1.92,
+        "response": "```python\ndef sort_array(arr):\n    return sorted(arr, key=lambda x: (bin(x).count('1'), x))\n```"
+      },
+      {
+        "task_id": "HumanEval/117",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 74,
+        "elapsed_s": 2.92,
+        "response": "```python\ndef select_words(s, n):\n    result = []\n    consonants = 'bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ'\n    for word in s.split():\n        if sum(1 for char in word if char in consonants) == n:\n            result.append(word)\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/118",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 75,
+        "elapsed_s": 2.94,
+        "response": "```python\ndef get_closest_vowel(word):\n    vowels = 'aeiouAEIOU'\n    for i in range(len(word) - 2, 0, -1):\n        if word[i] in vowels and word[i-1] not in vowels and word[i+1] not in vowels:\n            return word[i]\n    return \"\"\n```"
+      },
+      {
+        "task_id": "HumanEval/119",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 100,
+        "elapsed_s": 3.95,
+        "response": "```python\ndef match_parens(lst):\n    left_count = lst[0].count('(') + lst[1].count('(')\n    right_count = lst[0].count(')') + lst[1].count(')')\n    if left_count != right_count:\n        return 'No'\n    if lst[0].count(')') > left_count or lst[1].count(')') > left_count:\n        return 'No'\n    return 'Yes'\n```"
+      },
+      {
+        "task_id": "HumanEval/120",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 21,
+        "elapsed_s": 1.75,
+        "response": "```python\ndef maximum(arr, k):\n    return sorted(arr, reverse=True)[:k]\n```"
+      },
+      {
+        "task_id": "HumanEval/121",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 39,
+        "elapsed_s": 1.87,
+        "response": "```python\ndef solution(lst):\n    return sum(lst[i] for i in range(0, len(lst), 2) if lst[i] % 2 != 0)\n```"
+      },
+      {
+        "task_id": "HumanEval/122",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 34,
+        "elapsed_s": 2.06,
+        "response": "```python\ndef add_elements(arr, k):\n    return sum(x for x in arr[:k] if 0 < x < 100)\n```"
+      },
+      {
+        "task_id": "HumanEval/123",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 70,
+        "elapsed_s": 3.32,
+        "response": "```python\ndef get_odd_collatz(n):\n    result = []\n    while n != 1:\n        if n % 2 == 1:\n            result.append(n)\n        n = 3 * n + 1 if n % 2 else n // 2\n    result.append(1)\n    return sorted(result)\n```"
+      },
+      {
+        "task_id": "HumanEval/124",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 154,
+        "elapsed_s": 6.21,
+        "response": "```python\ndef valid_date(date):\n    if len(date) != 10 or date[2] != '-' or date[5] != '-':\n        return False\n    month, day, year = map(int, date.split('-'))\n    if month < 1 or month > 12 or year < 1:\n        return False\n    if month in [1, 3, 5, 7, 8, 10, 12]:\n        return 1 <= day <= 31\n    elif month in [4, 6, 9, 11]:\n        return 1 <= day <= 30\n    else:\n        return 1 <= day <= 29\n```"
+      },
+      {
+        "task_id": "HumanEval/125",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 63,
+        "elapsed_s": 2.72,
+        "response": "```python\ndef split_words(txt):\n    if ' ' in txt:\n        return txt.split(' ')\n    elif ',' in txt:\n        return txt.split(',')\n    else:\n        return sum(1 for c in txt if (ord(c) - ord('a')) % 2 == 1)\n```"
+      },
+      {
+        "task_id": "HumanEval/126",
+        "pass": false,
+        "err": "AssertionError: This prints if this assert fails 7 (good for debugging!)",
+        "completion_tokens": 89,
+        "elapsed_s": 3.97,
+        "response": "```python\ndef is_sorted(lst):\n    if len(lst) <= 1:\n        return True\n    duplicates = 0\n    for i in range(1, len(lst)):\n        if lst[i] < lst[i - 1]:\n            return False\n        if lst[i] == lst[i - 1]:\n            duplicates += 1\n            if duplicates > 1:\n                return False\n    return True\n```"
+      },
+      {
+        "task_id": "HumanEval/127",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 132,
+        "elapsed_s": 5.56,
+        "response": "```python\ndef intersection(interval1, interval2):\n    def is_prime(n):\n        if n <= 1:\n            return False\n        for i in range(2, int(n**0.5) + 1):\n            if n % i == 0:\n                return False\n        return True\n    \n    start_max = max(interval1[0], interval2[0])\n    end_min = min(interval1[1], interval2[1])\n    length = end_min - start_max + 1\n    \n    if length > 0 and is_prime(length):\n        return \"YES\"\n    else:\n        return \"NO\"\n```"
+      },
+      {
+        "task_id": "HumanEval/128",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 86,
+        "elapsed_s": 3.96,
+        "response": "```python\ndef prod_signs(arr):\n    if not arr:\n        return None\n    sign_product = 1\n    magnitude_sum = 0\n    for num in arr:\n        if num < 0:\n            sign_product *= -1\n        elif num == 0:\n            sign_product = 0\n            break\n        magnitude_sum += abs(num)\n    return magnitude_sum * sign_product\n```"
+      },
+      {
+        "task_id": "HumanEval/129",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 180,
+        "elapsed_s": 6.65,
+        "response": "```python\ndef minPath(grid, k):\n    N = len(grid)\n    directions = [(0, 1), (1, 0), (-1, 0), (0, -1)]\n    min_path = [float('inf')] * k\n\n    def dfs(x, y, path):\n        nonlocal min_path\n        if len(path) == k:\n            if path < min_path:\n                min_path = path.copy()\n            return\n        for dx, dy in directions:\n            nx, ny = x + dx, y + dy\n            if 0 <= nx < N and 0 <= ny < N:\n                dfs(nx, ny, path + [grid[nx][ny]])\n\n    for i in range(N):\n        for j in range(N):\n            dfs(i, j, [grid[i][j]])\n\n    return min_path\n```"
+      },
+      {
+        "task_id": "HumanEval/130",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 327,
+        "elapsed_s": 11.47,
+        "response": "```python\ndef tri(n):\n    \"\"\"Everyone knows Fibonacci sequence, it was studied deeply by mathematicians in \n    the last couple centuries. However, what people don't know is Tribonacci sequence.\n    Tribonacci sequence is defined by the recurrence:\n    tri(1) = 3\n    tri(n) = 1 + n / 2, if n is even.\n    tri(n) =  tri(n - 1) + tri(n - 2) + tri(n + 1), if n is odd.\n    For example:\n    tri(2) = 1 + (2 / 2) = 2\n    tri(4) = 3\n    tri(3) = tri(2) + tri(1) + tri(4)\n           = 2 + 3 + 3 = 8 \n    You are given a non-negative integer number n, you have to a return a list of the \n    first n + 1 numbers of the Tribonacci sequence.\n    Examples:\n    tri(3) = [1, 3, 2, 8]\n    \"\"\"\n    result = [1]\n    for i in range(1, n + 1):\n        if i == 1:\n            result.append(3)\n        elif i % 2 == 0:\n            result.append(1 + i // 2)\n        else:\n            next_value = result[-1] + result[-2] + (1 + (i + 1) // 2)\n            result.append(next_value)\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/131",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 75,
+        "elapsed_s": 3.51,
+        "response": "```python\ndef digits(n):\n    product = 1\n    has_odd = False\n    while n > 0:\n        digit = n % 10\n        if digit % 2 != 0:\n            product *= digit\n            has_odd = True\n        n //= 10\n    return product if has_odd else 0\n```"
+      },
+      {
+        "task_id": "HumanEval/132",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 75,
+        "elapsed_s": 3.43,
+        "response": "```python\ndef is_nested(string):\n    max_depth = 0\n    current_depth = 0\n    for char in string:\n        if char == '[':\n            current_depth += 1\n            max_depth = max(max_depth, current_depth)\n        elif char == ']':\n            current_depth -= 1\n    return max_depth > 1\n```"
+      },
+      {
+        "task_id": "HumanEval/133",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 29,
+        "elapsed_s": 1.9,
+        "response": "```python\nimport math\n\ndef sum_squares(lst):\n    return sum(math.ceil(x) ** 2 for x in lst)\n```"
+      },
+      {
+        "task_id": "HumanEval/134",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 69,
+        "elapsed_s": 2.74,
+        "response": "```python\ndef check_if_last_char_is_a_letter(txt):\n    if len(txt) == 0 or txt[-1].isspace():\n        return False\n    last_word = txt.rstrip().rsplit(' ', 1)[-1]\n    return last_word == last_word[-1] and last_word[-1].isalpha()\n```"
+      },
+      {
+        "task_id": "HumanEval/135",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 43,
+        "elapsed_s": 1.84,
+        "response": "```python\ndef can_arrange(arr):\n    for i in range(1, len(arr)):\n        if arr[i] < arr[i - 1]:\n            return i\n    return -1\n```"
+      },
+      {
+        "task_id": "HumanEval/136",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 80,
+        "elapsed_s": 3.28,
+        "response": "```python\ndef largest_smallest_integers(lst):\n    negatives = [x for x in lst if x < 0]\n    positives = [x for x in lst if x > 0]\n    max_negative = max(negatives) if negatives else None\n    min_positive = min(positives) if positives else None\n    return (max_negative, min_positive)\n```"
+      },
+      {
+        "task_id": "HumanEval/137",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 90,
+        "elapsed_s": 3.98,
+        "response": "```python\ndef compare_one(a, b):\n    def convert_to_float(value):\n        if isinstance(value, str):\n            value = value.replace(',', '.')\n        return float(value)\n    \n    a_float = convert_to_float(a)\n    b_float = convert_to_float(b)\n    \n    if a_float > b_float:\n        return a\n    elif b_float > a_float:\n        return b\n    else:\n        return None\n```"
+      },
+      {
+        "task_id": "HumanEval/138",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 28,
+        "elapsed_s": 1.82,
+        "response": "```python\ndef is_equal_to_sum_even(n):\n    return n > 7 and n % 2 == 0\n```"
+      },
+      {
+        "task_id": "HumanEval/139",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 76,
+        "elapsed_s": 3.44,
+        "response": "```python\ndef special_factorial(n):\n    def factorial(x):\n        result = 1\n        for i in range(1, x + 1):\n            result *= i\n        return result\n\n    special_fact = 1\n    for i in range(1, n + 1):\n        special_fact *= factorial(i)\n    return special_fact\n```"
+      },
+      {
+        "task_id": "HumanEval/140",
+        "pass": false,
+        "err": "AssertionError: This prints if this assert fails 3 (good for debugging!)",
+        "completion_tokens": 40,
+        "elapsed_s": 1.92,
+        "response": "```python\ndef fix_spaces(text):\n    import re\n    text = re.sub(' {2,}', '-', text)\n    text = text.replace(' ', '_')\n    return text\n```"
+      },
+      {
+        "task_id": "HumanEval/141",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 85,
+        "elapsed_s": 3.81,
+        "response": "```python\ndef file_name_check(file_name):\n    parts = file_name.split('.')\n    if len(parts) != 2 or not parts[0] or not parts[0][0].isalpha() or parts[1] not in ['txt', 'exe', 'dll'] or sum(c.isdigit() for c in file_name) > 3:\n        return 'No'\n    return 'Yes'\n```"
+      },
+      {
+        "task_id": "HumanEval/142",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 74,
+        "elapsed_s": 3.4,
+        "response": "```python\ndef sum_squares(lst):\n    result = 0\n    for i, val in enumerate(lst):\n        if i % 3 == 0:\n            result += val ** 2\n        elif i % 4 == 0:\n            result += val ** 3\n        else:\n            result += val\n    return result\n```"
+      },
+      {
+        "task_id": "HumanEval/143",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 92,
+        "elapsed_s": 3.68,
+        "response": "```python\ndef words_in_sentence(sentence):\n    def is_prime(num):\n        if num <= 1:\n            return False\n        for i in range(2, int(num**0.5) + 1):\n            if num % i == 0:\n                return False\n        return True\n\n    words = sentence.split()\n    result = [word for word in words if is_prime(len(word))]\n    return ' '.join(result)\n```"
+      },
+      {
+        "task_id": "HumanEval/144",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 82,
+        "elapsed_s": 3.65,
+        "response": "```python\ndef simplify(x, n):\n    x_numerator, x_denominator = map(int, x.split('/'))\n    n_numerator, n_denominator = map(int, n.split('/'))\n    result_numerator = x_numerator * n_numerator\n    result_denominator = x_denominator * n_denominator\n    return result_numerator % result_denominator == 0\n```"
+      },
+      {
+        "task_id": "HumanEval/145",
+        "pass": false,
+        "err": "AssertionError: ",
+        "completion_tokens": 36,
+        "elapsed_s": 2.12,
+        "response": "```python\ndef order_by_points(nums):\n    return sorted(nums, key=lambda x: (sum(int(d) for d in str(abs(x))), nums.index(x)))\n```"
+      },
+      {
+        "task_id": "HumanEval/146",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 75,
+        "elapsed_s": 3.11,
+        "response": "```python\ndef specialFilter(nums):\n    count = 0\n    for num in nums:\n        if num > 10:\n            str_num = str(num)\n            if int(str_num[0]) % 2 != 0 and int(str_num[-1]) % 2 != 0:\n                count += 1\n    return count\n```"
+      },
+      {
+        "task_id": "HumanEval/147",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 104,
+        "elapsed_s": 4.12,
+        "response": "```python\ndef get_max_triples(n):\n    a = [i * i - i + 1 for i in range(1, n + 1)]\n    count = 0\n    for i in range(n):\n        for j in range(i + 1, n):\n            for k in range(j + 1, n):\n                if (a[i] + a[j] + a[k]) % 3 == 0:\n                    count += 1\n    return count\n```"
+      },
+      {
+        "task_id": "HumanEval/148",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 113,
+        "elapsed_s": 4.46,
+        "response": "```python\ndef bf(planet1, planet2):\n    planets = [\"Mercury\", \"Venus\", \"Earth\", \"Mars\", \"Jupiter\", \"Saturn\", \"Uranus\", \"Neptune\"]\n    try:\n        index1 = planets.index(planet1)\n        index2 = planets.index(planet2)\n    except ValueError:\n        return ()\n    if index1 > index2:\n        index1, index2 = index2, index1\n    return tuple(planets[index1 + 1:index2])\n```"
+      },
+      {
+        "task_id": "HumanEval/149",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 48,
+        "elapsed_s": 2.59,
+        "response": "```python\ndef sorted_list_sum(lst):\n    lst = [s for s in lst if len(s) % 2 == 0]\n    lst.sort(key=lambda x: (len(x), x))\n    return lst\n```"
+      },
+      {
+        "task_id": "HumanEval/150",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 79,
+        "elapsed_s": 3.59,
+        "response": "```python\ndef x_or_y(n, x, y):\n    def is_prime(num):\n        if num <= 1:\n            return False\n        for i in range(2, int(num**0.5) + 1):\n            if num % i == 0:\n                return False\n        return True\n\n    return x if is_prime(n) else y\n```"
+      },
+      {
+        "task_id": "HumanEval/151",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 41,
+        "elapsed_s": 2.51,
+        "response": "```python\ndef double_the_difference(lst):\n    return sum(x**2 for x in lst if isinstance(x, int) and x > 0 and x % 2 != 0)\n```"
+      },
+      {
+        "task_id": "HumanEval/152",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 29,
+        "elapsed_s": 1.98,
+        "response": "```python\ndef compare(game, guess):\n    return [abs(g - s) for g, s in zip(guess, game)]\n```"
+      },
+      {
+        "task_id": "HumanEval/153",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 101,
+        "elapsed_s": 4.41,
+        "response": "```python\ndef Strongest_Extension(class_name, extensions):\n    max_strength = float('-inf')\n    strongest_extension = \"\"\n    for extension in extensions:\n        cap = sum(1 for c in extension if c.isupper())\n        sm = sum(1 for c in extension if c.islower())\n        strength = cap - sm\n        if strength > max_strength:\n            max_strength = strength\n            strongest_extension = extension\n    return f\"{class_name}.{strongest_extension}\"\n```"
+      },
+      {
+        "task_id": "HumanEval/154",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 38,
+        "elapsed_s": 1.68,
+        "response": "```python\ndef cycpattern_check(a, b):\n    s = b + b\n    return any(s[i:i+len(b)] in a for i in range(len(b)))\n```"
+      },
+      {
+        "task_id": "HumanEval/155",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 72,
+        "elapsed_s": 2.83,
+        "response": "```python\n\ndef even_odd_count(num):\n    even_count = 0\n    odd_count = 0\n    for digit in str(abs(num)):\n        if int(digit) % 2 == 0:\n            even_count += 1\n        else:\n            odd_count += 1\n    return (even_count, odd_count)\n\n```"
+      },
+      {
+        "task_id": "HumanEval/156",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 152,
+        "elapsed_s": 5.49,
+        "response": "```python\ndef int_to_mini_roman(number):\n    numerals = [\n        (1000, 'm'), (900, 'cm'), (500, 'd'), (400, 'cd'),\n        (100, 'c'), (90, 'xc'), (50, 'l'), (40, 'xl'),\n        (10, 'x'), (9, 'ix'), (5, 'v'), (4, 'iv'), (1, 'i')\n    ]\n    parts = []\n    for value, numeral in numerals:\n        while number >= value:\n            parts.append(numeral)\n            number -= value\n    return ''.join(parts)\n```"
+      },
+      {
+        "task_id": "HumanEval/157",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 52,
+        "elapsed_s": 2.65,
+        "response": "```python\ndef right_angle_triangle(a, b, c):\n    sides = sorted([a, b, c])\n    return sides[0] ** 2 + sides[1] ** 2 == sides[2] ** 2\n```"
+      },
+      {
+        "task_id": "HumanEval/158",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 84,
+        "elapsed_s": 3.21,
+        "response": "```python\ndef find_max(words):\n    max_unique = 0\n    max_word = \"\"\n    for word in words:\n        unique_chars = set(word)\n        if len(unique_chars) > max_unique:\n            max_unique = len(unique_chars)\n            max_word = word\n        elif len(unique_chars) == max_unique:\n            max_word = min(max_word, word)\n    return max_word\n```"
+      },
+      {
+        "task_id": "HumanEval/159",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 43,
+        "elapsed_s": 2.0,
+        "response": "```python\ndef eat(number, need, remaining):\n    if remaining >= need:\n        return [number + need, remaining - need]\n    else:\n        return [number + remaining, 0]\n```"
+      },
+      {
+        "task_id": "HumanEval/160",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 51,
+        "elapsed_s": 2.71,
+        "response": "```python\ndef do_algebra(operator, operand):\n    expression = str(operand[0])\n    for i in range(len(operator)):\n        expression += f\" {operator[i]} {operand[i + 1]}\"\n    return eval(expression)\n```"
+      },
+      {
+        "task_id": "HumanEval/161",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 86,
+        "elapsed_s": 3.28,
+        "response": "```python\ndef solve(s):\n    has_letters = any(c.isalpha() for c in s)\n    if not has_letters:\n        return s[::-1]\n    result = []\n    for c in s:\n        if c.isalpha():\n            if c.islower():\n                result.append(c.upper())\n            else:\n                result.append(c.lower())\n        else:\n            result.append(c)\n    return ''.join(result)\n```"
+      },
+      {
+        "task_id": "HumanEval/162",
+        "pass": true,
+        "err": null,
+        "completion_tokens": 34,
+        "elapsed_s": 1.81,
+        "response": "```python\nimport hashlib\n\ndef string_to_md5(text):\n    if not text:\n        return None\n    return hashlib.md5(text.encode()).hexdigest()\n```"
+      },
+      {
+        "task_id": "HumanEval/163",
+        "pass": false,
+        "err": "AssertionError: Test 1",
+        "completion_tokens": 48,
+        "elapsed_s": 2.49,
+        "response": "```python\ndef generate_integers(a, b):\n    start, end = sorted([a, b])\n    return [i for i in range(start, end + 1) if i % 2 == 0]\n```"
+      }
+    ]
+  },
+  "gsm8k": {
+    "total": 100,
+    "pass": 94,
+    "fail": 6,
+    "error": 0,
+    "items": [
+      {
+        "gold": 2280.0,
+        "pred": 2180.0,
+        "pass": false,
+        "completion_tokens": 169,
+        "elapsed_s": 6.53,
+        "response": "Step 1: Calculate how much Kim raised.\nKim raises $320 more than Alexandra, who raised $430.\nSo, Kim raised $430 + $320 = $750.\n\nStep 2: Calculate how much Maryam raised.\nMaryam raises $400 more than Sarah, who raised $300.\nSo, Maryam raised $300 + $400 = $700.\n\nStep 3: Add up the amounts raised by each girl.\nTotal amount raised = Amount raised by Kim + Amount raised by Alexandra + Amount raised by Maryam + Amount raised by Sarah\n= $750 + $430 + $700 + $300\n= $2180\n\nAnswer: 2180"
+      },
+      {
+        "gold": 1.0,
+        "pred": 1.0,
+        "pass": true,
+        "completion_tokens": 303,
+        "elapsed_s": 10.54,
+        "response": "To find out how long it will take Kalinda and her mom to complete the puzzle, we first need to determine their combined rate of adding puzzle pieces.\n\n1. **Determine Kalinda's rate**: Kalinda adds 4 pieces per minute.\n2. **Determine her mom's rate**: Her mom adds half as many pieces per minute as Kalinda, so her mom adds \\( \\frac{4}{2} = 2 \\) pieces per minute.\n3. **Combined rate**: Together, they add \\( 4 + 2 = 6 \\) pieces per minute.\n\nNext, we calculate the total time required to complete the puzzle:\n\n4. **Total pieces needed**: The puzzle has 360 pieces.\n5. **Time in minutes**: To find the total time in minutes, divide the total number of pieces by their combined rate:\n   \\[\n   \\text{Time (minutes)} = \\frac{\\text{Total pieces}}{\\text{Combined rate}} = \\frac{360}{6} = 60 \\text{ minutes}\n   \\]\n6. **Convert time to hours**: Since there are 60 minutes in an hour,\n   \\[\n   \\text{Time (hours)} = \\frac{60 \\text{ minutes}}{60 \\text{ minutes/hour}} = 1 \\text{ hour}\n   \\]\n\nTherefore, it will take them 1 hour to complete the puzzle.\n\nAnswer: 1"
+      },
+      {
+        "gold": 5.0,
+        "pred": 5.0,
+        "pass": true,
+        "completion_tokens": 273,
+        "elapsed_s": 10.01,
+        "response": "First, let's calculate the distance Tom travels from 1 PM to 4 PM.\n\n1. The time Tom spends traveling from 1 PM to 4 PM is:\n\\[ 4 \\text{ PM} - 1 \\text{ PM} = 3 \\text{ hours} \\]\n\n2. Since his speed is 10 miles per hour, the distance he travels in 3 hours is:\n\\[ \\text{Distance} = \\text{Speed} \\times \\text{Time} = 10 \\text{ mph} \\times 3 \\text{ hours} = 30 \\text{ miles} \\]\n\nNext, we need to determine how long it takes for Tom to travel back at a rate of 6 miles per hour.\n\n3. The distance he needs to travel back is the same as the distance he traveled initially, which is 30 miles.\n\n4. Using the formula \\( \\text{Time} = \\frac{\\text{Distance}}{\\text{Speed}} \\), the time it takes to travel back is:\n\\[ \\text{Time} = \\frac{30 \\text{ miles}}{6 \\text{ mph}} = 5 \\text{ hours} \\]\n\nTherefore, the time it takes Tom to travel back is:\n\\[ \\boxed{5} \\]"
+      },
+      {
+        "gold": 12.0,
+        "pred": 12.0,
+        "pass": true,
+        "completion_tokens": 209,
+        "elapsed_s": 7.87,
+        "response": "First, we need to determine the ages of both of James's sons. The first son is 12 years old, and the second son is 4 years younger than the first.\n\nAge of the second son = Age of the first son - 4\n= 12 - 4\n= 8\n\nNext, we calculate the total number of candles needed for both sons:\nTotal candles = Age of the first son + Age of the second son\n= 12 + 8\n= 20\n\nNow, we know that each pack contains 5 candles and costs $3. We need to find out how many packs James needs to buy to get at least 20 candles.\n\nNumber of packs needed = Total candles / Candles per pack\n= 20 / 5\n= 4\n\nFinally, we calculate the total cost for these packs:\nTotal cost = Number of packs * Cost per pack\n= 4 * 3\n= 12\n\nAnswer: 12"
+      },
+      {
+        "gold": 273.0,
+        "pred": 273.0,
+        "pass": true,
+        "completion_tokens": 220,
+        "elapsed_s": 8.3,
+        "response": "To find out how many yards of yarn Mariah and her grandma used altogether, we first need to calculate how much each of them used in terms of yards.\n\nStep 1: Calculate how many yards Mariah used.\n- Mariah used \\( \\frac{1}{4} \\) of a skein.\n- Since there are 364 yards in a skein, Mariah used \\( \\frac{1}{4} \\times 364 = 91 \\) yards.\n\nStep 2: Calculate how many yards Mariah's grandma used.\n- Her grandma used \\( \\frac{1}{2} \\) of a skein.\n- So, her grandma used \\( \\frac{1}{2} \\times 364 = 182 \\) yards.\n\nStep 3: Add the yards used by both Mariah and her grandma.\n- Total yards used = Mariah's yards + Grandma's yards\n- Total yards used = 91 + 182 = 273\n\nAnswer: 273"
+      },
+      {
+        "gold": 45.0,
+        "pred": 45.0,
+        "pass": true,
+        "completion_tokens": 171,
+        "elapsed_s": 6.15,
+        "response": "Step 1: Identify the initial number of fairies.\nKatelyn saw 50 fairies initially.\n\nStep 2: Calculate the number of fairies that joined after twenty minutes.\nOne of her friends saw half as many fairies as Katelyn saw, so:\nNumber of fairies joining = 50 / 2 = 25\n\nStep 3: Add the number of fairies that joined to the initial count.\nTotal number of fairies after joining = Initial number + Number joining\n= 50 + 25\n= 75\n\nStep 4: Subtract the number of fairies that flew away ten minutes later.\nNumber of fairies remaining = Total number after joining - Number flying away\n= 75 - 30\n= 45\n\nAnswer: 45"
+      },
+      {
+        "gold": 21.0,
+        "pred": 21.0,
+        "pass": true,
+        "completion_tokens": 96,
+        "elapsed_s": 4.05,
+        "response": "Step 1: Determine Ann's current age.\n- Ann is currently 9 years old.\n\nStep 2: Calculate her brother's current age.\n- Her brother is twice her age, so he is 2 * 9 = 18 years old.\n\nStep 3: Calculate her brother's age in 3 years.\n- In 3 years, her brother will be 18 + 3 = 21 years old.\n\nAnswer: 21"
+      },
+      {
+        "gold": 145.0,
+        "pred": 145.0,
+        "pass": true,
+        "completion_tokens": 246,
+        "elapsed_s": 9.11,
+        "response": "First, let's break down the information given:\n\n- Twenty dozen cups cost $1200 less than the total cost of half a dozen plates.\n- Each plate costs $6000.\n\nStep 1: Calculate the total cost of half a dozen plates.\n- Half a dozen means 6 plates.\n- Total cost for 6 plates = 6 * $6000 = $36000.\n\nStep 2: Determine the cost of twenty dozen cups.\n- The cost of twenty dozen cups is $1200 less than the total cost of the plates.\n- Cost of twenty dozen cups = $36000 - $1200 = $34800.\n\nStep 3: Calculate the number of cups in twenty dozen.\n- One dozen equals 12 units.\n- Twenty dozen cups = 20 * 12 = 240 cups.\n\nStep 4: Find the cost per cup.\n- Total cost for 240 cups = $34800.\n- Cost per cup = $34800 / 240 = $145.\n\nAnswer: 145"
+      },
+      {
+        "gold": 60.0,
+        "pred": 60.0,
+        "pass": true,
+        "completion_tokens": 161,
+        "elapsed_s": 6.38,
+        "response": "To find out how many students are enrolled this year after a 20% increase from last year's enrollment of 50 students, follow these steps:\n\n1. Calculate the number of additional students due to the 20% increase:\n   - 20% of 50 students = \\(0.20 \\times 50\\)\n   - \\(0.20 \\times 50 = 10\\) students\n\n2. Add the additional students to the original number of students:\n   - Total students this year = 50 (original) + 10 (additional)\n   - Total students this year = 60\n\nTherefore, the number of students enrolled this year in the calligraphy class is 60.\n\nAnswer: 60"
+      },
+      {
+        "gold": 122.0,
+        "pred": 122.0,
+        "pass": true,
+        "completion_tokens": 301,
+        "elapsed_s": 10.46,
+        "response": "To find the total number of crabs that Rani, Monic, and Bo have together, we need to follow these steps:\n\n1. Determine how many crabs Bo has.\n2. Use Bo's number of crabs to find out how many crabs Monic has.\n3. Use Monic's number of crabs to find out how many crabs Rani has.\n4. Add up the crabs each person has.\n\nStep 1: Bo has 40 crabs.\n\nStep 2: Monic has 4 fewer crabs than Bo. So, we subtract 4 from Bo's total:\n\\[ \\text{Monic's crabs} = 40 - 4 = 36 \\]\n\nStep 3: Rani has ten more crabs than Monic. So, we add 10 to Monic's total:\n\\[ \\text{Rani's crabs} = 36 + 10 = 46 \\]\n\nStep 4: Now, we add up the crabs each person has:\n\\[ \\text{Total crabs} = \\text{Bo's crabs} + \\text{Monic's crabs} + \\text{Rani's crabs} \\]\n\\[ \\text{Total crabs} = 40 + 36 + 46 \\]\n\\[ \\text{Total crabs} = 122 \\]\n\nAnswer: 122"
+      },
+      {
+        "gold": 29.0,
+        "pred": 29.0,
+        "pass": true,
+        "completion_tokens": 223,
+        "elapsed_s": 8.55,
+        "response": "To find the total amount of water removed by the dehumidifier, we need to calculate the amount of water removed at each speed and sum them up.\n\nFirst, let's determine the amount of water removed at each setting:\n- Low setting: 1 liter/day\n- Medium setting: \\(2 \\times\\) low setting = \\(2 \\times 1 = 2\\) liters/day\n- High setting: \\(2 \\times\\) medium setting = \\(2 \\times 2 = 4\\) liters/day\n\nNext, we calculate the total amount of water removed at each setting over the specified number of days:\n- Low setting for 3 days: \\(3 \\times 1 = 3\\) liters\n- Medium setting for 3 days: \\(3 \\times 2 = 6\\) liters\n- High setting for 5 days: \\(5 \\times 4 = 20\\) liters\n\nFinally, we sum these amounts to get the total amount of water removed:\n\\[ 3 + 6 + 20 = 29 \\]\n\nAnswer: 29"
+      },
+      {
+        "gold": 80.0,
+        "pred": 80.0,
+        "pass": true,
+        "completion_tokens": 264,
+        "elapsed_s": 9.75,
+        "response": "To find the total number of leftover burritos, we need to follow these steps:\n\n1. Calculate the total number of burritos consumed by the students.\n2. Add the number of burritos eaten by Mr. George.\n3. Subtract the total number of burritos consumed (by both students and Mr. George) from the initial number of burritos.\n\nStep 1: Calculate the total number of burritos consumed by the students.\n- There are 50 students, and each student ate 10 burritos.\n- Total burritos eaten by students = 50 students * 10 burritos/student = 500 burritos.\n\nStep 2: Add the number of burritos eaten by Mr. George.\n- Mr. George ate 20 burritos.\n- Total burritos eaten by everyone = 500 burritos (students) + 20 burritos (Mr. George) = 520 burritos.\n\nStep 3: Subtract the total number of burritos consumed from the initial number of burritos.\n- Initial number of burritos = 600 burritos.\n- Total number of leftover burritos = 600 burritos - 520 burritos = 80 burritos.\n\nAnswer: 80"
+      },
+      {
+        "gold": 36.0,
+        "pred": 36.0,
+        "pass": true,
+        "completion_tokens": 211,
+        "elapsed_s": 7.91,
+        "response": "Step 1: Calculate the time Jim spends reading each day.\n- Jim reads for half as long as he watches TV.\n- Time spent watching TV = 2 hours.\n- Time spent reading = 2 / 2 = 1 hour.\n\nStep 2: Calculate the total time Jim spends on both activities each day.\n- Total time per day = Time watching TV + Time reading.\n- Total time per day = 2 + 1 = 3 hours.\n\nStep 3: Calculate the total time Jim spends on both activities each week.\n- He does this 3 times a week.\n- Total time per week = Total time per day * Number of days.\n- Total time per week = 3 * 3 = 9 hours.\n\nStep 4: Calculate the total time Jim spends on both activities in 4 weeks.\n- Total time in 4 weeks = Total time per week * 4.\n- Total time in 4 weeks = 9 * 4 = 36 hours.\n\nAnswer: 36"
+      },
+      {
+        "gold": 1430.0,
+        "pred": 1430.0,
+        "pass": true,
+        "completion_tokens": 192,
+        "elapsed_s": 7.31,
+        "response": "To find out how much Janet paid in total, we need to follow these steps:\n\n1. Calculate the total cost of materials and construction.\n2. Calculate the insurance cost, which is 10% of the total cost from step 1.\n3. Add the insurance cost to the total cost from step 1.\n\nStep 1: Total cost of materials and construction\n\\[ \\text{Total cost} = \\$500 + \\$800 = \\$1300 \\]\n\nStep 2: Insurance cost\n\\[ \\text{Insurance cost} = 10\\% \\times \\$1300 = 0.10 \\times \\$1300 = \\$130 \\]\n\nStep 3: Total amount paid including insurance\n\\[ \\text{Total amount} = \\$1300 + \\$130 = \\$1430 \\]\n\nAnswer: 1430"
+      },
+      {
+        "gold": 5.0,
+        "pred": 5.0,
+        "pass": true,
+        "completion_tokens": 205,
+        "elapsed_s": 7.77,
+        "response": "To find out how many pounds of insects a flock of ten ducks needs per day, we can follow these steps:\n\n1. **Calculate weekly insect consumption for one duck**: We know that one duck needs 3.5 pounds of insects per week.\n\n2. **Calculate weekly insect consumption for ten ducks**: Since there are ten ducks, we multiply the weekly consumption of one duck by ten.\n   \\[\n   3.5 \\text{ pounds/week} \\times 10 = 35 \\text{ pounds/week}\n   \\]\n\n3. **Convert weekly consumption to daily consumption**: There are 7 days in a week, so we divide the total weekly consumption by 7 to get the daily consumption.\n   \\[\n   \\frac{35 \\text{ pounds/week}}{7 \\text{ days/week}} = 5 \\text{ pounds/day}\n   \\]\n\nTherefore, the flock of ten ducks needs 5 pounds of insects per day.\n\nAnswer: 5"
+      },
+      {
+        "gold": 5.0,
+        "pred": 5.0,
+        "pass": true,
+        "completion_tokens": 107,
+        "elapsed_s": 4.0,
+        "response": "First, we calculate Joey's total points after scoring 26 points:\n\\[ 214 + 26 = 240 \\]\n\nNext, we calculate Marcy's total points after scoring 10 points:\n\\[ 225 + 10 = 235 \\]\n\nNow, we find the difference between Joey's and Marcy's points to determine by how many points Joey is winning:\n\\[ 240 - 235 = 5 \\]\n\nAnswer: 5"
+      },
+      {
+        "gold": 5.0,
+        "pred": 5.0,
+        "pass": true,
+        "completion_tokens": 194,
+        "elapsed_s": 7.5,
+        "response": "First, we need to determine the total number of books Sarah bought. We know that each book costs $15 and she spent a total of $300.\n\nStep 1: Calculate the total number of books.\n\\[ \\text{Total number of books} = \\frac{\\text{Total amount spent}}{\\text{Cost per book}} = \\frac{300}{15} = 20 \\]\n\nSo, Sarah bought 20 books in total.\n\nStep 2: Determine how many books each child received.\nSince Sarah has 4 kids and she gave an equal number of books to each child, we divide the total number of books by the number of children.\n\\[ \\text{Books per child} = \\frac{\\text{Total number of books}}{\\text{Number of children}} = \\frac{20}{4} = 5 \\]\n\nEach child received 5 books.\n\nAnswer: 5"
+      },
+      {
+        "gold": 66.0,
+        "pred": 66.0,
+        "pass": true,
+        "completion_tokens": 177,
+        "elapsed_s": 6.28,
+        "response": "To find out how much Ted spent in total, we need to calculate the cost of the books and pencils separately and then add them together.\n\nStep 1: Calculate the total cost of the books.\n- Each book costs $16.\n- Ted buys 3 books.\n- Total cost for books = 3 * $16 = $48.\n\nStep 2: Calculate the total cost of the pencils.\n- Each pencil costs $6.\n- Ted buys 3 pencils.\n- Total cost for pencils = 3 * $6 = $18.\n\nStep 3: Add the total costs of the books and pencils to get the overall amount spent.\n- Total amount spent = Cost of books + Cost of pencils = $48 + $18 = $66.\n\nTherefore, the total amount Ted spent is $66.\n\nAnswer: 66"
+      },
+      {
+        "gold": 15.0,
+        "pred": 15.0,
+        "pass": true,
+        "completion_tokens": 160,
+        "elapsed_s": 6.32,
+        "response": "Step 1: Determine how many pomelos Eve is left with after giving some away.\n- Eve originally had 20 pomelos.\n- She is left with 1/4 of what she originally had.\n\nStep 2: Calculate 1/4 of the original number of pomelos.\n- 1/4 of 20 = 20 * (1/4) = 5 pomelos.\n\nStep 3: Find out how many pomelos Eve gave away.\n- Eve started with 20 pomelos and is left with 5 pomelos.\n- The number of pomelos given away = Original number - Remaining number = 20 - 5 = 15 pomelos.\n\nAnswer: 15"
+      },
+      {
+        "gold": 40.0,
+        "pred": 40.0,
+        "pass": true,
+        "completion_tokens": 212,
+        "elapsed_s": 8.02,
+        "response": "To find out how many kittens the Doubtfire family now has, we need to follow these steps:\n\n1. Identify the number of adopted kittens.\n2. Calculate the number of kittens born to Patchy.\n3. Add the number of kittens born to Trixie.\n4. Sum all the kittens together.\n\nStep 1: The number of adopted kittens is given as 7.\n\nStep 2: Patchy has had thrice the number of adopted kittens. Therefore, the number of kittens Patchy has had is:\n\\[ 3 \\times 7 = 21 \\]\n\nStep 3: Trixie has had 12 kittens.\n\nStep 4: Now, sum all the kittens together:\n\\[ 7 \\text{ (adopted)} + 21 \\text{ (from Patchy)} + 12 \\text{ (from Trixie)} = 40 \\]\n\nTherefore, the total number of kittens the Doubtfire family now has is:\n\\[ \\boxed{40} \\]"
+      },
+      {
+        "gold": 93.0,
+        "pred": 93.0,
+        "pass": true,
+        "completion_tokens": 115,
+        "elapsed_s": 4.71,
+        "response": "Step 1: Calculate the daily cost for feeding all the fish.\nEach fish needs $1 worth of food per day, and Jen has 3 fish.\nDaily cost = 3 fish * $1/fish = $3\n\nStep 2: Determine the number of days in May.\nMay has 31 days.\n\nStep 3: Calculate the total cost for feeding the fish in May.\nTotal cost = Daily cost * Number of days in May\nTotal cost = $3/day * 31 days = $93\n\nAnswer: 93"
+      },
+      {
+        "gold": 2000.0,
+        "pred": 2000.0,
+        "pass": true,
+        "completion_tokens": 324,
+        "elapsed_s": 11.88,
+        "response": "To find out how many steps Elliott took during his jog, we need to first determine how many steps he had taken before the jog and then use the information about the remaining steps to calculate the jog steps.\n\nStep 1: Calculate the total steps taken before the jog.\n- Elliott finished half of his steps walking to and from school. Since his goal is 10,000 steps, half of this is:\n\\[ \\frac{10,000}{2} = 5,000 \\text{ steps} \\]\n- He also did another 1,000 steps going for a short walk with his friend.\n- Therefore, the total steps taken before the jog are:\n\\[ 5,000 + 1,000 = 6,000 \\text{ steps} \\]\n\nStep 2: Use the information about the remaining steps to find out how many steps were taken during the jog.\n- After the jog, Elliott had 2,000 steps left to reach his goal of 10,000 steps.\n- This means he had already taken:\n\\[ 10,000 - 2,000 = 8,000 \\text{ steps} \\]\n- Since he had taken 6,000 steps before the jog, the number of steps taken during the jog is:\n\\[ 8,000 - 6,000 = 2,000 \\text{ steps} \\]\n\nAnswer: 2000"
+      },
+      {
+        "gold": 1520.0,
+        "pred": 1520.0,
+        "pass": true,
+        "completion_tokens": 214,
+        "elapsed_s": 7.55,
+        "response": "First, let's calculate how much money Rafaela received in tips.\n\nEach of the forty customers gave her a $20 tip:\n\\[ 40 \\times 20 = 800 \\]\n\nSo, Rafaela received $800 in tips.\n\nNext, we need to determine how much money Julieta received. Julieta received 10% less than Rafaela. First, find 10% of Rafaela's total tips:\n\\[ 10\\% \\text{ of } 800 = 0.10 \\times 800 = 80 \\]\n\nNow subtract this amount from Rafaela's total to find Julieta's total:\n\\[ 800 - 80 = 720 \\]\n\nJulieta received $720 in tips.\n\nFinally, add the amounts received by both Rafaela and Julieta to find the total:\n\\[ 800 + 720 = 1520 \\]\n\nAnswer: 1520"
+      },
+      {
+        "gold": 11050.0,
+        "pred": 11050.0,
+        "pass": true,
+        "completion_tokens": 291,
+        "elapsed_s": 10.77,
+        "response": "To solve this problem, we need to follow these steps:\n\n1. Calculate the original cost per balloon.\n2. Determine the new cost per balloon after the price increase.\n3. Calculate the total cost for 170 balloons at the new price.\n\n**Step 1: Calculate the original cost per balloon**\n\nThe total cost for 20 balloons was $900. Therefore, the cost per balloon can be calculated as follows:\n\\[ \\text{Original cost per balloon} = \\frac{\\$900}{20} = \\$45 \\]\n\n**Step 2: Determine the new cost per balloon**\n\nThe cost of filling each balloon was increased by $20. So, the new cost per balloon is:\n\\[ \\text{New cost per balloon} = \\$45 + \\$20 = \\$65 \\]\n\n**Step 3: Calculate the total cost for 170 balloons at the new price**\n\nNow, we calculate the total cost for 170 balloons at the new price:\n\\[ \\text{Total cost} = 170 \\times \\$65 = 170 \\times 65 = 11050 \\]\n\nTherefore, the amount Bentley paid to fill 170 balloons after the price increase is:\n\\[ \\text{Total cost} = \\$11050 \\]\n\nAnswer: 11050"
+      },
+      {
+        "gold": 90.0,
+        "pred": 90.0,
+        "pass": true,
+        "completion_tokens": 211,
+        "elapsed_s": 8.01,
+        "response": "Step 1: Calculate the total number of lollipops sold.\n- Each of the 30 students sold an average of 10 lollipops.\n- Total lollipops sold = 30 students * 10 lollipops/student = 300 lollipops.\n\nStep 2: Calculate the total revenue from selling the lollipops.\n- Each lollipop was sold for $0.8.\n- Total revenue = 300 lollipops * $0.8/lollipop = $240.\n\nStep 3: Calculate the total cost of buying the lollipops.\n- Each lollipop was bought for $0.5.\n- Total cost = 300 lollipops * $0.5/lollipop = $150.\n\nStep 4: Calculate the total profit.\n- Total profit = Total revenue - Total cost = $240 - $150 = $90.\n\nAnswer: 90"
+      },
+      {
+        "gold": 40000.0,
+        "pred": 40000.0,
+        "pass": true,
+        "completion_tokens": 218,
+        "elapsed_s": 8.17,
+        "response": "Step 1: Calculate the total loan amount John receives.\n- The house is worth $250,000 and he gets a loan worth 40% of that.\n- Loan amount = 40% of $250,000 = 0.40 * $250,000 = $100,000.\n\nStep 2: Calculate how much of the loan John uses to pay off his debts.\n- He uses 60% of the loan to pay off his debts.\n- Amount used for debts = 60% of $100,000 = 0.60 * $100,000 = $60,000.\n\nStep 3: Calculate the leftover amount after paying off debts.\n- Leftover amount = Total loan amount - Amount used for debts = $100,000 - $60,000 = $40,000.\n\nAnswer: 40000"
+      },
+      {
+        "gold": 21.0,
+        "pred": 21.0,
+        "pass": true,
+        "completion_tokens": 165,
+        "elapsed_s": 6.42,
+        "response": "First, we need to calculate how much money Mitchell made over the weekend. According to the information provided:\n\n- Mitchell sold 21 lemonades.\n- Each lemonade was sold for $4.\n\nTo find out how much money Mitchell made, we multiply the number of lemonades sold by the price per lemonade:\n\\[ 21 \\text{ lemonades} \\times \\$4/\\text{lemonade} = \\$84 \\]\n\nNext, we know that Liam made $63 over the same weekend.\n\nTo find out how much more money Mitchell made compared to Liam, we subtract the amount Liam made from the amount Mitchell made:\n\\[ \\$84 - \\$63 = \\$21 \\]\n\nTherefore, Mitchell made $21 more than Liam over the weekend.\n\nAnswer: 21"
+      },
+      {
+        "gold": 18.0,
+        "pred": 18.0,
+        "pass": true,
+        "completion_tokens": 469,
+        "elapsed_s": 16.66,
+        "response": "Let's denote the total number of vacuum cleaners Melanie started with as \\( V \\).\n\n1. **Step 1:** At the green house, she sold a third of her vacuum cleaners.\n   - This means she sold \\( \\frac{V}{3} \\) vacuum cleaners.\n   - The remaining vacuum cleaners after this sale are \\( V - \\frac{V}{3} = \\frac{2V}{3} \\).\n\n2. **Step 2:** To the red house, she sold 2 more vacuum cleaners.\n   - After selling 2 more, the remaining vacuum cleaners are \\( \\frac{2V}{3} - 2 \\).\n\n3. **Step 3:** At the orange house, she sold half of what was left.\n   - Half of the remaining vacuum cleaners is \\( \\frac{1}{2} \\left( \\frac{2V}{3} - 2 \\right) \\).\n   - After this sale, the remaining vacuum cleaners are:\n     \\[\n     \\left( \\frac{2V}{3} - 2 \\right) - \\frac{1}{2} \\left( \\frac{2V}{3} - 2 \\right) = \\frac{1}{2} \\left( \\frac{2V}{3} - 2 \\right)\n     \\]\n\n4. **Step 4:** We know that after these transactions, Melanie has 5 vacuum cleaners left.\n   - Therefore, we set up the equation:\n     \\[\n     \\frac{1}{2} \\left( \\frac{2V}{3} - 2 \\right) = 5\n     \\]\n   - Multiply both sides by 2 to clear the fraction:\n     \\[\n     \\frac{2V}{3} - 2 = 10\n     \\]\n   - Add 2 to both sides:\n     \\[\n     \\frac{2V}{3} = 12\n     \\]\n   - Multiply both sides by 3/2 to solve for \\( V \\):\n     \\[\n     V = 12 \\times \\frac{3}{2} = 18\n     \\]\n\nSo, Melanie started with 18 vacuum cleaners.\n\nAnswer: 18"
+      },
+      {
+        "gold": 14.0,
+        "pred": 14.0,
+        "pass": true,
+        "completion_tokens": 248,
+        "elapsed_s": 9.21,
+        "response": "Let's denote the number of people who got on the bus at the terminal as \\( x \\).\n\n1. Initially, \\( x \\) people are on the bus.\n2. At the first bus stop, 5 more people get on the bus. So now, the number of people on the bus is \\( x + 5 \\).\n3. At the second bus stop, 7 people get off and 8 more get on. The net change in the number of people is \\( -7 + 8 = 1 \\). Therefore, the number of people on the bus becomes \\( (x + 5) + 1 = x + 6 \\).\n4. We know that after these changes, there are 20 people on the bus heading to the third stop. Thus, we can set up the equation:\n   \\[\n   x + 6 = 20\n   \\]\n5. Solving for \\( x \\):\n   \\[\n   x = 20 - 6\n   \\]\n   \\[\n   x = 14\n   \\]\n\nSo, the number of people who got on the bus at the terminal is 14.\n\nAnswer: 14"
+      },
+      {
+        "gold": 23.0,
+        "pred": 23.0,
+        "pass": true,
+        "completion_tokens": 233,
+        "elapsed_s": 8.24,
+        "response": "Step 1: Calculate the number of green cars.\n- There are 2 fewer green cars than red cars.\n- Number of red cars = 12\n- Therefore, number of green cars = 12 - 2 = 10\n\nStep 2: Calculate the number of blue cars.\n- There are 3 times the number of blue cars as there are green cars.\n- Number of green cars = 10\n- Therefore, number of blue cars = 3 * 10 = 30\n\nStep 3: Sum up the known quantities of cars.\n- Red cars = 12\n- Green cars = 10\n- Blue cars = 30\n- Total of these cars = 12 + 10 + 30 = 52\n\nStep 4: Calculate the number of yellow cars.\n- Total number of cars at the rink = 75\n- Total of red, green, and blue cars = 52\n- Therefore, number of yellow cars = 75 - 52 = 23\n\nAnswer: 23"
+      },
+      {
+        "gold": 145.0,
+        "pred": 145.0,
+        "pass": true,
+        "completion_tokens": 264,
+        "elapsed_s": 9.82,
+        "response": "First, let's calculate how many points each student has collected.\n\nAdam has collected 50 points.\n\nBetty collected 30% more than Adam. To find out how many points that is:\n\\[ \\text{Points collected by Betty} = 50 + (0.30 \\times 50) = 50 + 15 = 65 \\]\n\nTom has 30 points less than Betty:\n\\[ \\text{Points collected by Tom} = 65 - 30 = 35 \\]\n\nMarta collected 3 times more points than Tom:\n\\[ \\text{Points collected by Marta} = 3 \\times 35 = 105 \\]\n\nNow, we sum up all the points collected by the students:\n\\[ \\text{Total points} = 50 (\\text{Adam}) + 65 (\\text{Betty}) + 35 (\\text{Tom}) + 105 (\\text{Marta}) = 255 \\]\n\nThe minimum threshold for the trip is 400 points. So, the number of points the class is missing is:\n\\[ 400 - 255 = 145 \\]\n\nAnswer: 145"
+      },
+      {
+        "gold": 123.0,
+        "pred": 123.0,
+        "pass": true,
+        "completion_tokens": 228,
+        "elapsed_s": 8.5,
+        "response": "To find the total number of children in the classroom, we need to calculate the number of girls and nongendered children based on the given information.\n\nStep 1: Calculate the number of girls.\n- The classroom has 3 times as many girls as boys.\n- Given there are 30 boys, the number of girls is \\(3 \\times 30 = 90\\).\n\nStep 2: Calculate the number of nongendered children.\n- The classroom has \\( \\frac{1}{10} \\) as many nongendered children as boys.\n- Given there are 30 boys, the number of nongendered children is \\( \\frac{1}{10} \\times 30 = 3 \\).\n\nStep 3: Calculate the total number of children.\n- Total children = Number of boys + Number of girls + Number of nongendered children.\n- Total children = 30 (boys) + 90 (girls) + 3 (nongendered children) = 123.\n\nAnswer: 123"
+      },
+      {
+        "gold": 98.0,
+        "pred": 98.0,
+        "pass": true,
+        "completion_tokens": 264,
+        "elapsed_s": 9.36,
+        "response": "First, we need to convert the length from yards to feet. Since 1 yard equals 3 feet, the length of the room in feet is:\n\\[ 3 \\text{ yards} \\times 3 = 9 \\text{ feet} \\]\n\nNext, we use the formula for the area of a rectangle, which is:\n\\[ \\text{Area} = \\text{length} \\times \\text{width} \\]\nGiven that the area is 360 square feet and the length is 9 feet, we can solve for the width:\n\\[ 360 = 9 \\times \\text{width} \\]\n\\[ \\text{width} = \\frac{360}{9} = 40 \\text{ feet} \\]\n\nNow, we know both dimensions of the rectangle: the length is 9 feet and the width is 40 feet. The perimeter \\( P \\) of a rectangle is given by:\n\\[ P = 2 \\times (\\text{length} + \\text{width}) \\]\nSubstituting the known values:\n\\[ P = 2 \\times (9 + 40) = 2 \\times 49 = 98 \\text{ feet} \\]\n\nAnswer: 98"
+      },
+      {
+        "gold": 7.0,
+        "pred": 7.0,
+        "pass": true,
+        "completion_tokens": 352,
+        "elapsed_s": 12.8,
+        "response": "First, let's calculate the total cost of the lollipops Manolo bought.\n\nEach lollipop costs $0.40, so for five lollipops:\n\\[ 5 \\times 0.40 = 2.00 \\]\n\nThis means the lollipops cost $2.00 in total.\n\nSince the total cost for five lollipops and four candies is $3.20, we can find the total cost of the four candies by subtracting the cost of the lollipops from the total cost:\n\\[ 3.20 - 2.00 = 1.20 \\]\n\nSo, the four candies cost $1.20 in total.\n\nNext, we need to determine the cost of one candy. Since four candies cost $1.20:\n\\[ \\text{Cost of one candy} = \\frac{1.20}{4} = 0.30 \\]\n\nNow, we want to find out how much 10 lollipops and 10 candies will cost. First, calculate the cost of 10 lollipops:\n\\[ 10 \\times 0.40 = 4.00 \\]\n\nThen, calculate the cost of 10 candies:\n\\[ 10 \\times 0.30 = 3.00 \\]\n\nFinally, add these two amounts together to get the total cost:\n\\[ 4.00 + 3.00 = 7.00 \\]\n\nTherefore, the total cost for 10 lollipops and 10 candies is:\n\\[ \\boxed{7.00} \\]"
+      },
+      {
+        "gold": 34.0,
+        "pred": 34.0,
+        "pass": true,
+        "completion_tokens": 219,
+        "elapsed_s": 8.23,
+        "response": "First, let's calculate the total cost of the tickets:\n- Total cost of tickets = $20.25\n\nNext, we find out how much they spent on food:\n- Amount spent on food = $20.25 - $4.50 = $15.75\n\nNow, let's calculate the cost of the rides:\n- Cost per ride = $33\n- Number of rides = 2\n- Total cost of rides = 2 * $33 = $66\n\nWe now add up all the expenses:\n- Total expenses = Cost of tickets + Cost of food + Cost of rides\n- Total expenses = $20.25 + $15.75 + $66 = $102\n\nSince there are three friends and they agreed to split all the costs evenly, we divide the total expenses by 3:\n- Amount each friend pays = Total expenses / 3\n- Amount each friend pays = $102 / 3 = $34\n\nAnswer: 34"
+      },
+      {
+        "gold": 38.0,
+        "pred": 38.0,
+        "pass": true,
+        "completion_tokens": 274,
+        "elapsed_s": 10.1,
+        "response": "To find out how much Winston spent on fruit, we need to calculate the cost for each type of fruit he picked and then sum these costs.\n\nStep 1: Calculate the cost of peaches.\n- Price per pound of peaches = $2.00\n- Pounds of peaches picked = 6\n- Cost of peaches = 6 * $2.00 = $12.00\n\nStep 2: Calculate the cost of plums.\n- Price per pound of plums = $1.00\n- Pounds of plums picked = 8\n- Cost of plums = 8 * $1.00 = $8.00\n\nStep 3: Calculate the cost of apricots.\n- Price per pound of apricots = $3.00\n- Pounds of apricots picked = 6\n- Cost of apricots = 6 * $3.00 = $18.00\n\nStep 4: Sum the costs of all fruits.\n- Total cost = Cost of peaches + Cost of plums + Cost of apricots\n- Total cost = $12.00 + $8.00 + $18.00 = $38.00\n\nAnswer: 38"
+      },
+      {
+        "gold": 320.0,
+        "pred": 320.0,
+        "pass": true,
+        "completion_tokens": 250,
+        "elapsed_s": 9.32,
+        "response": "Step 1: Calculate the number of cards Elaine collected in the first month.\n- Initially, Elaine had 20 cards.\n- She collected three times that number in the first month.\n- First month collection = 3 * 20 = 60 cards.\n\nStep 2: Calculate the number of cards Elaine collected in the second month.\n- In the second month, she collected 20 fewer cards than in the first month.\n- Second month collection = 60 - 20 = 40 cards.\n\nStep 3: Calculate the number of cards Elaine collected in the third month.\n- In the third month, she collected twice the combined number of cards from the first and second months.\n- Combined first and second month collection = 60 + 40 = 100 cards.\n- Third month collection = 2 * 100 = 200 cards.\n\nStep 4: Calculate the total number of cards Elaine has now.\n- Initial cards + First month collection + Second month collection + Third month collection\n- Total cards = 20 + 60 + 40 + 200 = 320 cards.\n\nAnswer: 320"
+      },
+      {
+        "gold": 50.0,
+        "pred": 50.0,
+        "pass": true,
+        "completion_tokens": 257,
+        "elapsed_s": 9.05,
+        "response": "First, let's calculate the number of votes each candidate received based on the percentages given.\n\nCandidate A received 20% of the votes. Since there were 100 voters in total:\n\\[ \\text{Votes for Candidate A} = 20\\% \\times 100 = 0.20 \\times 100 = 20 \\]\n\nCandidate B received 50% more than Candidate A's votes. Therefore:\n\\[ \\text{Votes for Candidate B} = 20 + (0.50 \\times 20) = 20 + 10 = 30 \\]\n\nThe remaining votes went to Candidate C. To find out how many votes Candidate C received, we subtract the votes for Candidates A and B from the total number of votes:\n\\[ \\text{Votes for Candidate C} = 100 - (\\text{Votes for Candidate A} + \\text{Votes for Candidate B}) \\]\n\\[ \\text{Votes for Candidate C} = 100 - (20 + 30) = 100 - 50 = 50 \\]\n\nTherefore, the number of votes Candidate C received is:\nAnswer: 50"
+      },
+      {
+        "gold": 50.0,
+        "pred": 50.0,
+        "pass": true,
+        "completion_tokens": 183,
+        "elapsed_s": 6.96,
+        "response": "First, we need to determine how much money Gerald and Julia each received based on the given ratio of 3:2.\n\nThe total parts of the ratio are:\n\\[ 3 + 2 = 5 \\]\n\nSince they divided $100 in this ratio, each part is worth:\n\\[ \\frac{100}{5} = 20 \\]\n\nNow, we calculate how much money Gerald received:\n\\[ 3 \\times 20 = 60 \\]\n\nJulia received:\n\\[ 2 \\times 20 = 40 \\]\n\nNext, we account for the $10 that Gerald spent on a book. The amount of money Gerald has left after spending $10 is:\n\\[ 60 - 10 = 50 \\]\n\nTherefore, the amount of money Gerald has left is:\n\\[ \\boxed{50} \\]"
+      },
+      {
+        "gold": 84.0,
+        "pred": 84.0,
+        "pass": true,
+        "completion_tokens": 179,
+        "elapsed_s": 6.39,
+        "response": "Step 1: Calculate how many grapes Madeline's brother used.\n- Madeline ate 6 grapes.\n- Brother used 5 times as many grapes as Madeline.\n- So, brother used \\(6 \\times 5 = 30\\) grapes.\n\nStep 2: Calculate how many grapes were used in total for the pies.\n- Each pie requires 12 grapes.\n- There are 4 pies.\n- So, \\(12 \\times 4 = 48\\) grapes were used for the pies.\n\nStep 3: Add up all the grapes used.\n- Grapes eaten by Madeline: 6\n- Grapes used by her brother: 30\n- Grapes used for pies: 48\n- Total grapes used: \\(6 + 30 + 48 = 84\\)\n\nAnswer: 84"
+      },
+      {
+        "gold": 50.0,
+        "pred": 50.0,
+        "pass": true,
+        "completion_tokens": 332,
+        "elapsed_s": 12.01,
+        "response": "To solve this problem, we need to determine how much Elvis needs to save each day in the second half of April to meet his monthly savings target.\n\nFirst, let's break down the month of April into two halves:\n- The first half of April consists of 15 days.\n- The second half of April also consists of 15 days.\n\nLet \\( x \\) be the amount Elvis saves each day in the first half of April. Then, according to the problem, he will save \\( 2x \\) each day in the second half of April.\n\nThe total savings for the first half of April would be:\n\\[ 15x \\]\n\nThe total savings for the second half of April would be:\n\\[ 15 \\times 2x = 30x \\]\n\nAdding these together gives the total savings for the month:\n\\[ 15x + 30x = 45x \\]\n\nWe know that Elvis's monthly savings target is $1125. Therefore, we set up the equation:\n\\[ 45x = 1125 \\]\n\nNow, solve for \\( x \\):\n\\[ x = \\frac{1125}{45} \\]\n\\[ x = 25 \\]\n\nSo, Elvis saves $25 each day in the first half of April. Since he saves twice as much each day in the second half, he saves:\n\\[ 2x = 2 \\times 25 = 50 \\]\n\nTherefore, Elvis needs to save $50 each day in the second half of April.\n\nAnswer: 50"
+      },
+      {
+        "gold": 8000.0,
+        "pred": 8000.0,
+        "pass": true,
+        "completion_tokens": 190,
+        "elapsed_s": 7.33,
+        "response": "Let's denote the number of copies Harald sold as \\( H \\). According to the problem, Marilyn's first record sold 10 times as many copies as Harald's, so Marilyn sold \\( 10H \\) copies.\n\nThe total number of copies sold by both Marilyn and Harald is given as 88,000. Therefore, we can set up the following equation:\n\n\\[ H + 10H = 88,000 \\]\n\nCombining like terms, we get:\n\n\\[ 11H = 88,000 \\]\n\nTo find \\( H \\), we divide both sides of the equation by 11:\n\n\\[ H = \\frac{88,000}{11} \\]\n\n\\[ H = 8,000 \\]\n\nSo, Harald sold 8,000 copies.\n\nAnswer: 8000"
+      },
+      {
+        "gold": 280.0,
+        "pred": 280.0,
+        "pass": true,
+        "completion_tokens": 168,
+        "elapsed_s": 6.52,
+        "response": "To find out how many children can participate in the drill, we need to calculate the total number of children from all the schools.\n\nStep 1: Calculate the number of children per school.\n- Each row has 8 children.\n- There are 7 rows per school.\nSo, the number of children per school is:\n\\[ 8 \\text{ children/row} \\times 7 \\text{ rows} = 56 \\text{ children/school} \\]\n\nStep 2: Calculate the total number of children from all 5 schools.\n- There are 5 schools.\nSo, the total number of children is:\n\\[ 56 \\text{ children/school} \\times 5 \\text{ schools} = 280 \\text{ children} \\]\n\nAnswer: 280"
+      },
+      {
+        "gold": 30.0,
+        "pred": 30.0,
+        "pass": true,
+        "completion_tokens": 149,
+        "elapsed_s": 5.36,
+        "response": "To find out how old Jeff is, we need to follow these steps:\n\n1. Determine Martha's age.\n2. Use Martha's age to determine Jeff's age.\n\nStep 1: Find Martha's age.\n- We know that Mike is 24 years old and Martha is 4 years younger than Mike.\n- Therefore, Martha's age = Mike's age - 4 years = 24 - 4 = 20 years.\n\nStep 2: Find Jeff's age.\n- We know that Jeff is 10 years older than Martha.\n- Therefore, Jeff's age = Martha's age + 10 years = 20 + 10 = 30 years.\n\nAnswer: 30"
+      },
+      {
+        "gold": 192.0,
+        "pred": 176.0,
+        "pass": false,
+        "completion_tokens": 294,
+        "elapsed_s": 10.71,
+        "response": "First, let's calculate the initial number of cows in all ten stalls:\n\n- Each stall has 20 cows.\n- There are 10 stalls.\n\nSo, the total number of cows initially is:\n\\[ 20 \\text{ cows/stall} \\times 10 \\text{ stalls} = 200 \\text{ cows} \\]\n\nNext, Mr. Sylas buys 40 cows and distributes them equally among 20 stalls (not just the original 10). To find out how many cows are added to each stall, we divide the 40 cows by the 20 stalls:\n\\[ \\frac{40 \\text{ cows}}{20 \\text{ stalls}} = 2 \\text{ cows/stall} \\]\n\nNow, we need to determine the new number of cows in each of the original 10 stalls after adding the new cows:\n\\[ 20 \\text{ cows/stall} + 2 \\text{ cows/stall} = 22 \\text{ cows/stall} \\]\n\nWe want to know how many cows are in 8 of these stalls:\n\\[ 22 \\text{ cows/stall} \\times 8 \\text{ stalls} = 176 \\text{ cows} \\]\n\nThus, the number of cows in 8 of the stalls is:\n\\[ \\boxed{176} \\]"
+      },
+      {
+        "gold": 276.0,
+        "pred": 276.0,
+        "pass": true,
+        "completion_tokens": 326,
+        "elapsed_s": 11.32,
+        "response": "To find out how many wheels will be left after Henry assembles all the toys, we'll follow these steps:\n\n1. Calculate the total number of wheels needed for the cars.\n2. Calculate the total number of wheels needed for the motorcycles.\n3. Add the wheels needed for both cars and motorcycles to get the total number of wheels required.\n4. Subtract the total number of wheels required from the initial number of wheels (650) to find out how many wheels will be left.\n\nStep 1: Calculate the wheels needed for the cars.\n- Each car requires 4 wheels.\n- Henry needs to assemble 57 cars.\n- Total wheels needed for cars = 57 cars * 4 wheels/car = 228 wheels.\n\nStep 2: Calculate the wheels needed for the motorcycles.\n- Each motorcycle requires 2 wheels.\n- Henry needs to assemble 73 motorcycles.\n- Total wheels needed for motorcycles = 73 motorcycles * 2 wheels/motorcycle = 146 wheels.\n\nStep 3: Calculate the total number of wheels required.\n- Total wheels required = Wheels needed for cars + Wheels needed for motorcycles\n- Total wheels required = 228 wheels + 146 wheels = 374 wheels.\n\nStep 4: Calculate the number of wheels left.\n- Initial number of wheels = 650 wheels.\n- Number of wheels left = Initial number of wheels - Total wheels required\n- Number of wheels left = 650 wheels - 374 wheels = 276 wheels.\n\nAnswer: 276"
+      },
+      {
+        "gold": 32.0,
+        "pred": 17.0,
+        "pass": false,
+        "completion_tokens": 243,
+        "elapsed_s": 9.15,
+        "response": "To find out how many fish Anakin and Locsin caught in total, we need to first calculate the number of each type of fish they caught individually and then sum them up.\n\nStep 1: Calculate the number of fish Anakin caught.\n- Starfish: 10 (but we're only interested in fish, so we'll ignore this)\n- Sea horses: 6\n- Clownfish: 3\n\nTotal fish caught by Anakin = 6 (sea horses) + 3 (clownfish) = 9\n\nStep 2: Calculate the number of fish Locsin caught.\n- Starfish: 10 - 5 = 5 (again, not a fish)\n- Sea horses: 6 - 3 = 3\n- Clownfish: 3 + 2 = 5\n\nTotal fish caught by Locsin = 3 (sea horses) + 5 (clownfish) = 8\n\nStep 3: Add the totals from both Anakin and Locsin.\nTotal fish caught by both = 9 (Anakin's fish) + 8 (Locsin's fish) = 17\n\nAnswer: 17"
+      },
+      {
+        "gold": 25.0,
+        "pred": 25.0,
+        "pass": true,
+        "completion_tokens": 282,
+        "elapsed_s": 10.36,
+        "response": "First, we need to determine how many groups of 8 crayons Nik can make from his 200 crayons.\n\n\\[ \\text{Number of groups} = \\frac{200}{8} = 25 \\]\n\nThis means Nik will have 25 boxes since each group of 8 crayons goes into one box.\n\nNext, we calculate the total weight of the crayons. Since each crayon weighs 1 ounce:\n\n\\[ \\text{Total weight of crayons} = 200 \\times 1 = 200 \\text{ ounces} \\]\n\nNow, we calculate the total weight of the boxes. Each box weighs 8 ounces:\n\n\\[ \\text{Total weight of boxes} = 25 \\times 8 = 200 \\text{ ounces} \\]\n\nAdding these together gives us the combined weight of the crayons and the boxes:\n\n\\[ \\text{Combined weight} = 200 + 200 = 400 \\text{ ounces} \\]\n\nSince there are 16 ounces in a pound, we convert the total weight from ounces to pounds:\n\n\\[ \\text{Weight in pounds} = \\frac{400}{16} = 25 \\]\n\nTherefore, the total weight of the crayons and the boxes is:\n\nAnswer: 25"
+      },
+      {
+        "gold": 10.0,
+        "pred": 10.0,
+        "pass": true,
+        "completion_tokens": 114,
+        "elapsed_s": 4.68,
+        "response": "Step 1: Calculate the increased weight after a 50% increase.\n- Original weight = 8 pounds\n- Increase = 50% of 8 pounds = 0.5 * 8 = 4 pounds\n\nStep 2: Add the increase to the original weight.\n- New weight = 8 pounds + 4 pounds = 12 pounds\n\nStep 3: Adjust the weight since it was too heavy.\n- Reduced weight = 12 pounds - 2 pounds = 10 pounds\n\nAnswer: 10"
+      },
+      {
+        "gold": 84.0,
+        "pred": 84.0,
+        "pass": true,
+        "completion_tokens": 228,
+        "elapsed_s": 8.02,
+        "response": "To find the total age of all the siblings, we need to add up the ages of each sibling.\n\nStep 1: Identify the ages of the sisters.\n- There are 3 sisters, and each sister is 16 years old.\n- Total age of the sisters = 3 * 16 = 48 years.\n\nStep 2: Identify the ages of the brothers.\n- One brother is 12 years old.\n- The other brother's age is twice that of the younger brother (since 12 is half the age of the older brother).\n- Age of the older brother = 2 * 12 = 24 years.\n\nStep 3: Calculate the total age of the brothers.\n- Total age of the brothers = 12 + 24 = 36 years.\n\nStep 4: Add the total age of the sisters and the total age of the brothers to get the total age of all siblings.\n- Total age of all siblings = 48 (sisters) + 36 (brothers) = 84 years.\n\nAnswer: 84"
+      },
+      {
+        "gold": 147.0,
+        "pred": 147.0,
+        "pass": true,
+        "completion_tokens": 249,
+        "elapsed_s": 9.24,
+        "response": "To find out how much dog food the kennel house needs for a week, we'll first calculate the daily consumption for each type of dog and then multiply that by 7 to get the weekly total.\n\n1. Calculate the daily consumption for all German Shepherds:\n   - Each German Shepherd consumes 5 kg of dog food per day.\n   - There are 3 German Shepherds.\n   - Daily consumption for German Shepherds = 3 * 5 kg = 15 kg.\n\n2. Calculate the daily consumption for all Bulldogs:\n   - Each Bulldog consumes 3 kg of dog food per day.\n   - There are 2 Bulldogs.\n   - Daily consumption for Bulldogs = 2 * 3 kg = 6 kg.\n\n3. Add the daily consumption of both types of dogs to get the total daily consumption:\n   - Total daily consumption = 15 kg (German Shepherds) + 6 kg (Bulldogs) = 21 kg.\n\n4. Multiply the total daily consumption by 7 to get the weekly consumption:\n   - Weekly consumption = 21 kg/day * 7 days/week = 147 kg.\n\nAnswer: 147"
+      },
+      {
+        "gold": 25.0,
+        "pred": 25.0,
+        "pass": true,
+        "completion_tokens": 319,
+        "elapsed_s": 11.63,
+        "response": "To solve this problem, we need to find out how many students like to play video games given the constraints.\n\nStep 1: Identify the total number of students and those with specific hobbies.\n- Total students = 50\n- Students who like baking = 10\n- Students who like basketball = 5\n\nStep 2: Calculate the remaining students who like either playing video games or playing music.\n- Remaining students = Total students - (Students who like baking + Students who like basketball)\n- Remaining students = 50 - (10 + 5) = 35\n\nStep 3: Let \\( x \\) be the number of students who like to play music. According to the problem, the number of students who like to play music is twice the number that prefer playing basketball.\n- Number of students who like to play music = \\( 2 \\times 5 = 10 \\)\n\nStep 4: Determine the number of students who like to play video games.\n- Let \\( y \\) be the number of students who like to play video games.\n- We know that \\( x + y = 35 \\) (since these are the remaining students).\n- Substituting \\( x = 10 \\), we get \\( 10 + y = 35 \\).\n\nStep 5: Solve for \\( y \\).\n- \\( y = 35 - 10 = 25 \\)\n\nTherefore, the number of students who like to play video games is 25.\n\nAnswer: 25"
+      },
+      {
+        "gold": 1800.0,
+        "pred": 1800.0,
+        "pass": true,
+        "completion_tokens": 276,
+        "elapsed_s": 10.22,
+        "response": "To find out how many books Bob can buy per school, we need to follow these steps:\n\n1. Calculate the total number of books Bob can buy with $27,000.\n2. Divide that total by the number of schools (which is 3) to find out how many books each school gets.\n\nStep 1: Calculate the total number of books Bob can buy.\n- We know that 100 books cost $500.\n- To find out how many sets of 100 books Bob can buy with $27,000, we divide $27,000 by $500.\n\n\\[ \\text{Number of sets of 100 books} = \\frac{27000}{500} = 54 \\]\n\nSince each set contains 100 books, the total number of books Bob can buy is:\n\n\\[ 54 \\times 100 = 5400 \\]\n\nStep 2: Divide the total number of books by the number of schools.\n- There are 3 schools, so we divide 5400 by 3.\n\n\\[ \\text{Books per school} = \\frac{5400}{3} = 1800 \\]\n\nAnswer: 1800"
+      },
+      {
+        "gold": 20.0,
+        "pred": 20.0,
+        "pass": true,
+        "completion_tokens": 313,
+        "elapsed_s": 10.85,
+        "response": "First, let's calculate the total time Carol spent on each activity:\n\n1. Writing a song: 4 hours\n2. Recording the song: \\( \\frac{4}{2} = 2 \\) hours\n3. Editing the song: 90 minutes\n\nNext, convert all times to the same unit (minutes):\n\n- Writing: \\( 4 \\times 60 = 240 \\) minutes\n- Recording: \\( 2 \\times 60 = 120 \\) minutes\n- Editing: 90 minutes\n\nNow, sum up the total time spent on all activities:\n\n\\[ 240 + 120 + 90 = 450 \\text{ minutes} \\]\n\nTo find the percentage of time spent editing, use the formula for percentage:\n\n\\[ \\text{Percentage} = \\left( \\frac{\\text{Time spent editing}}{\\text{Total time}} \\right) \\times 100 \\]\n\nSubstitute the values:\n\n\\[ \\text{Percentage} = \\left( \\frac{90}{450} \\right) \\times 100 \\]\n\nSimplify the fraction:\n\n\\[ \\frac{90}{450} = \\frac{1}{5} \\]\n\nThen multiply by 100 to get the percentage:\n\n\\[ \\left( \\frac{1}{5} \\right) \\times 100 = 20\\% \\]\n\nAnswer: 20"
+      },
+      {
+        "gold": 140.0,
+        "pred": 140.0,
+        "pass": true,
+        "completion_tokens": 187,
+        "elapsed_s": 6.94,
+        "response": "To solve this problem, we need to calculate how much money Jordan would earn if he spent the time he uses to play video games working at his part-time job.\n\nStep 1: Calculate the total number of hours Jordan spends playing video games each week.\n- Jordan plays video games for 2 hours every day.\n- There are 7 days in a week.\n- Total hours per week = 2 hours/day * 7 days/week = 14 hours/week\n\nStep 2: Calculate how much money Jordan would earn if he worked those hours at his part-time job.\n- Jordan earns $10 per hour at his part-time job.\n- Total earnings = 14 hours/week * $10/hour = $140/week\n\nTherefore, if Jordan spent his video game time working instead, he would earn $140 in one week.\n\nAnswer: 140"
+      },
+      {
+        "gold": 36.0,
+        "pred": 36.0,
+        "pass": true,
+        "completion_tokens": 279,
+        "elapsed_s": 10.36,
+        "response": "To solve this problem, we need to follow these steps:\n\n1. Determine Gerald's original time for running the 400-meter hurdles.\n2. Calculate Gerald's new time after improving his diet.\n\n**Step 1: Determine Gerald's original time**\n\nGiven that Lee runs the 400-meter hurdles in 38 seconds and he used to be able to run it two seconds faster than Gerald, we can find Gerald's original time as follows:\n\\[ \\text{Gerald's original time} = \\text{Lee's time} + 2 \\]\n\\[ \\text{Gerald's original time} = 38 + 2 = 40 \\text{ seconds} \\]\n\n**Step 2: Calculate Gerald's new time after improving his diet**\n\nGerald's diet improvement increased his speed by 10%, meaning he now takes 90% of his original time to complete the race. We calculate this as:\n\\[ \\text{New time} = \\text{Original time} \\times (1 - 0.10) \\]\n\\[ \\text{New time} = 40 \\times 0.90 = 36 \\text{ seconds} \\]\n\nThus, Gerald can now run the 400-meter hurdles in 36 seconds with his improved diet.\n\nAnswer: 36"
+      },
+      {
+        "gold": 1.0,
+        "pred": 100.0,
+        "pass": false,
+        "completion_tokens": 370,
+        "elapsed_s": 13.29,
+        "response": "First, let's calculate how much Becky paid for her apples.\n\n1. Calculate the total cost of the apples before the discount:\n   \\[\n   20 \\text{ apples} \\times 45 \\text{ cents/apple} = 900 \\text{ cents}\n   \\]\n\n2. Apply the $1 (100 cents) discount to the total cost:\n   \\[\n   900 \\text{ cents} - 100 \\text{ cents} = 800 \\text{ cents}\n   \\]\n\nNext, let's calculate how much Kelly paid for her apples.\n\n1. Calculate the total cost of the apples before the discount:\n   \\[\n   20 \\text{ apples} \\times 50 \\text{ cents/apple} = 1000 \\text{ cents}\n   \\]\n\n2. Apply the 10% discount to the total cost:\n   \\[\n   10\\% \\text{ of } 1000 \\text{ cents} = 0.10 \\times 1000 \\text{ cents} = 100 \\text{ cents}\n   \\]\n   \\[\n   1000 \\text{ cents} - 100 \\text{ cents} = 900 \\text{ cents}\n   \\]\n\nNow, we need to find out how much more Kelly paid compared to Becky.\n\n1. Subtract the amount Becky paid from the amount Kelly paid:\n   \\[\n   900 \\text{ cents} - 800 \\text{ cents} = 100 \\text{ cents}\n   \\]\n\nThus, Kelly paid 100 cents more than Becky.\n\nAnswer: 100"
+      },
+      {
+        "gold": 1.0,
+        "pred": 1.0,
+        "pass": true,
+        "completion_tokens": 143,
+        "elapsed_s": 5.66,
+        "response": "First, let's calculate the total cost of the boots on Amazon.com:\n- Cost of boots: $16\n- Shipping cost: $4\n- Total cost on Amazon: $16 + $4 = $20\n\nNext, we'll calculate the total cost of the boots on eBay:\n- Cost of boots: $13\n- Shipping cost: 2 * $4 (since it's twice as much as Amazon) = $8\n- Total cost on eBay: $13 + $8 = $21\n\nNow, we find the difference in cost between eBay and Amazon:\n- Difference: $21 - $20 = $1\n\nAnswer: 1"
+      },
+      {
+        "gold": 50.0,
+        "pred": 50.0,
+        "pass": true,
+        "completion_tokens": 266,
+        "elapsed_s": 9.95,
+        "response": "To find the total value of all the toys in the room, we need to calculate the value of each type of toy and sum them up.\n\n1. **Value of Red Cars**:\n   - Each red car costs $4.\n   - There are 5 red cars.\n   - Total value of red cars = \\(5 \\times 4 = 20\\) dollars.\n\n2. **Value of Action Figures**:\n   - Each action figure costs $5.\n   - There are 3 action figures.\n   - Total value of action figures = \\(3 \\times 5 = 15\\) dollars.\n\n3. **Value of the Doll**:\n   - The doll costs as much as 3 action figures.\n   - Since each action figure costs $5, the cost of 3 action figures = \\(3 \\times 5 = 15\\) dollars.\n   - Therefore, the doll costs $15.\n\n4. **Total Value of All Toys**:\n   - Summing up the values of all the toys:\n     - Red cars: $20\n     - Action figures: $15\n     - Doll: $15\n   - Total value = \\(20 + 15 + 15 = 50\\) dollars.\n\nAnswer: 50"
+      },
+      {
+        "gold": 860.0,
+        "pred": 860.0,
+        "pass": true,
+        "completion_tokens": 268,
+        "elapsed_s": 10.03,
+        "response": "To find out how many kilometers Michael did in total, we need to break down his biking activities into two parts: the first four weeks and the next three weeks.\n\n**Step 1: Calculate the distance covered in the first four weeks.**\n\n- Michael rides his bike at least 5 times a week.\n- Each ride covers 25 kilometers.\n- Therefore, the weekly distance covered is \\(5 \\times 25 = 125\\) kilometers.\n- Over four weeks, the total distance is \\(4 \\times 125 = 500\\) kilometers.\n\n**Step 2: Calculate the distance covered in the next three weeks.**\n\n- Michael now rides his bike 2 times a week.\n- Each ride covers 60 kilometers.\n- Therefore, the weekly distance covered is \\(2 \\times 60 = 120\\) kilometers.\n- Over three weeks, the total distance is \\(3 \\times 120 = 360\\) kilometers.\n\n**Step 3: Add the distances from both periods to get the total distance.**\n\n- Total distance = Distance in the first four weeks + Distance in the next three weeks\n- Total distance = \\(500 + 360 = 860\\) kilometers.\n\nAnswer: 860"
+      },
+      {
+        "gold": 60.0,
+        "pred": 60.0,
+        "pass": true,
+        "completion_tokens": 329,
+        "elapsed_s": 11.9,
+        "response": "To find the average number of Junebugs Rita removes per day, we first need to calculate the total number of Junebugs removed over the five days and then divide this total by the number of days.\n\n1. Calculate the number of Junebugs removed each day:\n   - Monday: 39 Junebugs\n   - Tuesday: \\(2 \\times 39 = 78\\) Junebugs\n   - Wednesday: \\(2 \\times 39 = 78\\) Junebugs\n   - Thursday: 48 Junebugs\n   - Friday: 57 Junebugs\n\n2. Sum the total number of Junebugs removed over the five days:\n   \\[\n   39 + 78 + 78 + 48 + 57\n   \\]\n\n3. Perform the addition step-by-step:\n   \\[\n   39 + 78 = 117\n   \\]\n   \\[\n   117 + 78 = 195\n   \\]\n   \\[\n   195 + 48 = 243\n   \\]\n   \\[\n   243 + 57 = 300\n   \\]\n\n4. The total number of Junebugs removed over the five days is 300.\n\n5. To find the average number of Junebugs removed per day, divide the total number of Junebugs by the number of days (5):\n   \\[\n   \\frac{300}{5} = 60\n   \\]\n\nAnswer: 60"
+      },
+      {
+        "gold": 23.0,
+        "pred": 23.0,
+        "pass": true,
+        "completion_tokens": 258,
+        "elapsed_s": 9.54,
+        "response": "Step 1: Calculate initial total number of cookies.\n- Oatmeal: 9\n- Chocolate Chip: 4\n- Sugar: 5\n\nTotal = 9 + 4 + 5 = 18\n\nStep 2: Subtract the 3 cookies Randy ate for an early day snack (one of each flavor).\n- Oatmeal: 9 - 1 = 8\n- Chocolate Chip: 4 - 1 = 3\n- Sugar: 5 - 1 = 4\n\nStep 3: Subtract the 2 oatmeal cookies Randy ate for lunch.\n- Oatmeal: 8 - 2 = 6\n\nStep 4: Subtract the 2 sugar cookies Randy gave to his friends.\n- Sugar: 4 - 2 = 2\n\nStep 5: Add the 4 cookies of each flavor that Randy baked for dinner.\n- Oatmeal: 6 + 4 = 10\n- Chocolate Chip: 3 + 4 = 7\n- Sugar: 2 + 4 = 6\n\nStep 6: Calculate the new total number of cookies.\nTotal = 10 + 7 + 6 = 23\n\nAnswer: 23"
+      },
+      {
+        "gold": 350.0,
+        "pred": 350.0,
+        "pass": true,
+        "completion_tokens": 267,
+        "elapsed_s": 9.36,
+        "response": "To find out how much money the tomato vendor saves in a week, we need to follow these steps:\n\n1. Calculate the daily cost of tomatoes from the old vendor.\n2. Calculate the daily cost of tomatoes from the new vendor.\n3. Find the daily savings by subtracting the new daily cost from the old daily cost.\n4. Multiply the daily savings by the number of days in a week (7) to get the weekly savings.\n\nStep 1: Daily cost with the old vendor\n- Number of tomatoes sold per day = 500\n- Cost per tomato from the old vendor = $0.5\n- Daily cost from the old vendor = 500 * $0.5 = $250\n\nStep 2: Daily cost with the new vendor\n- Cost per tomato from the new vendor = $0.4\n- Daily cost from the new vendor = 500 * $0.4 = $200\n\nStep 3: Daily savings\n- Daily savings = Old daily cost - New daily cost = $250 - $200 = $50\n\nStep 4: Weekly savings\n- Weekly savings = Daily savings * 7 = $50 * 7 = $350\n\nAnswer: 350"
+      },
+      {
+        "gold": 100.0,
+        "pred": 100.0,
+        "pass": true,
+        "completion_tokens": 233,
+        "elapsed_s": 8.74,
+        "response": "To find the cost difference between the two offers, we need to calculate the total cost for each offer and then subtract one from the other.\n\nFirst, let's calculate the total cost for Furniture United's offer:\n- Advance payment: $1,350\n- Monthly installments: 6 * $350 = $2,100\n\nTotal cost for Furniture United's offer:\n\\[ 1,350 + 2,100 = 3,450 \\]\n\nNext, let's calculate the total cost for Cozy Homes' offer:\n- Advance payment: $1,100\n- Monthly installments: 9 * $250 = $2,250\n\nTotal cost for Cozy Homes' offer:\n\\[ 1,100 + 2,250 = 3,350 \\]\n\nNow, we find the cost difference between the two offers:\n\\[ 3,450 - 3,350 = 100 \\]\n\nTherefore, the cost difference between the two offers is:\nAnswer: 100"
+      },
+      {
+        "gold": 133.0,
+        "pred": 133.0,
+        "pass": true,
+        "completion_tokens": 124,
+        "elapsed_s": 5.0,
+        "response": "Step 1: Calculate the amount of the discount.\n- The discount rate is 5%, and the original price is $140.\n- To find the discount amount, multiply the original price by the discount rate: $140 * 5% = $140 * 0.05 = $7.\n\nStep 2: Subtract the discount from the original price to find the final price.\n- Original price: $140\n- Discount: $7\n- Final price: $140 - $7 = $133\n\nAnswer: 133"
+      },
+      {
+        "gold": 112.0,
+        "pred": 112.0,
+        "pass": true,
+        "completion_tokens": 259,
+        "elapsed_s": 9.23,
+        "response": "First, let's calculate the total number of windows for both students' and teachers' cars.\n\nFor the students' cars:\n- There are 64 cars.\n- Each car has 4 windows.\nSo, the total number of windows for students' cars is \\(64 \\times 4 = 256\\).\n\nFor the teachers' cars:\n- There are 32 cars.\n- Each car has 2 windows.\nSo, the total number of windows for teachers' cars is \\(32 \\times 2 = 64\\).\n\nNext, we calculate how many windows Hannah smashes based on the given fractions.\n\nFor the students' cars:\n- Hannah smashes a quarter of the windows.\nSo, she smashes \\( \\frac{1}{4} \\times 256 = 64 \\) windows.\n\nFor the teachers' cars:\n- Hannah smashes three-quarters of the windows.\nSo, she smashes \\( \\frac{3}{4} \\times 64 = 48 \\) windows.\n\nFinally, to find the total number of windows smashed, we add the windows smashed from both groups of cars:\n\\[ 64 + 48 = 112 \\]\n\nAnswer: 112"
+      },
+      {
+        "gold": 13.0,
+        "pred": 13.0,
+        "pass": true,
+        "completion_tokens": 170,
+        "elapsed_s": 6.69,
+        "response": "Step 1: Determine the number of letters in Indras' name.\n- Indras has 6 letters.\n\nStep 2: Calculate half of the letters in Indras' name.\n- Half of 6 letters is \\( \\frac{6}{2} = 3 \\) letters.\n\nStep 3: Find out how many letters are in her sister's name.\n- Her sister's name has 4 more letters than half of Indras' name.\n- So, her sister's name has \\( 3 + 4 = 7 \\) letters.\n\nStep 4: Add the number of letters in both names to find the total.\n- Total letters = Letters in Indras' name + Letters in her sister's name\n- Total letters = 6 + 7 = 13\n\nAnswer: 13"
+      },
+      {
+        "gold": 130.0,
+        "pred": 130.0,
+        "pass": true,
+        "completion_tokens": 255,
+        "elapsed_s": 9.53,
+        "response": "To solve this problem, we need to break down each part of Elise's writing process and calculate the total number of letters she writes.\n\n1. **First Step**: Elise writes the entire alphabet twice.\n   - The English alphabet has 26 letters.\n   - Writing it twice means \\(26 \\times 2 = 52\\) letters.\n\n2. **Second Step**: Elise writes half of the alphabet once.\n   - Half of the alphabet is \\(26 / 2 = 13\\) letters.\n   - So, she writes 13 letters.\n\n3. **Third Step**: Elise re-writes everything she has already written.\n   - Up to this point, she has written \\(52 + 13 = 65\\) letters.\n   - Re-writing everything means adding another 65 letters.\n\nNow, let's sum up all the letters she has written:\n- First two full alphabets: 52 letters\n- Half of the alphabet: 13 letters\n- Rewriting everything she has written so far: 65 letters\n\nTotal letters written:\n\\[ 52 + 13 + 65 = 130 \\]\n\nAnswer: 130"
+      },
+      {
+        "gold": 2125.0,
+        "pred": 2125.0,
+        "pass": true,
+        "completion_tokens": 217,
+        "elapsed_s": 8.16,
+        "response": "To find out how many blocks Johnny picks up, we need to calculate the total number of Lego pieces from each box and sum them up.\n\nStep 1: Identify the number of pieces in each box.\n- The first box has 500 pieces.\n- The second box has 3 times more pieces than the first one, so it has \\(3 \\times 500 = 1500\\) pieces.\n- The third box has 1/4 the number of pieces as the first one, so it has \\(\\frac{1}{4} \\times 500 = 125\\) pieces.\n\nStep 2: Add the number of pieces from all three boxes.\n- Total pieces = 500 (first box) + 1500 (second box) + 125 (third box)\n\nStep 3: Calculate the sum.\n- Total pieces = 500 + 1500 + 125 = 2125\n\nAnswer: 2125"
+      },
+      {
+        "gold": 7.0,
+        "pred": 7.0,
+        "pass": true,
+        "completion_tokens": 200,
+        "elapsed_s": 7.61,
+        "response": "Step 1: Determine how many marbles Brendan initially had.\n- Brendan started with 10 marbles.\n\nStep 2: Calculate how many marbles Brendan lost when he dropped half of them.\n- Half of 10 marbles is \\( \\frac{10}{2} = 5 \\) marbles.\n\nStep 3: Find out how many marbles Brendan had after dropping half.\n- After dropping half, Brendan had \\( 10 - 5 = 5 \\) marbles left.\n\nStep 4: Add the number of marbles Brendan found after searching.\n- Brendan found 3 marbles, so he now has \\( 5 + 3 = 8 \\) marbles.\n\nStep 5: Subtract the bead that Brendan realized was not a marble.\n- Brendan had 8 marbles but one was actually a bead, so he ends up with \\( 8 - 1 = 7 \\) marbles.\n\nAnswer: 7"
+      },
+      {
+        "gold": 120.0,
+        "pred": 120.0,
+        "pass": true,
+        "completion_tokens": 230,
+        "elapsed_s": 8.57,
+        "response": "First, let's determine how many days Josh works in a week. Since he is closed on Sunday and Wednesday, he works for 5 days each week.\n\nNext, we calculate the number of cars he services in one week:\n\\[ \\text{Cars serviced per week} = 3 \\text{ cars/day} \\times 5 \\text{ days/week} = 15 \\text{ cars/week} \\]\n\nNow, we find out how many cars he services in two weeks:\n\\[ \\text{Cars serviced in 2 weeks} = 15 \\text{ cars/week} \\times 2 \\text{ weeks} = 30 \\text{ cars} \\]\n\nSince Josh gets paid $4 per car, his earnings over the two weeks can be calculated as follows:\n\\[ \\text{Total earnings} = 30 \\text{ cars} \\times 4 \\text{ dollars/car} = 120 \\text{ dollars} \\]\n\nTherefore, the total amount Josh makes in 2 weeks is:\n\\[ \\text{Answer: 120} \\]"
+      },
+      {
+        "gold": 8.0,
+        "pred": 8.0,
+        "pass": true,
+        "completion_tokens": 281,
+        "elapsed_s": 10.33,
+        "response": "To find out how many total hours Peyton's after-work activities will take, we need to calculate the duration of each activity and sum them up.\n\n1. **Yoga Class on Monday**: The yoga class lasts 1 hour.\n2. **Cooking Class on Tuesday**: This class lasts three times as long as the yoga class. Therefore, it lasts \\(3 \\times 1 = 3\\) hours.\n3. **Cheese-Tasting Event on Wednesday**: This event lasts 0.5 hours (half an hour).\n4. **Museum Tour on Thursday**: This tour takes half as long as the cooking class. Therefore, it lasts \\(\\frac{3}{2} = 1.5\\) hours.\n5. **Errands on Friday**: These take 2 hours.\n\nNow, let's add up all these durations:\n\\[ 1 \\text{ (yoga)} + 3 \\text{ (cooking)} + 0.5 \\text{ (cheese-tasting)} + 1.5 \\text{ (museum)} + 2 \\text{ (errands)} \\]\n\nAdding these together:\n\\[ 1 + 3 + 0.5 + 1.5 + 2 = 8 \\]\n\nTherefore, the total number of hours for all of Peyton's after-work activities is 8.\n\nAnswer: 8"
+      },
+      {
+        "gold": 144.0,
+        "pred": 144.0,
+        "pass": true,
+        "completion_tokens": 305,
+        "elapsed_s": 10.63,
+        "response": "To find out how much it will cost to paint the room, we need to follow these steps:\n\n1. Calculate the total area of the walls.\n2. Determine how many gallons of paint are needed.\n3. Calculate the total cost based on the number of gallons required.\n\n**Step 1: Calculate the total area of the walls**\n\n- North wall: \\(10 \\times 8 = 80\\) square feet\n- South wall: \\(10 \\times 8 = 80\\) square feet\n- East wall: \\(5 \\times 8 = 40\\) square feet\n- West wall: \\(5 \\times 8 = 40\\) square feet\n\nTotal area:\n\\[ 80 + 80 + 40 + 40 = 240 \\text{ square feet} \\]\n\n**Step 2: Determine how many gallons of paint are needed**\n\nA gallon of paint covers 20 square feet. Therefore, the number of gallons needed is:\n\\[ \\frac{240}{20} = 12 \\text{ gallons} \\]\n\n**Step 3: Calculate the total cost**\n\nEach gallon costs $12. So, the total cost is:\n\\[ 12 \\text{ gallons} \\times 12 \\text{ dollars/gallon} = 144 \\text{ dollars} \\]\n\nTherefore, the total cost to paint the room is:\nAnswer: 144"
+      },
+      {
+        "gold": 6.0,
+        "pred": 6.0,
+        "pass": true,
+        "completion_tokens": 171,
+        "elapsed_s": 6.74,
+        "response": "To find out how many guns each person would have if they shared equally, we first need to calculate the total number of guns.\n\nStep 1: Calculate the total number of guns.\n- DJ has 8 guns.\n- Nick has 10 guns.\n- RJ has 1 gun.\n- Richard has 5 guns.\n\nTotal number of guns = 8 + 10 + 1 + 5 = 24 guns\n\nStep 2: Divide the total number of guns by the number of people to find out how many guns each person would have if they shared equally.\n- There are 4 people (DJ, Nick, RJ, and Richard).\n\nNumber of guns per person = Total number of guns / Number of people\n= 24 guns / 4 people\n= 6 guns/person\n\nAnswer: 6"
+      },
+      {
+        "gold": 450.0,
+        "pred": 450.0,
+        "pass": true,
+        "completion_tokens": 103,
+        "elapsed_s": 4.26,
+        "response": "Step 1: Identify the number of loaves Sam had last Friday.\nSam had 70 loaves.\n\nStep 2: Calculate seven times the number of loaves Sam had.\nSeven times 70 loaves = 7 * 70 = 490 loaves\n\nStep 3: The bakery has 40 less than this amount.\nSo, the bakery has 490 - 40 = 450 loaves\n\nAnswer: 450"
+      },
+      {
+        "gold": 4400.0,
+        "pred": 3866.0,
+        "pass": false,
+        "completion_tokens": 433,
+        "elapsed_s": 15.09,
+        "response": "First, let's break down Mike's movie collection into different categories based on the given information.\n\n1. **Movies in various series**: \n   - Total movies = 600.\n   - Third of the movies are in various series.\n   - Number of movies in series = \\( \\frac{600}{3} = 200 \\).\n\n2. **Cost of movies in series**:\n   - Cost of a normal movie = $10.\n   - Cost of a movie in series = \\( \\frac{10}{3} \\approx 3.33 \\) (since they are cheaper by a third).\n   - Total cost for movies in series = \\( 200 \\times 3.33 = 666 \\).\n\n3. **Remaining movies after series**:\n   - Remaining movies = \\( 600 - 200 = 400 \\).\n\n4. **Older movies among the remaining**:\n   - 40% of the remaining movies are older movies.\n   - Number of older movies = \\( 0.4 \\times 400 = 160 \\).\n   - Cost of each older movie = $5.\n   - Total cost for older movies = \\( 160 \\times 5 = 800 \\).\n\n5. **Normal movies among the remaining**:\n   - Number of normal movies = \\( 400 - 160 = 240 \\).\n   - Cost of each normal movie = $10.\n   - Total cost for normal movies = \\( 240 \\times 10 = 2400 \\).\n\n6. **Total cost**:\n   - Summing up all the costs:\n     - Movies in series = $666.\n     - Older movies = $800.\n     - Normal movies = $2400.\n   - Total cost = \\( 666 + 800 + 2400 = 3866 \\).\n\nAnswer: 3866"
+      },
+      {
+        "gold": 450.0,
+        "pred": 450.0,
+        "pass": true,
+        "completion_tokens": 296,
+        "elapsed_s": 10.64,
+        "response": "To calculate the total commission Antonella earned from selling goods worth $2500, we need to break down the calculation into two parts:\n\n1. The commission for the first $1000.\n2. The additional commission for sales over $1000.\n\nStep 1: Calculate the commission for the first $1000.\n- Commission rate for the first $1000 = 30%\n- Amount of commission for the first $1000 = $1000 * 30% = $1000 * 0.30 = $300\n\nStep 2: Calculate the additional commission for sales over $1000.\n- Amount over $1000 = $2500 - $1000 = $1500\n- Additional commission rate for sales over $1000 = 10%\n- Additional commission amount = $1500 * 10% = $1500 * 0.10 = $150\n\nStep 3: Add both commissions together to find the total commission.\n- Total commission = Commission for the first $1000 + Additional commission\n- Total commission = $300 + $150 = $450\n\nTherefore, the total amount of money Antonella earned is $450.\n\nAnswer: 450"
+      },
+      {
+        "gold": 64.0,
+        "pred": 64.0,
+        "pass": true,
+        "completion_tokens": 319,
+        "elapsed_s": 11.7,
+        "response": "Step 1: Determine the distance Aaron ran.\nSince Vanessa ran twice as far as Aaron, and she ran 4 miles, Aaron must have run half that distance:\n\\[ \\text{Distance Aaron ran} = \\frac{4}{2} = 2 \\text{ miles} \\]\n\nStep 2: Calculate Aaron's speed.\nAaron completed his 2-mile run in 16 minutes. Therefore, his speed (in miles per minute) is:\n\\[ \\text{Speed of Aaron} = \\frac{2 \\text{ miles}}{16 \\text{ minutes}} = \\frac{1}{8} \\text{ miles per minute} \\]\n\nStep 3: Determine Vanessa's speed.\nSince Aaron runs each mile twice as fast as Vanessa, Vanessa's speed is half of Aaron's speed:\n\\[ \\text{Speed of Vanessa} = \\frac{1}{2} \\times \\frac{1}{8} = \\frac{1}{16} \\text{ miles per minute} \\]\n\nStep 4: Calculate the time it took for Vanessa to run 4 miles.\nUsing Vanessa's speed, we can find out how long it took her to run 4 miles:\n\\[ \\text{Time taken by Vanessa} = \\frac{\\text{Distance}}{\\text{Speed}} = \\frac{4 \\text{ miles}}{\\frac{1}{16} \\text{ miles per minute}} = 4 \\times 16 = 64 \\text{ minutes} \\]\n\nAnswer: 64"
+      },
+      {
+        "gold": 27.0,
+        "pred": 27.0,
+        "pass": true,
+        "completion_tokens": 256,
+        "elapsed_s": 9.42,
+        "response": "First, let's determine how many scoops of mashed potatoes Gomer ate. The problem states that Gomer ate 5 less than 23 scoops.\n\n\\[ \\text{Scoops eaten} = 23 - 5 = 18 \\]\n\nNext, we need to find out how many potatoes are required to make one scoop of mashed potatoes. According to the problem, it takes 3 less than 6 potatoes to make 1 less than 3 scoops of mashed potatoes.\n\n\\[ \\text{Potatoes for 2 scoops} = 6 - 3 = 3 \\]\n\nSince this amount of potatoes makes 2 scoops, we can calculate the number of potatoes needed for one scoop:\n\n\\[ \\text{Potatoes per scoop} = \\frac{3}{2} = 1.5 \\]\n\nNow, we know Gomer ate 18 scoops of mashed potatoes. To find out how many potatoes he consumed in total, we multiply the number of scoops by the number of potatoes per scoop:\n\n\\[ \\text{Total potatoes} = 18 \\times 1.5 = 27 \\]\n\nTherefore, the total number of potatoes Gomer ate is:\n\nAnswer: 27"
+      },
+      {
+        "gold": 112.0,
+        "pred": 112.0,
+        "pass": true,
+        "completion_tokens": 216,
+        "elapsed_s": 8.07,
+        "response": "To find out how many colors of crayons Beatrice bought in total, we can break down the problem into two parts based on the number of packets and the number of pieces in each packet.\n\nStep 1: Calculate the total number of pieces from the six packets that each have eight pieces.\n\\[6 \\text{ packets} \\times 8 \\text{ pieces per packet} = 48 \\text{ pieces}\\]\n\nStep 2: Calculate the total number of pieces from the four packets that each have sixteen pieces.\n\\[4 \\text{ packets} \\times 16 \\text{ pieces per packet} = 64 \\text{ pieces}\\]\n\nStep 3: Add the results from Step 1 and Step 2 to get the total number of pieces of crayons.\n\\[48 \\text{ pieces} + 64 \\text{ pieces} = 112 \\text{ pieces}\\]\n\nTherefore, the total number of colors of crayons Beatrice bought is 112.\n\nAnswer: 112"
+      },
+      {
+        "gold": 32.0,
+        "pred": 32.0,
+        "pass": true,
+        "completion_tokens": 228,
+        "elapsed_s": 8.53,
+        "response": "First, we need to calculate the total number of hours John spends in the cooking class over the 6 weeks.\n\nThe class meets 4 times a week for 2 hours each time:\n\\[ 4 \\text{ times/week} \\times 2 \\text{ hours/time} = 8 \\text{ hours/week} \\]\n\nSince the class runs for 6 weeks, the total number of hours spent in the class is:\n\\[ 8 \\text{ hours/week} \\times 6 \\text{ weeks} = 48 \\text{ hours} \\]\n\nNext, we determine how many recipes John learns based on the given rate of learning a new recipe every 1.5 hours of class time.\n\nTo find the total number of recipes learned, we divide the total class hours by the time it takes to learn one recipe:\n\\[ \\frac{48 \\text{ hours}}{1.5 \\text{ hours/recipe}} = 32 \\text{ recipes} \\]\n\nTherefore, the total number of recipes John learns is:\n\\[ \\boxed{32} \\]"
+      },
+      {
+        "gold": 6.0,
+        "pred": 6.0,
+        "pass": true,
+        "completion_tokens": 269,
+        "elapsed_s": 9.9,
+        "response": "Let's break down the information given and solve the problem step by step.\n\n1. **Determine the capacity of Brittany's phone:**\n   - We know that Jamal's phone can hold 6 times more photographs than Brittany's phone.\n   - Let \\( B \\) represent the number of photographs Brittany's phone can hold.\n   - Therefore, \\( 6B = 1800 \\).\n\n2. **Solve for \\( B \\):**\n   \\[\n   B = \\frac{1800}{6} = 300\n   \\]\n   So, Brittany's phone can hold 300 photographs.\n\n3. **Relate the capacity of Brittany's phone to the number of ducks:**\n   - The maximum number of photographs Brittany's phone can hold (300) is 50 times more than the number of ducks in Jamal's photograph.\n   - Let \\( D \\) represent the number of ducks in Jamal's photograph.\n   - Therefore, \\( 50D = 300 \\).\n\n4. **Solve for \\( D \\):**\n   \\[\n   D = \\frac{300}{50} = 6\n   \\]\n\nSo, the number of ducks in Jamal's photograph is 6.\n\nAnswer: 6"
+      },
+      {
+        "gold": 4.0,
+        "pred": 4.0,
+        "pass": true,
+        "completion_tokens": 193,
+        "elapsed_s": 7.49,
+        "response": "To find out how many pans worth of cupcakes Mary should bake, we need to follow these steps:\n\n1. Calculate the total number of cupcakes that can be decorated with all the sprinkles.\n2. Determine how many pans are needed to bake that many cupcakes.\n\nStep 1: Calculate the total number of cupcakes that can be decorated.\n- Mary has 6 jars of sprinkles.\n- Each jar can decorate 8 cupcakes.\n- Therefore, the total number of cupcakes that can be decorated is \\(6 \\times 8 = 48\\) cupcakes.\n\nStep 2: Determine how many pans are needed to bake 48 cupcakes.\n- Each pan holds 12 cupcakes.\n- To find out how many pans are needed, divide the total number of cupcakes by the number of cupcakes per pan: \\(48 \\div 12 = 4\\).\n\nTherefore, Mary needs to bake 4 pans worth of cupcakes.\n\nAnswer: 4"
+      },
+      {
+        "gold": 79.0,
+        "pred": 79.0,
+        "pass": true,
+        "completion_tokens": 307,
+        "elapsed_s": 11.14,
+        "response": "To find out how many miles Alisa and Stanley biked in total, we first need to calculate the distance each of them biked individually.\n\nThe formula to calculate distance is:\n\\[ \\text{Distance} = \\text{Speed} \\times \\text{Time} \\]\n\nFor Alisa:\n- Speed = 12 miles per hour\n- Time = 4.5 hours\n\nSo, the distance Alisa biked is:\n\\[ \\text{Distance}_{\\text{Alisa}} = 12 \\times 4.5 \\]\n\\[ \\text{Distance}_{\\text{Alisa}} = 54 \\text{ miles} \\]\n\nFor Stanley:\n- Speed = 10 miles per hour\n- Time = 2.5 hours\n\nSo, the distance Stanley biked is:\n\\[ \\text{Distance}_{\\text{Stanley}} = 10 \\times 2.5 \\]\n\\[ \\text{Distance}_{\\text{Stanley}} = 25 \\text{ miles} \\]\n\nNow, to find the total distance both biked, we add their individual distances together:\n\\[ \\text{Total Distance} = \\text{Distance}_{\\text{Alisa}} + \\text{Distance}_{\\text{Stanley}} \\]\n\\[ \\text{Total Distance} = 54 + 25 \\]\n\\[ \\text{Total Distance} = 79 \\text{ miles} \\]\n\nAnswer: 79"
+      },
+      {
+        "gold": 35.0,
+        "pred": 35.0,
+        "pass": true,
+        "completion_tokens": 181,
+        "elapsed_s": 6.5,
+        "response": "Step 1: Determine the initial count of cars in the parking lot.\n- Initial count = 50 cars\n\nStep 2: Add the additional cars that were counted during the first break.\n- Additional cars = 20 cars\n- Total after first break = Initial count + Additional cars = 50 cars + 20 cars = 70 cars\n\nStep 3: Calculate the number of cars that left during the time between the first break and lunch break.\n- Cars that left = 1/2 * Total after first break = 1/2 * 70 cars = 35 cars\n\nStep 4: Calculate the number of cars remaining in the parking lot during the lunch break.\n- Remaining cars = Total after first break - Cars that left = 70 cars - 35 cars = 35 cars\n\nAnswer: 35"
+      },
+      {
+        "gold": 100.0,
+        "pred": 100.0,
+        "pass": true,
+        "completion_tokens": 112,
+        "elapsed_s": 4.6,
+        "response": "To find Mark's initial weight, we need to work backwards from his final weight.\n\nStep 1: Identify the total weight loss.\nMark lost 10 pounds per month for 3 months.\nTotal weight loss = 10 pounds/month * 3 months = 30 pounds\n\nStep 2: Calculate the initial weight.\nFinal weight = 70 pounds\nInitial weight = Final weight + Total weight loss\nInitial weight = 70 pounds + 30 pounds = 100 pounds\n\nAnswer: 100"
+      },
+      {
+        "gold": 40.0,
+        "pred": 40.0,
+        "pass": true,
+        "completion_tokens": 123,
+        "elapsed_s": 5.12,
+        "response": "Step 1: Determine how many video games Brian has after losing 5.\nBrian originally has 20 video games and loses 5, so he now has:\n20 - 5 = 15 video games.\n\nStep 2: Calculate how many video games Bobby has based on the information given.\nBobby has 5 fewer than 3 times as many video games as Brian has now. So we calculate:\n3 * 15 (Brian's current number of video games) - 5 = 45 - 5 = 40 video games.\n\nAnswer: 40"
+      },
+      {
+        "gold": 30.0,
+        "pred": 30.0,
+        "pass": true,
+        "completion_tokens": 267,
+        "elapsed_s": 9.51,
+        "response": "To find out how many dragons Prince Bruce has slain, we need to follow these steps:\n\n1. Calculate the number of dragons Prince Arthur slew.\n2. Use that number to calculate the number of dragons Prince Walter slew.\n3. Finally, use the number from step 2 to determine how many dragons Prince Bruce slew.\n\nStep 1: Prince Arthur slew three quarters as many dragons as Prince Thaddeus.\n- Prince Thaddeus slew 100 dragons.\n- Three quarters of 100 is calculated as \\( \\frac{3}{4} \\times 100 = 75 \\).\nSo, Prince Arthur slew 75 dragons.\n\nStep 2: Prince Walter slew twice as many dragons as Prince Arthur.\n- Prince Arthur slew 75 dragons.\n- Twice as many is \\( 2 \\times 75 = 150 \\).\nSo, Prince Walter slew 150 dragons.\n\nStep 3: Prince Bruce slew one-fifth as many dragons as Prince Walter.\n- Prince Walter slew 150 dragons.\n- One-fifth of 150 is calculated as \\( \\frac{1}{5} \\times 150 = 30 \\).\nSo, Prince Bruce slew 30 dragons.\n\nAnswer: 30"
+      },
+      {
+        "gold": 170.0,
+        "pred": 170.0,
+        "pass": true,
+        "completion_tokens": 353,
+        "elapsed_s": 12.74,
+        "response": "Step 1: Calculate the total area of land Abraham initially has.\n- Abraham starts with 80 square meters.\n\nStep 2: Determine how much land Abraham sold in the first transaction.\n- He sold half of his land, so he sold \\( \\frac{80}{2} = 40 \\) square meters.\n- The price for this portion was $50.\n\nStep 3: Calculate the amount of land left after the first sale.\n- After selling 40 square meters, Abraham has \\( 80 - 40 = 40 \\) square meters left.\n\nStep 4: Determine how much land Abraham sold in the second transaction.\n- He sold another 1/4 of his remaining land, so he sold \\( \\frac{40}{4} = 10 \\) square meters.\n- The price for this portion was $30.\n\nStep 5: Calculate the amount of land left after the second sale.\n- After selling 10 more square meters, Abraham has \\( 40 - 10 = 30 \\) square meters left.\n\nStep 6: Calculate the earnings from selling the remaining land at $3 per square meter.\n- He sold the remaining 30 square meters at $3 per square meter, so he earned \\( 30 \\times 3 = 90 \\) dollars.\n\nStep 7: Sum up all the earnings from each transaction.\n- From the first sale: $50\n- From the second sale: $30\n- From the third sale: $90\n\nTotal earnings = $50 + $30 + $90 = $170\n\nAnswer: 170"
+      },
+      {
+        "gold": 29.0,
+        "pred": 29.0,
+        "pass": true,
+        "completion_tokens": 154,
+        "elapsed_s": 6.18,
+        "response": "Let's break down the information given step by step:\n\n1. Steve is 60 years old.\n2. Steve's wife is 4 years older than Steve, so she is \\(60 + 4 = 64\\) years old.\n3. Their son is currently half as old as his mom. Since his mom is 64 years old, their son is \\(64 / 2 = 32\\) years old.\n4. The son's wife is 3 years younger than her husband. Since the son is 32 years old, his wife is \\(32 - 3 = 29\\) years old.\n\nTherefore, the age of Steve's son's wife is 29.\n\nAnswer: 29"
+      },
+      {
+        "gold": 5.0,
+        "pred": 5.0,
+        "pass": true,
+        "completion_tokens": 121,
+        "elapsed_s": 4.95,
+        "response": "Step 1: Determine how many lollipops Ray shared.\nRay started with 25 lollipops and kept 5 for himself. So, he shared:\n\\[ 25 - 5 = 20 \\text{ lollipops} \\]\n\nStep 2: Calculate how many lollipops each friend received.\nRay shared these 20 lollipops equally among his four friends. Therefore, each friend received:\n\\[ \\frac{20}{4} = 5 \\text{ lollipops} \\]\n\nAnswer: 5"
+      },
+      {
+        "gold": 12.0,
+        "pred": 12.0,
+        "pass": true,
+        "completion_tokens": 273,
+        "elapsed_s": 10.06,
+        "response": "Let's denote the number of small stuffed animals sold as \\( S \\) and the number of large stuffed animals sold as \\( L \\).\n\nGiven:\n- The price of each small stuffed animal is $4.\n- The price of each large stuffed animal is three times that of a small one, so it is \\( 3 \\times 4 = \\$12 \\).\n- Teresa sold twice as many small stuffed animals as large ones, so \\( S = 2L \\).\n- The total earnings from the sales were $120.\n\nWe can set up the equation for the total earnings based on the quantities sold and their prices:\n\n\\[ 4S + 12L = 120 \\]\n\nSubstitute \\( S = 2L \\) into the equation:\n\n\\[ 4(2L) + 12L = 120 \\]\n\\[ 8L + 12L = 120 \\]\n\\[ 20L = 120 \\]\n\\[ L = \\frac{120}{20} \\]\n\\[ L = 6 \\]\n\nSince \\( S = 2L \\):\n\n\\[ S = 2 \\times 6 \\]\n\\[ S = 12 \\]\n\nTherefore, Teresa sold 12 small stuffed animals.\n\nAnswer: 12"
+      },
+      {
+        "gold": 310.0,
+        "pred": 310.0,
+        "pass": true,
+        "completion_tokens": 286,
+        "elapsed_s": 10.59,
+        "response": "To solve this problem, we need to calculate the number of students at the end of each month from January to May, starting with 10 students at the beginning of the year.\n\n1. **Initial number of students**: 10\n\n2. **End of January**: The number of students doubles.\n   \\[\n   10 \\times 2 = 20\n   \\]\n\n3. **End of February**: The number of students doubles again.\n   \\[\n   20 \\times 2 = 40\n   \\]\n\n4. **End of March**: The number of students doubles again.\n   \\[\n   40 \\times 2 = 80\n   \\]\n\n5. **End of April**: The number of students doubles again.\n   \\[\n   80 \\times 2 = 160\n   \\]\n\n6. **End of May**: The number of students doubles again.\n   \\[\n   160 \\times 2 = 320\n   \\]\n\nNow, we need to find out how many additional students have joined by the end of May compared to the initial number of students (10).\n\n\\[\n320 - 10 = 310\n\\]\n\nThus, the number of additional students that have joined by the end of May is:\n\nAnswer: 310"
+      },
+      {
+        "gold": 230.0,
+        "pred": 230.0,
+        "pass": true,
+        "completion_tokens": 183,
+        "elapsed_s": 7.02,
+        "response": "Step 1: Calculate the discounted price of the radiator.\n- Original price of the radiator = $400\n- Discount = 80%\n- Discounted amount = $400 * 80% = $400 * 0.80 = $320\n- Price after discount = $400 - $320 = $80\n\nStep 2: Calculate the labor cost for installing the radiator.\n- Time taken = 3 hours\n- Rate per hour = $50\n- Total labor cost = 3 hours * $50/hour = $150\n\nStep 3: Add the cost of the radiator and the labor cost to find the total payment.\n- Total payment = Cost of radiator + Labor cost = $80 + $150 = $230\n\nAnswer: 230"
+      },
+      {
+        "gold": 650.0,
+        "pred": 650.0,
+        "pass": true,
+        "completion_tokens": 217,
+        "elapsed_s": 8.14,
+        "response": "To solve this problem, we'll first calculate the total number of letters Craig has used, then find out how many letters Craig's brother has used, and finally add these two totals together.\n\nStep 1: Calculate the total number of letters Craig has used.\n- Craig has spelled out 20 words, each with 15 letters.\n- Total letters used by Craig = 20 words * 15 letters/word = 300 letters.\n\nStep 2: Calculate the total number of letters Craig's brother has used.\n- Craig's brother has used 50 more letters than Craig.\n- Total letters used by Craig's brother = 300 letters + 50 letters = 350 letters.\n\nStep 3: Calculate the total number of letters both have used.\n- Total letters used by both = Total letters used by Craig + Total letters used by Craig's brother\n- Total letters used by both = 300 letters + 350 letters = 650 letters.\n\nAnswer: 650"
+      },
+      {
+        "gold": 75.0,
+        "pred": 75.0,
+        "pass": true,
+        "completion_tokens": 285,
+        "elapsed_s": 10.45,
+        "response": "To find out how much Susan earns, we need to calculate the total time she spends working and then use her earning rate to determine her total earnings.\n\nStep 1: Calculate the total time from 8 a.m. to 11 a.m.\n- From 8 a.m. to 11 a.m. is 3 hours.\n- Convert this into minutes: \\(3 \\text{ hours} \\times 60 \\text{ minutes/hour} = 180 \\text{ minutes}\\).\n\nStep 2: Subtract the time she pauses.\n- She pauses for half an hour, which is \\(30 \\text{ minutes}\\).\n- Total working time: \\(180 \\text{ minutes} - 30 \\text{ minutes} = 150 \\text{ minutes}\\).\n\nStep 3: Calculate how many 10-minute intervals are in 150 minutes.\n- Number of 10-minute intervals: \\(150 \\text{ minutes} / 10 \\text{ minutes/interval} = 15 \\text{ intervals}\\).\n\nStep 4: Calculate her total earnings.\n- Earnings per interval: $5.\n- Total earnings: \\(15 \\text{ intervals} \\times 5 \\text{ dollars/interval} = 75 \\text{ dollars}\\).\n\nAnswer: 75"
+      },
+      {
+        "gold": 7.0,
+        "pred": 7.0,
+        "pass": true,
+        "completion_tokens": 242,
+        "elapsed_s": 9.01,
+        "response": "First, we calculate the total cost of the apples:\n- Verna bought 3 apples at $1.50 each.\n- Total cost for apples = 3 * $1.50 = $4.50.\n\nNext, we calculate the total cost of the oranges:\n- Verna bought 5 oranges at $0.80 each.\n- Total cost for oranges = 5 * $0.80 = $4.00.\n\nThen, we calculate the total cost of the peaches:\n- Verna bought 6 peaches at $0.75 each.\n- Total cost for peaches = 6 * $0.75 = $4.50.\n\nNow, we add up all the costs to find the total amount spent:\n- Total amount spent = $4.50 (apples) + $4.00 (oranges) + $4.50 (peaches) = $13.00.\n\nFinally, we determine the change Verna received from her $20:\n- Change received = $20 - $13.00 = $7.00.\n\nAnswer: 7"
+      },
+      {
+        "gold": 1600.0,
+        "pred": 1200.0,
+        "pass": false,
+        "completion_tokens": 345,
+        "elapsed_s": 12.43,
+        "response": "To determine the maximum number of popsicle sticks Frederick can make with his budget, we need to consider the cost and yield of each type of wood.\n\nFirst, let's calculate how many popsicle sticks Frederick can get per dollar spent on each type of wood:\n\n1. **2 x 4 piece of wood:**\n   - Cost: $4\n   - Number of sticks: 200\n   - Sticks per dollar: \\( \\frac{200}{4} = 50 \\) sticks per dollar\n\n2. **2 x 8 piece of wood:**\n   - Cost: $6\n   - Number of sticks: 400\n   - Sticks per dollar: \\( \\frac{400}{6} \\approx 66.67 \\) sticks per dollar\n\nSince the 2 x 8 piece of wood provides more sticks per dollar, it is the cheaper option in terms of cost efficiency. However, the problem specifies that we should buy the cheapest lumber, which is the 2 x 4 piece of wood.\n\nNext, we calculate how many 2 x 4 pieces Frederick can buy with his $24 budget:\n- Number of 2 x 4 pieces: \\( \\frac{24}{4} = 6 \\)\n\nNow, we calculate the total number of popsicle sticks he can make with these 2 x 4 pieces:\n- Total sticks: \\( 6 \\times 200 = 1200 \\)\n\nTherefore, the most popsicle sticks he can make if he buys the cheapest lumber (2 x 4 pieces) is:\n\nAnswer: 1200"
+      },
+      {
+        "gold": 90.0,
+        "pred": 90.0,
+        "pass": true,
+        "completion_tokens": 224,
+        "elapsed_s": 8.51,
+        "response": "Let's denote the total number of jellyfish in the tank as \\( J \\).\n\n1. According to the problem, a fifth of the jellyfish are large. So, the number of large jellyfish is:\n   \\[\n   \\frac{J}{5}\n   \\]\n\n2. A third of these large jellyfish change color from green to blue under UV light. Therefore, the number of large jellyfish that change color is:\n   \\[\n   \\frac{1}{3} \\times \\frac{J}{5} = \\frac{J}{15}\n   \\]\n\n3. We know from the problem statement that 6 jellyfish changed color when the UV light was turned on. This means:\n   \\[\n   \\frac{J}{15} = 6\n   \\]\n\n4. To find \\( J \\), we solve the equation:\n   \\[\n   J = 6 \\times 15 = 90\n   \\]\n\nTherefore, the total number of jellyfish in the tank is \\( 90 \\).\n\nAnswer: 90"
+      },
+      {
+        "gold": 18.0,
+        "pred": 18.0,
+        "pass": true,
+        "completion_tokens": 232,
+        "elapsed_s": 8.79,
+        "response": "To find out how many more vlogs Emma needs to make to reach her goal of 72 vlogs per month, we need to follow these steps:\n\n1. Calculate the total number of vlogs Emma has already made in the first three weeks.\n2. Subtract this total from her monthly goal to find out how many more vlogs she needs to make.\n\nFirst, let's add up the vlogs she has already made:\n- First week: 18 vlogs\n- Second week: 21 vlogs\n- Third week: 15 vlogs\n\nTotal vlogs made so far = 18 + 21 + 15 = 54 vlogs\n\nNext, subtract the total vlogs made so far from her monthly goal:\n- Monthly goal: 72 vlogs\n- Vlogs already made: 54 vlogs\n\nVlogs needed to complete the goal = 72 - 54 = 18 vlogs\n\nTherefore, Emma needs to make 18 more vlogs to complete her goal of 72 vlogs per month.\n\nAnswer: 18"
+      }
+    ]
+  },
+  "total_elapsed_s": 1403.4
+}

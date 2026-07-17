@@ -1,0 +1,39 @@
+== big_eval [qwen36-35ba3b-awq-a40] ==
+  endpoint: https://l7hk8qbo942mjn-8000.proxy.runpod.net
+  model:    QuantTrio/Qwen3.6-35B-A3B-AWQ
+  humaneval: 164 problems
+  gsm8k:     100 problems
+  results:   /home/linked/p/boundcorp/cluster-boundcorp-homeops/ai/bench/big_eval/results/big-qwen36-35ba3b-awq-a40-20260425-081041.json
+
+--- HumanEval ---
+  [10/164] pass@1 so far: 9/10 = 90.0%
+  [20/164] pass@1 so far: 19/20 = 95.0%
+  [30/164] pass@1 so far: 29/30 = 96.7%
+  [40/164] pass@1 so far: 38/40 = 95.0%
+  [50/164] pass@1 so far: 48/50 = 96.0%
+  [60/164] pass@1 so far: 57/60 = 95.0%
+  [70/164] pass@1 so far: 66/70 = 94.3%
+  [80/164] pass@1 so far: 75/80 = 93.8%
+  [90/164] pass@1 so far: 85/90 = 94.4%
+  [100/164] pass@1 so far: 94/100 = 94.0%
+  [110/164] pass@1 so far: 104/110 = 94.5%
+  [120/164] pass@1 so far: 114/120 = 95.0%
+  [130/164] pass@1 so far: 123/130 = 94.6%
+  [140/164] pass@1 so far: 130/140 = 92.9%
+  [150/164] pass@1 so far: 139/150 = 92.7%
+  [160/164] pass@1 so far: 149/160 = 93.1%
+  [164/164] pass@1 so far: 152/164 = 92.7%
+
+--- GSM8K ---
+  [20/100] pass@1 so far: 6/20 = 30.0%
+  [40/100] pass@1 so far: 6/40 = 15.0%
+  [60/100] pass@1 so far: 6/60 = 10.0%
+  [80/100] pass@1 so far: 6/80 = 7.5%
+  [100/100] pass@1 so far: 6/100 = 6.0%
+
+== SUMMARY ==
+  HumanEval: 152/164 = 92.7%
+  GSM8K:     6/100 = 6.0%
+  Combined:  158/264 = 59.8%
+  Elapsed:   592.7s
+  Saved:     /home/linked/p/boundcorp/cluster-boundcorp-homeops/ai/bench/big_eval/results/big-qwen36-35ba3b-awq-a40-20260425-081041.json
