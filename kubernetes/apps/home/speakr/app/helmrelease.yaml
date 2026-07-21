@@ -182,9 +182,10 @@ spec:
         enabled: true
         className: nginx
         annotations:
+          external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_PRIVATE_DOMAIN}"
           hajimari.io/icon: mdi:microphone-message
         hosts:
-          - host: &host speakr.home.boundcorp.net
+          - host: &host "speakr.${SECRET_PUBLIC_DOMAIN}"
             paths:
               - path: /
                 service:

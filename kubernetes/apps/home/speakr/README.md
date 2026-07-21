@@ -5,7 +5,7 @@ Speakr is deployed in the `home` namespace with:
 - `learnedmachine/speakr:lite` for the web application.
 - `onerahmet/openai-whisper-asr-webservice:latest` for a CPU-hosted Whisper ASR endpoint.
 - The shared Crunchy Postgres cluster, via the `speakr` user/database in `kubernetes/apps/database/crunchy/cluster.yaml`.
-- An ingress at `https://speakr.home.boundcorp.net`.
+- An ingress at `https://speakr.boundcorp.net`.
 
 The CPU Whisper service starts with `ASR_MODEL=base`. Increase this to `small`,
 `medium`, or `large-v3` if the node has enough CPU/RAM budget, or switch to a
