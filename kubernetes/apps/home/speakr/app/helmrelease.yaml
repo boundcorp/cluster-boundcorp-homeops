@@ -134,7 +134,10 @@ spec:
               ASR_DEVICE: cpu
               MODEL_IDLE_TIMEOUT: "900"
             probes:
-              liveness: &asr-probe
+              # The single-worker ASR server cannot answer probes while transcribing.
+              liveness:
+                enabled: false
+              readiness: &asr-probe
                 enabled: true
                 custom: true
                 spec:
@@ -145,7 +148,6 @@ spec:
                   periodSeconds: 30
                   timeoutSeconds: 5
                   failureThreshold: 5
-              readiness: *asr-probe
               startup:
                 enabled: true
                 custom: true
