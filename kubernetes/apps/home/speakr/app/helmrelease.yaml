@@ -185,17 +185,21 @@ spec:
         className: nginx
         annotations:
           external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_PRIVATE_DOMAIN}"
+          nginx.ingress.kubernetes.io/proxy-body-size: "0"
           hajimari.io/icon: mdi:microphone-message
         hosts:
-          - host: &host "speakr.${SECRET_PUBLIC_DOMAIN}"
-            paths:
+          - host: &public-host "speakr.${SECRET_PUBLIC_DOMAIN}"
+            paths: &paths
               - path: /
                 service:
                   identifier: speakr
                   port: http
+          - host: &private-host "speakr.${SECRET_PRIVATE_DOMAIN}"
+            paths: *paths
         tls:
           - hosts:
-              - *host
+              - *public-host
+              - *private-host
     persistence:
       uploads:
         enabled: true
