@@ -70,9 +70,12 @@ spec:
                   secretKeyRef:
                     name: speakr
                     key: TEXT_MODEL_NAME
-              ASR_BASE_URL: http://speakr-whisper-asr.home.svc.cluster.local:9000
-              ASR_DIARIZE: "false"
-              ASR_RETURN_SPEAKER_EMBEDDINGS: "false"
+              TRANSCRIPTION_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: speakr
+                    key: TEXT_MODEL_API_KEY
+              TRANSCRIPTION_MODEL: gpt-4o-transcribe-diarize
               AUDIO_COMPRESS_UPLOADS: "true"
               AUDIO_CODEC: mp3
               AUDIO_BITRATE: 128k
@@ -119,66 +122,12 @@ spec:
                 memory: 512Mi
               limits:
                 memory: 2Gi
-      whisper-asr:
-        annotations:
-          reloader.stakater.com/auto: "true"
-        containers:
-          app:
-            image:
-              repository: onerahmet/openai-whisper-asr-webservice
-              tag: latest
-              pullPolicy: IfNotPresent
-            env:
-              ASR_ENGINE: openai_whisper
-              ASR_MODEL: base
-              ASR_DEVICE: cpu
-              MODEL_IDLE_TIMEOUT: "900"
-            probes:
-              # The single-worker ASR server cannot answer probes while transcribing.
-              liveness:
-                enabled: false
-              readiness: &asr-probe
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /
-                    port: &asr-port 9000
-                  initialDelaySeconds: 30
-                  periodSeconds: 30
-                  timeoutSeconds: 5
-                  failureThreshold: 5
-              startup:
-                enabled: true
-                custom: true
-                spec:
-                  httpGet:
-                    path: /
-                    port: *asr-port
-                  initialDelaySeconds: 30
-                  periodSeconds: 10
-                  timeoutSeconds: 5
-                  failureThreshold: 60
-            securityContext:
-              allowPrivilegeEscalation: false
-              capabilities: { drop: ["ALL"] }
-            resources:
-              requests:
-                cpu: 500m
-                memory: 2Gi
-              limits:
-                memory: 8Gi
     service:
       speakr:
         controller: speakr
         ports:
           http:
             port: 8899
-      whisper-asr:
-        controller: whisper-asr
-        ports:
-          http:
-            port: 9000
     ingress:
       main:
         enabled: true
@@ -221,13 +170,3 @@ spec:
           speakr:
             app:
               - path: /data/instance
-      whisper-cache:
-        enabled: true
-        retain: true
-        storageClass: nfs-titan-nvme
-        size: 20Gi
-        accessMode: ReadWriteOnce
-        advancedMounts:
-          whisper-asr:
-            app:
-              - path: /root/.cache
