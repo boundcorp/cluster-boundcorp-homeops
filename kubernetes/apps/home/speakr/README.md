@@ -3,13 +3,12 @@
 Speakr is deployed in the `home` namespace with:
 
 - `learnedmachine/speakr:lite` for the web application.
-- `onerahmet/openai-whisper-asr-webservice:latest` for a CPU-hosted Whisper ASR endpoint.
+- OpenAI `gpt-4o-transcribe-diarize` for hosted transcription and speaker diarization.
 - The shared Crunchy Postgres cluster, via the `speakr` user/database in `kubernetes/apps/database/crunchy/cluster.yaml`.
 - An ingress at `https://speakr.boundcorp.net`.
 
-The CPU Whisper service starts with `ASR_MODEL=base`. Increase this to `small`,
-`medium`, or `large-v3` if the node has enough CPU/RAM budget, or switch to a
-CUDA WhisperX deployment if an NVIDIA node is added later.
+Speakr chunks recordings longer than the OpenAI connector's duration limit and
+uses speaker references from the first chunk to preserve identities where possible.
 
 ## Secrets
 
@@ -19,7 +18,7 @@ Runtime secrets live in `app/secret.sops.yaml`:
 - `ADMIN_PASSWORD` was generated during setup.
 - `SECRET_KEY` was generated during setup.
 - `TEXT_MODEL_BASE_URL` is `https://api.openai.com/v1`.
-- `TEXT_MODEL_API_KEY` reuses the existing Birdweather OpenAI key.
+- `TEXT_MODEL_API_KEY` reuses the existing Birdweather OpenAI key for both text generation and transcription.
 - `TEXT_MODEL_NAME` is `gpt-5.4-mini`.
 
 ## Database Bootstrap
