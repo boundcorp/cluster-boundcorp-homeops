@@ -25,6 +25,9 @@ spec:
   values:
     controllers:
       satisfactory:
+        # Scaled to 0: suspected of crashing vega under load (heavy CPU/mem on
+        # the only schedulable node). Re-enable by restoring replicas: 1.
+        replicas: 0
         containers:
           app:
             image:
