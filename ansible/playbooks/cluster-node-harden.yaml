@@ -1,0 +1,100 @@
+---
+# Make a node a clean headless server.
+#
+# Some Trixie (Debian 13) netinst runs pulled in the full GNOME desktop, which
+# dragged in NetworkManager AND power management that ACPI-suspended the box on
+# idle -- the node kept dropping off the network. This playbook strips the
+# desktop, forces a text/multi-user boot, and masks all sleep/suspend targets.
+#
+# Safe + idempotent on already-headless nodes (bookworm control-plane/workers):
+# the desktop packages simply aren't installed, so purging is a no-op, and there
+# is no reboot handler, so running it does not disrupt a healthy node.
+#
+# Usage (scope to a node):
+#   task ansible:harden        # all hosts
+#   ansible-playbook ... playbooks/cluster-node-harden.yaml --limit nova
+- name: Harden node into a headless server
+  hosts: all
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+  vars:
+    # Desktop/GUI stacks to remove. Not-installed entries are skipped; the
+    # autoremove step then cleans up the orphaned dependencies (gnome apps,
+    # fonts, mesa, sound, etc.).
+    desktop_packages:
+      - task-gnome-desktop
+      - task-desktop
+      - gnome-core
+      - gnome-shell
+      - gnome-session
+      - gnome-session-bin
+      - gnome-control-center
+      - gnome-terminal
+      - gdm3
+      - xserver-xorg-core
+      - xserver-xorg
+      - xserver-common
+      - xwayland
+      - xinit
+      - cups-daemon
+      - cups-browsed
+      - pipewire
+      - network-manager-gnome
+    # Marked manual so the desktop autoremove below can never orphan-remove them
+    # (a blanket autoremove once nuked sudo, breaking privilege escalation).
+    protected_packages:
+      - sudo
+      - openssh-server
+      - openssh-client
+      - python3
+      - python3-apt
+      # Keep the active network stack (a node may still be on NetworkManager).
+      - network-manager
+      - systemd-resolved
+      - systemd-sysv
+      - ifupdown
+      - iproute2
+      - isc-dhcp-client
+      - ca-certificates
+      - curl
+      - gnupg
+      - cron
+      - locales
+  tasks:
+    - name: Protect essential packages from autoremove
+      ansible.builtin.command:
+        cmd: "apt-mark manual {{ protected_packages | join(' ') }}"
+      changed_when: false
+      failed_when: false
+
+    - name: Boot to multi-user (no graphical target)
+      ansible.builtin.command:
+        cmd: systemctl set-default multi-user.target
+      register: set_default
+      changed_when: "'Created symlink' in set_default.stderr"
+
+    - name: Mask sleep / suspend / hibernate
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        masked: true
+      loop:
+        - sleep.target
+        - suspend.target
+        - hibernate.target
+        - hybrid-sleep.target
+
+    - name: Purge desktop packages
+      ansible.builtin.apt:
+        name: "{{ desktop_packages }}"
+        state: absent
+        purge: true
+
+    - name: Autoremove orphaned desktop dependencies
+      ansible.builtin.apt:
+        autoremove: true
+        purge: true
+
+    - name: Clean apt cache
+      ansible.builtin.apt:
+        autoclean: true

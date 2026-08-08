@@ -138,6 +138,47 @@
             regexp: ManageForeignRoutes
             line: ManageForeignRoutes=no
 
+    # Trixie netinst defaults to NetworkManager, which fights Cilium's datapath
+    # (it manages the cilium_*/lxc* interfaces and foreign routes, breaking node
+    # networking on join). Match the bookworm nodes: use systemd-networkd, where
+    # the ManageForeignRoutes=no fix above actually applies. Gated to Debian 13
+    # so the existing bookworm nodes are left untouched.
+    - name: Network stack (systemd-networkd on Trixie)
+      when: ansible_distribution_major_version == '13'
+      notify: Reboot
+      block:
+        - name: Network stack | Static systemd-networkd config
+          ansible.builtin.copy:
+            dest: "/etc/systemd/network/10-{{ ansible_default_ipv4.interface }}.network"
+            mode: "0644"
+            content: |
+              [Match]
+              Name={{ ansible_default_ipv4.interface }}
+              [Network]
+              Address={{ node_static_ipv4 | default(ansible_host) }}/{{ node_prefix | default(24) }}
+              Gateway={{ node_gateway | default('10.20.30.1') }}
+              DNS={{ node_dns | default('10.20.30.1') }}
+        - name: Network stack | Remove any managed resolv.conf symlink
+          ansible.builtin.file:
+            path: /etc/resolv.conf
+            state: absent
+        - name: Network stack | Static resolv.conf
+          ansible.builtin.copy:
+            dest: /etc/resolv.conf
+            mode: "0644"
+            content: "nameserver {{ node_dns | default('10.20.30.1') }}\n"
+        - name: Network stack | Enable systemd-networkd
+          ansible.builtin.systemd:
+            name: systemd-networkd
+            enabled: true
+        # Not stopped here (--now) to avoid dropping the play's SSH session; the
+        # Reboot handler applies the switch cleanly on the next boot.
+        - name: Network stack | Disable and mask NetworkManager
+          ansible.builtin.systemd:
+            name: NetworkManager
+            enabled: false
+            masked: true
+
     - name: System Configuration
       notify: Reboot
       block:
