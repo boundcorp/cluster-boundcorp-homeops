@@ -97,19 +97,7 @@ spec:
         medium: Memory
         sizeLimit: 2Gi
         mountPath: /dev/shm
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: feature.node.kubernetes.io/usb-fe_1a6e_089a.present
-                  operator: In
-                  values:
-                    - "true"
-            - matchExpressions:
-                - key: feature.node.kubernetes.io/usb-ff_18d1_9302.present
-                  operator: In
-                  values:
-                    - "true"
+    nodeSelector:
+      kubernetes.io/hostname: nova
     podAnnotations:
       configmap.reloader.stakater.com/reload: "frigate-config"
