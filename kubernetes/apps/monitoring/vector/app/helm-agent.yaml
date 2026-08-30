@@ -7,7 +7,6 @@ metadata:
 spec:
   interval: 5m
   suspend: false
-  resetValues: true
   chart:
     spec:
       chart: vector

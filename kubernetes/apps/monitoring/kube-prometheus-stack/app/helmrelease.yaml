@@ -6,7 +6,6 @@ metadata:
   namespace: monitoring
 spec:
   interval: 30m
-  resetValues: true
   timeout: 15m
   chart:
     spec:
