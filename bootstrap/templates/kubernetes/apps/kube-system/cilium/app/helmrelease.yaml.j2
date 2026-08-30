@@ -70,19 +70,19 @@ spec:
           annotations:
             hajimari.io/icon: simple-icons:cilium
           hosts:
-            - &host "hubble.${SECRET_DOMAIN}"
+            - &host "hubble.home.boundcorp.net"
           tls:
             - hosts:
                 - *host
     ipam:
       mode: kubernetes
-    ipv4NativeRoutingCIDR: "${CLUSTER_CIDR}"
+    ipv4NativeRoutingCIDR: "10.42.0.0/16"
     {% if bootstrap_ipv6_enabled | default(false) %}
     ipv6NativeRoutingCIDR: "${CLUSTER_CIDR_V6}"
     ipv6:
       enabled: true
     {% endif %}
-    k8sServiceHost: "${KUBE_VIP_ADDR}"
+    k8sServiceHost: "10.20.30.250"
     k8sServicePort: 6443
     kubeProxyReplacement: strict
     kubeProxyReplacementHealthzBindAddr: 0.0.0.0:10256
@@ -101,6 +101,15 @@ spec:
       mode: dsr
     localRedirectPolicy: true
     operator:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                - vega
       replicas: 1
       rollOutPods: true
       prometheus:
