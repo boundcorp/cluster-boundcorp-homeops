@@ -80,7 +80,6 @@ spec:
       enabled: true
     nodeSelector:
       kubernetes.io/os: linux
-      nonexistent: null
     securityContext:
       privileged: true
     tolerations:
