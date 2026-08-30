@@ -207,3 +207,4 @@ spec:
     prometheus-node-exporter:
       nodeSelector:
         kubernetes.io/os: linux
+        nonexistent: null
