@@ -6,6 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   path: ./kubernetes/apps/monitoring/vector/app
+  suspend: false
   prune: true
   sourceRef:
     kind: GitRepository
