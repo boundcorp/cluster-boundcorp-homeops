@@ -6,6 +6,7 @@ metadata:
   namespace: monitoring
 spec:
   interval: 5m
+  suspend: false
   chart:
     spec:
       chart: vector
@@ -77,6 +78,8 @@ spec:
       enabled: false
     podMonitor:
       enabled: true
+    nodeSelector:
+      kubernetes.io/os: linux
     securityContext:
       privileged: true
     tolerations:

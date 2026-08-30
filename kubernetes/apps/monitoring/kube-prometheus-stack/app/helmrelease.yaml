@@ -204,3 +204,6 @@ spec:
               resources:
                 requests:
                   storage: 25Gi
+    prometheus-node-exporter:
+      nodeSelector:
+        kubernetes.io/os: linux
