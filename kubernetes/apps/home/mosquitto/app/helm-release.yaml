@@ -21,7 +21,19 @@ spec:
     image:
       repository: docker.io/library/eclipse-mosquitto
       tag: 2.1.2-alpine
-    command: ["mosquitto", "-c", "/configinc/mqtt.conf"]
+    command:
+      - sh
+      - -c
+      - |
+        # mosquitto 2.1.x refuses to open the password file if it's a symlink,
+        # which is exactly how Kubernetes mounts Secret volumes. Copy to a
+        # real file first.
+        set -e
+        mkdir -p /tmp/mosquitto-config
+        cp /configinc/mqtt.conf /configinc/mosquitto_pwd /tmp/mosquitto-config/
+        chmod 0440 /tmp/mosquitto-config/mqtt.conf /tmp/mosquitto-config/mosquitto_pwd
+        sed -i 's#/configinc/#/tmp/mosquitto-config/#' /tmp/mosquitto-config/mqtt.conf
+        exec mosquitto -c /tmp/mosquitto-config/mqtt.conf
     env:
       TZ: "${TIMEZONE}"
     probes:
