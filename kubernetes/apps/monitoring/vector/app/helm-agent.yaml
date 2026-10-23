@@ -10,7 +10,7 @@ spec:
   chart:
     spec:
       chart: vector
-      version: 0.60.0
+      version: 0.22.1
       sourceRef:
         kind: HelmRepository
         name: vector-charts
@@ -28,8 +28,8 @@ spec:
     keepHistory: false
   values:
     image:
-      repository: ghcr.io/vectordotdev/vector
-      tag: 0.60.0-debian
+      repository: timberio/vector
+      tag: 0.30.0-debian
     role: Agent
     env:
       - name: VECTOR_WATCH_CONFIG
