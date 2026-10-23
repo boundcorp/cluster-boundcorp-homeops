@@ -37,6 +37,17 @@ spec:
         ports:
           http:
             port: 7878
+    probes:
+      startup:
+        enabled: true
+        custom: true
+        spec:
+          tcpSocket:
+            port: 7878
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 60
+          timeoutSeconds: 5
     ingress:
       main:
         enabled: true

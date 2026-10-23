@@ -33,6 +33,17 @@ spec:
         ports:
           http:
             port: 8080
+    probes:
+      startup:
+        enabled: true
+        custom: true
+        spec:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 60
+          timeoutSeconds: 5
     ingress:
       main:
         enabled: true
