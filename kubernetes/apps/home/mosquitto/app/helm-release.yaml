@@ -63,4 +63,4 @@ spec:
         volumeSpec:
           secret:
             secretName: mosquitto
-            defaultMode: 0400
+            defaultMode: 0440
