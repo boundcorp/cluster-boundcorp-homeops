@@ -26,8 +26,8 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     image:
-      repository: ghcr.io/onedr0p/radarr-develop
-      tag: 4.7.5.7809@sha256:f2044d2e8bd2e8d24e8a79f051404be80400f450a94b4c481cbc93cfeffbe745
+      repository: ghcr.io/home-operations/radarr
+      tag: 6.4.4.10685@sha256:1902ad2c08e9bac276ff9a1429af2eaa2f3c635a51f138f1b3eb734995171537
     env:
       RADARR__INSTANCE_NAME: Radarr
       RADARR__APPLICATION_URL: "https://{{ .Release.Name }}.${SECRET_PRIVATE_DOMAIN}"

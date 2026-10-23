@@ -26,8 +26,8 @@ spec:
       annotations:
         reloader.stakater.com/auto: "true"
     image:
-      repository: ghcr.io/onedr0p/sonarr-develop
-      tag: 4.0.0.646@sha256:0552df69435151b205607146a433d2ae810167970a89f65fb57d4a2c8e66bc77
+      repository: ghcr.io/home-operations/sonarr
+      tag: 4.0.20.3012@sha256:1f19eb5e0f421418c1a956bbe01310a0141423afe28bd9a4b1dcb8629ff2bce2
     env:
       SONARR__INSTANCE_NAME: Sonarr
       SONARR__APPLICATION_URL: "https://{{ .Release.Name }}.${SECRET_PRIVATE_DOMAIN}"

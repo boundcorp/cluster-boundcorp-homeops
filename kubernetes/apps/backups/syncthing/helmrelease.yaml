@@ -26,7 +26,7 @@ spec:
       nameOverride: *app
     image:
       repository: syncthing/syncthing
-      tag: 1.23.0
+      tag: 2.1.7
     ingress:
       main:
         enabled: true

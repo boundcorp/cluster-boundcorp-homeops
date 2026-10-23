@@ -5,6 +5,7 @@ kind: Kustomization
 resources:
   # Pre Flux-Kustomizations
   - ./namespace.yaml
+  - ./networkpolicy.yaml
   # Flux-Kustomizations
   - ./crunchy/secret.sops.yaml
   - ./crunchy/ghcr-secret.sops.yaml

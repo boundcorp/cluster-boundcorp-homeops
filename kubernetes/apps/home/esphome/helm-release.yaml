@@ -21,7 +21,7 @@ spec:
     image:
       # https://hub.docker.com/r/esphome/esphome
       repository: docker.io/esphome/esphome
-      tag: latest
+      tag: 2026.10.0
     env:
       TZ: "${TIMEZONE}"
     service:

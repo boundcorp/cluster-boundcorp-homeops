@@ -4,8 +4,7 @@ kind: Kustomization
 resources:
   - ./namespace.yaml
   - ./slushmedia-pvc.yaml
-  - ./filebrowser-config-pvc.yaml
-  - ./filebrowser-helm-release.yaml
+  - ./filebrowser-config-pvc.yaml # filebrowser app removed (archived, unpatchable CVE-2026-54089); PVC kept for a few weeks in case data is needed
   - ./sabnzbd/ks.yaml
   - ./radarr/ks.yaml
   - ./sonarr/ks.yaml

@@ -13,7 +13,6 @@ resources:
   - ./ethereum-helm-charts.yaml
   - ./external-dns.yaml
   - ./grafana.yaml
-  - ./hajimari.yaml
   - ./immich.yaml
   - ./ingress-nginx.yaml
   - ./jetstack.yaml
@@ -24,4 +23,3 @@ resources:
   - ./rook-ceph-charts.yaml
   - ./stakater.yaml
   - ./vector.yaml
-  - ./weave-gitops.yaml

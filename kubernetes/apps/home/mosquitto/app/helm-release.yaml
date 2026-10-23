@@ -19,8 +19,8 @@ spec:
     createNamespace: true
   values:
     image:
-      repository: ghcr.io/k8s-at-home/eclipse-mosquitto
-      tag: v2.0.15
+      repository: docker.io/library/eclipse-mosquitto
+      tag: 2.1.2-alpine
     command: ["mosquitto", "-c", "/configinc/mqtt.conf"]
     env:
       TZ: "${TIMEZONE}"
