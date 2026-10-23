@@ -27,7 +27,7 @@ spec:
     keepHistory: false
   values:
     fullnameOverride: coredns
-    replicaCount: 1
+    replicaCount: 2
     k8sAppLabelOverride: kube-dns
     service:
       name: kube-dns
@@ -71,13 +71,6 @@ spec:
       requests:
         cpu: 100m
         memory: 128Mi
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - matchExpressions:
-                - key: node-role.kubernetes.io/control-plane
-                  operator: Exists
     tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
