@@ -4,6 +4,27 @@ Ad hoc notes on findings/decisions from the Oct 2026 security review that don't
 belong in the SRE audit journals (operational health) but are worth keeping
 somewhere durable.
 
+## AdGuard Home is NOT running in this cluster — correction to the Oct 2026 report
+
+The original security review flagged `networking/adguard`'s HelmRelease
+(chart `adguard-home` 5.5.2, appVersion v0.107.7) as critically vulnerable
+(CVE-2026-32136, CVE-2026-41448 — unauthenticated admin takeover). That
+finding was **based on dead code**: `kubernetes/apps/networking/adguard/app/kustomization.yaml`
+never actually listed `helm-release.yaml` or `config-pvc.yaml` as resources,
+so nothing from that HelmRelease was ever applied to the cluster. Confirmed
+live: no HelmRelease, Deployment, or PVC named `adguard` exists; only an
+`ExternalName` Service pointing at `net.internal.boundcorp.net`, which
+resolves to `10.20.30.1` — your router/gateway. **The real AdGuard Home
+instance runs on your router, outside Kubernetes and outside this repo
+entirely.** The dead manifest files were deleted during remediation
+(2026-10-23); the ExternalName Service + Ingress (the actual proxy-through
+config) were left as-is.
+
+**Action needed, outside this repo:** check whatever AdGuard Home build is
+actually running at `10.20.30.1` and update it directly (router UI / SSH /
+whatever manages that device) — I have no visibility into its version or
+update mechanism from here.
+
 ## `homeops-admin` cluster-admin ServiceAccount
 
 - **Found:** 2026-10-23, during the security review.
