@@ -25,6 +25,19 @@ actually running at `10.20.30.1` and update it directly (router UI / SSH /
 whatever manages that device) — I have no visibility into its version or
 update mechanism from here.
 
+## Zigbee2MQTT was also not actually running — correction
+
+Same class of issue: `home/kustomization.yaml` has `#- ./zigbee2mqtt`
+commented out, so the Zigbee2MQTT HelmRelease (flagged for CVE-2026-71279)
+was never deployed either. Confirmed live: no matching Deployment/Pod
+anywhere in the cluster. Migrated the manifest off the dead `k8s-at-home-charts`
+source to `bjw-s` app-template anyway (image bumped 1.31.2 → 2.14.2) since
+it was a zero-risk edit with nothing running to break — but it's still
+commented out in `home/kustomization.yaml`. Re-enable only after reading
+Zigbee2MQTT's 1.x→2.x `configuration.yaml` migration notes and backing up
+the `zigbee2mqtt-config-v2` PVC; that's a config-schema concern independent
+of this repo.
+
 ## `homeops-admin` cluster-admin ServiceAccount
 
 - **Found:** 2026-10-23, during the security review.

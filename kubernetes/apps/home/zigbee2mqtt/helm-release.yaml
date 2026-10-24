@@ -8,11 +8,11 @@ spec:
   interval: 5m
   chart:
     spec:
-      chart: zigbee2mqtt
-      version: 9.2.0
+      chart: app-template
+      version: 1.5.1
       sourceRef:
         kind: HelmRepository
-        name: k8s-at-home-charts
+        name: bjw-s
         namespace: flux-system
       interval: 5m
   install:
@@ -23,10 +23,15 @@ spec:
   values:
     image:
       repository: ghcr.io/koenkk/zigbee2mqtt
-      tag: 1.31.2
+      tag: 2.14.2
     env:
       TZ: "${TIMEZONE}"
       ZIGBEE2MQTT_DATA: /data
+    service:
+      main:
+        ports:
+          http:
+            port: 8080
     ingress:
       main:
         enabled: true
@@ -57,9 +62,12 @@ spec:
         cpu: 100m
       limits:
         memory: 500Mi
-    # These config values are not what is my current state of zigbee2mqtt
-    # It's merely a guide for the initial start up on a fresh install
-    # Everything after the first start is managed in the UI
+    # These config values are not my current state of zigbee2mqtt.
+    # It's merely a guide for the initial start up on a fresh install.
+    # Everything after the first start is managed in the UI (stored on the
+    # config PVC's configuration.yaml, which carries its own 1.x->2.x schema
+    # migration the first time 2.x boots against existing 1.x data -- back
+    # up zigbee2mqtt-config-v2 before re-enabling this app).
     config:
       homeassistant: true
       device_options:
