@@ -28,7 +28,7 @@ spec:
         containers:
           main:
             image:
-              tag: v3.2.0
+              tag: v3.3.5
             env:
               TZ: "${TIMEZONE}"
 
