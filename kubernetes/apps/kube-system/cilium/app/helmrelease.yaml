@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: cilium
-      version: 1.17.18
+      version: 1.18.16
       sourceRef:
         kind: HelmRepository
         name: cilium
@@ -86,7 +86,8 @@ spec:
     loadBalancer:
       algorithm: maglev
       mode: dsr
-    localRedirectPolicy: true
+    localRedirectPolicies:
+      enabled: true
     operator:
       affinity:
         nodeAffinity:
