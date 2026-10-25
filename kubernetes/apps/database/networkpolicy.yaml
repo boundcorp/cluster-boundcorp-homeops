@@ -1,11 +1,13 @@
 ---
 # Default-deny ingress for every pod in this namespace, then explicitly allow
-# only the namespaces that actually talk to Postgres/PgBouncer (home, media,
-# monitoring for the exporter, and database itself). Closes the lateral-movement
-# path where any compromised pod anywhere in the cluster previously had a
-# direct line to the shared Postgres cluster. CNI is Cilium, which enforces
-# standard NetworkPolicy; egress is intentionally left unrestricted here to
-# keep this a minimal first policy.
+# only the namespaces that actually talk into here: home/media (apps using
+# Postgres), monitoring (the exporter), networking (ingress-nginx connects
+# directly to immich-server's pod IP for its own Ingress), and database
+# itself. Closes the lateral-movement path where any compromised pod
+# anywhere in the cluster previously had a direct line to the shared
+# Postgres cluster. CNI is Cilium, which enforces standard NetworkPolicy;
+# egress is intentionally left unrestricted here to keep this a minimal
+# first policy.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -39,3 +41,6 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: monitoring
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: networking
