@@ -20,6 +20,9 @@ objects:
       max_area: 100000
       threshold: 0.7
 
+detect:
+  enabled: true
+
 detectors:
   coral:
     type: edgetpu
