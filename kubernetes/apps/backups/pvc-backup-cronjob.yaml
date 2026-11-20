@@ -76,9 +76,6 @@ spec:
                 - name: mosquitto-config
                   mountPath: /pvcs/mosquitto-config
                   readOnly: true
-                - name: wyoming-whisper-data
-                  mountPath: /pvcs/wyoming-whisper-data
-                  readOnly: true
                 - name: recipes-media
                   mountPath: /pvcs/recipes-media
                   readOnly: true
@@ -150,10 +147,6 @@ spec:
               nfs:
                 server: 10.20.30.99
                 path: /volume1/k8s/pvc-50d5e76a-7eef-4a72-9373-70a3ca473e01
-            - name: wyoming-whisper-data
-              nfs:
-                server: 10.20.30.99
-                path: /volume1/k8s/pvc-e3ca061a-947f-454b-8d55-ba43187d35eb
             - name: recipes-media
               nfs:
                 server: 10.20.30.99
