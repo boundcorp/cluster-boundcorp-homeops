@@ -153,3 +153,13 @@ Not run: no Ansible, no cordon or uncordon, no `kubectl apply/edit/patch/delete`
 - Take a pre-hop snapshot, run the offload job, and check its sha256 on titan.
 - Decide on vega first.
 - Decide on the SUC bump.
+
+## vega un-cordon and 30-minute watch (21:01 UTC)
+
+Lee asked to uncordon vega (cordoned since 2026-08-30 after unexplained hangs on Aug 23 and Aug 29). Only the un-cordon was done: no k3s change, no Ansible, no drain. enterprise stays cordoned.
+
+- Baseline (21:01): Ready, uptime 28d, load 0.10, 4.4Gi/31Gi used, root 11% used, package temp 42C, no warning/error kernel entries since the Oct 22 boot (read via `sudo -n dmesg`/`journalctl`; the `setup` user is not in adm or systemd-journal). Only the 9 DaemonSet pods ran there.
+- `kubectl --context home uncordon vega` at 2026-11-20T21:01:55Z; `spec.unschedulable` empty, enterprise still `true`.
+- Checks every 5 min (21:02, :07, :12, :17, :22, :27, plus a final one at 21:32): vega Ready every time, load 0.04-0.24, memory used 4.5Gi (kubectl top 32%, CPU 0-1%), package temp 40-42C, no kernel warnings, no hung task/MCE/NMI/I/O error matches, no pod restarts.
+- No new pods were scheduled onto vega in the 30 minutes (still the same 9 DaemonSet pods); nothing was forced or moved there.
+- Not re-cordoned. The plan's 24h soak runs from 21:01:55Z; this entry only covers the first 30 minutes. An idle node tells us little about the load-triggered hangs, so keep watching.
