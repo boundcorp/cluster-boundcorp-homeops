@@ -1,0 +1,42 @@
+---
+# static PV on titan's k8s-hdd share. Retain, so deleting the PVC/PV never
+# deletes snapshots. the cronjob mounts only the etcd-snapshots/ subPath,
+# which it keeps root:root 0700 (files 0600). titan exports without root squash.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: etcd-snapshot-offload-titan
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  mountOptions:
+    - soft
+    - timeo=30
+    - retrans=3
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: 10.20.30.99#volume2/k8s-hdd##etcd-snapshot-offload
+    volumeAttributes:
+      server: 10.20.30.99
+      share: /volume2/k8s-hdd
+  claimRef:
+    namespace: kube-system
+    name: etcd-snapshot-offload-titan
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: etcd-snapshot-offload-titan
+  namespace: kube-system
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  volumeName: etcd-snapshot-offload-titan
+  resources:
+    requests:
+      storage: 50Gi

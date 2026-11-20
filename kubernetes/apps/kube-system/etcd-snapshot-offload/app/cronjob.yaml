@@ -1,0 +1,123 @@
+---
+# copies k3s etcd snapshots (and the server token, needed to restore on a
+# rebuilt node) from enterprise to titan:/volume2/k8s-hdd/etcd-snapshots.
+# read-only on the host; no k3s config change. snapshots hold every cluster
+# secret in plaintext, so the target dir is root-only.
+# on demand (e.g. before each upgrade hop, after `k3s etcd-snapshot save`):
+#   kubectl --context home -n kube-system create job --from=cronjob/etcd-snapshot-offload <name>
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-snapshot-offload
+  namespace: kube-system
+spec:
+  # k3s takes its scheduled snapshots at 00:00/12:00 enterprise local time
+  schedule: "30 0,12 * * *"
+  timeZone: America/Los_Angeles
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          restartPolicy: Never
+          # pinned by name so it runs on the cordoned control plane without
+          # going through the scheduler (enterprise stays cordoned)
+          nodeName: enterprise
+          tolerations:
+            - operator: Exists
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          containers:
+            - name: offload
+              image: docker.io/library/alpine:3.20.3
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  umask 077
+                  SRC=/snapshots
+                  DST=/titan
+                  KEEP_SCHEDULED=14   # etcd-snapshot-* (2/day = 7 days)
+                  KEEP_OTHER=20       # on-demand / pre-hop snapshots
+                  chmod 0700 "$DST"
+                  echo "target: $(stat -c '%U:%G %a' "$DST")"
+
+                  copied=0
+                  for f in "$SRC"/*; do
+                    [ -f "$f" ] || continue
+                    n=$(basename "$f")
+                    if [ -f "$DST/$n" ] && [ -f "$DST/$n.sha256" ]; then continue; fi
+                    want=$(sha256sum "$f" | cut -d' ' -f1)
+                    cp "$f" "$DST/.$n.tmp"
+                    got=$(sha256sum "$DST/.$n.tmp" | cut -d' ' -f1)
+                    if [ "$want" != "$got" ]; then
+                      echo "checksum mismatch for $n"; rm -f "$DST/.$n.tmp"; exit 1
+                    fi
+                    chmod 0600 "$DST/.$n.tmp"
+                    touch -r "$f" "$DST/.$n.tmp"   # keep snapshot mtime for retention order
+                    mv "$DST/.$n.tmp" "$DST/$n"
+                    echo "$want  $n" > "$DST/$n.sha256"
+                    chmod 0600 "$DST/$n.sha256"
+                    echo "copied $n $(stat -c %s "$DST/$n") bytes sha256=$want"
+                    copied=$((copied+1))
+                  done
+
+                  # server token: required to restore a snapshot on a rebuilt node
+                  if ! cmp -s /k3s-token "$DST/token" 2>/dev/null; then
+                    cp /k3s-token "$DST/.token.tmp"; chmod 0600 "$DST/.token.tmp"
+                    mv "$DST/.token.tmp" "$DST/token"; echo "token updated"
+                  fi
+
+                  # retention, only on snapshot files this job wrote
+                  prune() { # $1 = keep count, rest = ls pattern
+                    keep=$1; shift
+                    ls -1t "$@" 2>/dev/null | grep -v '\.sha256$' | tail -n +$((keep+1)) | while read -r old; do
+                      rm -f "$old" "$old.sha256"; echo "pruned $(basename "$old")"
+                    done
+                  }
+                  prune "$KEEP_SCHEDULED" "$DST"/etcd-snapshot-*
+                  others=$(ls -1 "$DST" | grep -v '^etcd-snapshot-' | grep -v '\.sha256$' | grep -v '^token$' | grep -v '^\.' | sed "s|^|$DST/|" || true)
+                  [ -z "$others" ] || prune "$KEEP_OTHER" $others
+                  rm -f "$DST"/.*.tmp
+
+                  echo "copied=$copied; on titan now:"
+                  ls -ln "$DST"
+              securityContext:
+                runAsUser: 0
+                runAsGroup: 0
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                limits:
+                  memory: 128Mi
+              volumeMounts:
+                - name: snapshots
+                  mountPath: /snapshots
+                  readOnly: true
+                - name: token
+                  mountPath: /k3s-token
+                  readOnly: true
+                - name: titan
+                  mountPath: /titan
+                  subPath: etcd-snapshots
+          volumes:
+            - name: snapshots
+              hostPath:
+                path: /var/lib/rancher/k3s/server/db/snapshots
+                type: Directory
+            - name: token
+              hostPath:
+                path: /var/lib/rancher/k3s/server/token
+                type: File
+            - name: titan
+              persistentVolumeClaim:
+                claimName: etcd-snapshot-offload-titan
