@@ -9,7 +9,9 @@ spec:
   version: "v1.27.3+k3s1"
   serviceAccountName: system-upgrade
   concurrency: 1
-  cordon: true
+  # no cordon/drain on purpose: SUC sets Unschedulable=false after a successful
+  # job when cordon or drain is set (handle_batch.go), which would uncordon
+  # enterprise. enterprise stays cordoned by hand. see docs/k3s-upgrade-plan.md P3.
   nodeSelector:
     matchExpressions:
       - { key: node-role.kubernetes.io/control-plane, operator: Exists }
