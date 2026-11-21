@@ -163,3 +163,23 @@ Lee asked to uncordon vega (cordoned since 2026-08-30 after unexplained hangs on
 - Checks every 5 min (21:02, :07, :12, :17, :22, :27, plus a final one at 21:32): vega Ready every time, load 0.04-0.24, memory used 4.5Gi (kubectl top 32%, CPU 0-1%), package temp 40-42C, no kernel warnings, no hung task/MCE/NMI/I/O error matches, no pod restarts.
 - No new pods were scheduled onto vega in the 30 minutes (still the same 9 DaemonSet pods); nothing was forced or moved there.
 - Not re-cordoned. The plan's 24h soak runs from 21:01:55Z; this entry only covers the first 30 minutes. An idle node tells us little about the load-triggered hangs, so keep watching.
+
+## vega load test (2026-11-21 05:10-05:57 UTC): FAILED, vega hung in stage c
+
+Lee asked for a load test of vega. It hung during stage c, the same way as Aug 23 and Aug 29: no warning in the kernel log, and the host simply stopped answering. Result: vega is re-cordoned and needs a hands-on power-cycle by Lee.
+
+What ran: test pods only, in the temporary namespace `vega-loadtest`, pinned with nodeSelector `kubernetes.io/hostname: vega`, no toleration. Image `alexeiled/stress-ng:0.12.05` (stress-ng 0.12.05), memory limits per pod, emptyDir `sizeLimit: 10Gi`, no NFS or PVC. vega is an Intel i7-8700T, 6 cores / 12 threads, 31Gi RAM (allocatable 30632536Ki), 12 CPU. A watcher on devbox logged Ready, `kubectl top`, load, memory, temperatures and new warn+ kernel lines (via ssh with a 10s timeout) every 60s.
+
+| Stage | Window (UTC) | stress-ng args | Peak load1 | Memory (free used / top) | Peak pkg temp | Kernel |
+|---|---|---|---|---|---|---|
+| idle baseline | 05:10 | - | 0.11 | 4.5Gi / 32% | 41C | boot-time (Oct 22) audio/FAT noise only |
+| a | 05:11-05:27 (completed) | `--cpu 6 --cpu-method matrixprod --timeout 900s` | 6.6 | 4.6Gi / 32% | 78C | clean |
+| b | 05:31:44-05:47 (completed) | `--cpu 12 --vm 2 --vm-bytes 8G --vm-keep --timeout 900s` | 16.9 | 12.8Gi / 60% (64% briefly) | 79C | clean |
+| c | 05:47:39-~05:56 (HUNG) | b + `--hdd 2 --hdd-bytes 1G --temp-path /scratch` | 20.6 | 13.8Gi / 60% | 79C (one 90.0C reading in the b to c handover) | none captured |
+
+- First stage b run used `--vm-bytes 4G` (stress-ng 0.12 splits it across workers, so only 4G was allocated, memory 46%); it was deleted after 3 minutes and re-run with 8G. Stage d (30 min, 75-80% memory, `--matrix`, `--vm`, `--hdd`, `--iomix`) was never started.
+- Last good sample 05:55:28Z: Ready, load 19.5, 12.8Gi used, 77C. Kubelet's last heartbeat 05:53:37Z. At 05:56:33Z ssh to vega timed out; `kubectl top` lost its metrics; at 05:57:02Z node `NotReady` (kubelet stopped posting status), ssh "No route to host", ping 100% loss. Memory, temperature and load were all inside limits at the last sample: the hang was not caused by memory pressure or heat (max 79C vs 94C high / 100C crit).
+- No MCE, hung-task, lockup, NMI, I/O or EDAC lines in the last captured kernel log; the only post-boot warn line was a harmless stress-ng "oom_adj is deprecated". Kernel log from the hang itself could not be read (host down); check `sudo dmesg`/`journalctl -b -1` after the power-cycle.
+- Actions: `kubectl --context home cordon vega` at 05:57:13Z, `kubectl --context home delete ns vega-loadtest` at 05:57:13Z (namespace stuck Terminating while vega is down; pods clear when it returns). Not touched: k3s, Ansible, enterprise (still cordoned), real workloads. No recovery attempt.
+- Verdict: FAILED at stage c (CPU 100% + 60% memory + disk I/O, ~9 minutes in). The August hangs are reproducible under sustained combined CPU and disk I/O load; the cause is still unknown (suspect the storage path or platform firmware/power; stages a and b alone were fine).
+- Advice for upgrade step 1: do not use vega as a schedulable worker for the upgrade, and the 24h soak (ends 2026-11-21 21:02Z) is no longer meaningful for it, since vega is cordoned and down. Evidence: the local watcher log and `vega-loadtest-evidence.txt` in the worktree (not committed).
