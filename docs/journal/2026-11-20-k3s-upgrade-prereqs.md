@@ -183,3 +183,106 @@ What ran: test pods only, in the temporary namespace `vega-loadtest`, pinned wit
 - Actions: `kubectl --context home cordon vega` at 05:57:13Z, `kubectl --context home delete ns vega-loadtest` at 05:57:13Z (namespace stuck Terminating while vega is down; pods clear when it returns). Not touched: k3s, Ansible, enterprise (still cordoned), real workloads. No recovery attempt.
 - Verdict: FAILED at stage c (CPU 100% + 60% memory + disk I/O, ~9 minutes in). The August hangs are reproducible under sustained combined CPU and disk I/O load; the cause is still unknown (suspect the storage path or platform firmware/power; stages a and b alone were fine).
 - Advice for upgrade step 1: do not use vega as a schedulable worker for the upgrade, and the 24h soak (ends 2026-11-21 21:02Z) is no longer meaningful for it, since vega is cordoned and down. Evidence: the local watcher log and `vega-loadtest-evidence.txt` in the worktree (not committed).
+
+## vega post-freeze diagnosis (2026-11-21 16:08-16:30 UTC)
+
+Lee power-cycled vega; it booted at 2026-11-21 16:07:38Z (08:07 PST). This pass was read-only: journal, SMART, sysfs, dmidecode, plus Prometheus and Loki through the API proxy. No reboot, stress, package, firmware or cordon change. The only change is this entry.
+
+### Node state (16:08Z)
+
+- vega Ready since 16:07:49Z, still cordoned (`unschedulable=true`, `node.kubernetes.io/unschedulable:NoSchedule`). enterprise still cordoned. nova and ziti were not touched.
+- Only the 9 DaemonSet pods run on vega (cilium, cilium-envoy, csi-nfs-node, intel-gpu-plugin, nfd-worker, node-exporter, loki-canary, vector-agent, netbird), each with +1 restart from the power-cycle.
+- The `vega-loadtest` namespace is gone (NotFound). It finished deleting once vega's kubelet came back, so no finalizers had to be removed.
+
+### When it froze: 05:56:03-05:56:33Z
+
+- The persistent journal works (`/var/log/journal/<machine-id>`; `--list-boots` goes back to Feb 2026).
+- Boot -1 (2026-10-22 17:30 PDT to 2026-11-20 21:55:44 PST) ends at **05:55:44.012Z** with `systemd[1]: Removed slice user-1000.slice`. That is routine teardown after the watcher's 05:55:33 ssh session ran `dmesg`. k3s last logged at 05:47:41 (stage c pod start). Nothing after that is unusual.
+- Prometheus: the last good node-exporter scrape was at **05:56:03Z** and the 05:56:33 scrape failed (`up=0`). So the host died within that 30 s window, 35 s after the last good watcher sample (05:55:28Z). The journal's last ~20-50 s never reached disk.
+- At 05:56:03 the box looked healthy:
+  - IO PSI `stalled` was flat at 111.08 s (no I/O stall building), memory PSI 0.03 s.
+  - Dirty 348 MB, writeback 17 MB.
+  - sda ~105 MB/s writes, io_time 1.0 (disk saturated but completing I/O).
+  - Package and core throttle counters 0 for the whole boot; temp 77-79 °C. The one transient was 92 °C at 05:48:30, during the b-to-c handover.
+  - Root fs 775 GB free.
+- Loki only has pod logs (vector ships no journald or kernel stream). The last vega line was at 05:55:25.
+- Boot -1 has **no** kernel warnings after boot. There are no lockup, hung-task, RCU-stall, MCE, EDAC, ATA, I/O or ext4 lines; the only warning is stress-ng's `oom_adj is deprecated` at 05:12:16.
+- The earlier hangs show the same pattern:
+  - Boot -2 (Aug 25 to Aug 29) ends at 2026-08-30T04:31:46.263Z mid-stream. k3s was logging every 2 s (an orphaned-pod volume error) and simply stopped.
+  - Boot -3 (Aug 22 to Aug 23) ends at 2026-08-23T09:17:01Z with the hourly cron. It was quiet before that, so the exact hang time is unknown.
+  - Neither boot has kernel warnings or any lockup line.
+- No crash artifacts:
+  - efi-pstore is registered as the pstore backend, so a kernel panic would have left a dump. `/sys/fs/pstore` and `/var/lib/systemd/pstore` are both empty, which means no panic dump was ever written.
+  - No `/var/crash` and no kdump installed.
+  - `last -x` shows each of these boots with no shutdown record. The SSD counts 229 power-off retracts (unsafe power-offs) out of 258 power cycles.
+
+### Key finding: the hardware watchdog was armed and did not reset the box
+
+- `/etc/systemd/system.conf.d/watchdog.conf` (dated 2025-11-19) sets `RuntimeWatchdogSec=30s` on `/dev/watchdog0`, which is `iTCO_wdt` (Intel PCH TCO v6, nowayout=0).
+- Boots -1, -2 and -3 all logged `Using hardware watchdog 'iTCO_wdt'` and `Watchdog running with a timeout of 30s`.
+- Also set: `kernel.panic=10`, `nmi_watchdog=1`, `softlockup_panic=0`, `hardlockup_panic=0`.
+- Yet vega stayed hung for ~10 h until the manual power-cycle, and the same happened on Aug 23 and Aug 29.
+- A software hang (kernel deadlock, panic, livelock) stops systemd feeding the TCO timer, and the PCH should reset the board about 30-60 s later. A panic would also self-reboot after 10 s.
+- Either the platform was wedged below the OS (power delivery, VRM or CPU/PCH hard hang), or the iTCO reset path does not work on this board. The latter has never been tested; `bootstatus` is 0.
+
+### Hardware checks
+
+| Check | Result |
+|---|---|
+| Machine | Lenovo ThinkCentre M720q Tiny (10T7001QUS), board 312D |
+| BIOS | **M1UKT39A, 2019-05-10**: original, never updated |
+| CPU / microcode | i7-8700T (sig 0x906ea), microcode **0xf2** (2023-01-12) from intel-microcode 3.20230512.1; candidate 3.20251111.1~deb12u1 is available but not installed |
+| Kernel | 6.1.0-10-amd64 (6.1.37, Jul 2023), the only kernel besides -9. Cmdline already has `intel_idle.max_cstate=1 pcie_aspm=off nvme_core.default_ps_max_latency_us=0`, so the C-state/ASPM workarounds were tried earlier and did not help. |
+| RAM | 2x16 GB DDR4-2666 SO-DIMM, mfr 85F7, P/N J642GU42J9266NF; **non-ECC** (`EDAC ie31200: No ECC support`). No ras-mc-ctl/rasdaemon/mcelog installed; no MCE lines in any boot. |
+| Power limits | RAPL PL1 35 W, **PL2 92 W**. The Tiny runs on an external Lenovo brick; its wattage can't be read from software (SMBIOS type 39 is "To Be Filled By O.E.M."). |
+| Disk | single SATA SSD `OEM Genuine 1TB` (fw R0817B0, not in smartctl db, DRAM-less no-name) on Intel Cannon Lake AHCI at 6 Gb/s. **It holds everything**: `/` = sda2 ext4, and `/var/lib/kubelet` (emptyDir) and `/var/lib/rancher` are plain directories on `/`. mq-deadline, queue depth 32, no swap. |
+| SMART | PASSED. Reallocated 0, pending 0, offline-uncorrectable 0, program/erase fails 0. UDMA CRC **1**, unchanged since Aug. SATA phy ICRC/R_ERR 0, 2 COMRESETs. Error log empty, no self-tests logged. 57,857 POH (56,671 in Aug), 3% endurance used, 36 °C. Hardware_ECC_Recovered 3,482,895 (vendor-specific, no baseline). |
+| ATA/I/O in kernel log | none in any retained boot (no `ata1` exception/reset, no I/O or ext4 errors) |
+| Thermal now | package 41 °C idle, throttle counters 0 |
+| IPMI / NVMe | none (consumer Tiny, no BMC; no NVMe device) |
+
+`smartctl -t short` was not run: reading the attributes was enough, and the disk shows no fault.
+
+### Diagnosis, most likely first
+
+1. **Platform/power-level hard hang (external PSU brick, board VRM, or CPU/PCH)**. Most likely.
+   - For:
+     - Death was instant, inside a 30 s window. There was no lead-up in PSI, dirty pages, temperature or throttling.
+     - Nothing reached the kernel log, and neither panic=10 nor the NMI hard-lockup detector produced a reboot or a line.
+     - The hardware TCO watchdog failed to reset it three times. Only a wedged platform (or a dead reset path) explains that.
+     - It is reproducible only under sustained high combined load: Satisfactory in Aug, stage c now.
+     - The brick and board are ~6.6 years powered on, and PL2 92 W is above what a 65 W brick can feed with SSD, RAM and board load on top.
+   - Against: stage b ran the same 100% CPU for 15 min without failing. Stage c only added SSD/SATA and page-cache traffic, a few watts more.
+   - Confirm:
+     - Read the brick's label (65 W vs 90 W).
+     - Rerun stage c on a known-good 90 W+ Lenovo brick, or with PL2 capped to 35-45 W.
+     - Test the iTCO reset so we know whether a broken reset path or a wedged platform is why it never rebooted.
+2. **RAM (non-ECC, generic modules)**.
+   - For: no ECC means silent corruption is possible, and load-triggered.
+   - Against: bad RAM usually produces oopses or panics, and panic=10 would reboot. Stage b's 8 GB `--vm` passed.
+   - Confirm: memtest86+ for at least 4 passes, then one DIMM at a time.
+3. **Firmware/microcode/kernel**.
+   - For: the BIOS is from 2019 and Lenovo shipped many later M720q releases; microcode and kernel are 2-3 years stale.
+   - Against: a pure kernel hang should have tripped the TCO reset.
+   - Confirm: update BIOS, microcode and kernel, then rerun stage c.
+4. **SSD/SATA path**. Unlikely.
+   - For: the freeze began only once disk I/O was added, and the disk is a no-name DRAM-less SSD.
+   - Against:
+     - SMART is clean, with no errors since Aug, and there are no ATA resets in any boot.
+     - IO PSI was flat right before the end.
+     - A stalled SSD leaves ping working and logs hung tasks after 120 s; here ping died immediately.
+   - Confirm: rerun stage c with `--hdd` writing to NFS or tmpfs instead of sda. If that survives, revisit.
+5. **Thermal**: ruled out. Throttle count was 0 for the whole run, max 79 °C sustained against 94 °C high.
+
+### Next steps
+
+| # | Step | Needs |
+|---|---|---|
+| 1 | Keep vega cordoned and out of the upgrade plan. Treat it as non-schedulable hardware until a cause is confirmed. | nothing |
+| 2 | Read the power brick's wattage label and check it for heat or damage; look at the BIOS event log if the setup menu has one. | physical access |
+| 3 | Install a netconsole target (e.g. to enterprise or rigel) and set `kernel.softlockup_panic=1`, `hardlockup_panic=1` and `hung_task_panic=1`. Next time we either get the dying kernel's last words over the network or a reboot. | Lee's go-ahead (config change) |
+| 4 | Test the iTCO watchdog once: stop feeding it, e.g. `sysctl kernel.panic=0` plus `echo c > /proc/sysrq-trigger`, and check that the board resets within ~60 s. If it doesn't reset, the watchdog is useless as a safety net. | Lee's go-ahead (deliberate crash and reboot) |
+| 5 | memtest86+, at least 4 passes. | physical access + downtime |
+| 6 | Update the BIOS to the latest M720q release, then intel-microcode 3.20251111 and the current bookworm kernel. | Lee's go-ahead (firmware/packages; BIOS flash wants physical presence) |
+| 7 | After 2-6, rerun stage c in steps: (a) known-good 90 W+ brick, (b) PL2 capped, (c) `--hdd` off sda. Each takes ~15 min, under the same watcher. | Lee's go-ahead |
+| 8 | If it still hangs on a good brick with good RAM and current firmware, retire or RMA the board/CPU. Moving the SSD is not enough evidence on its own. | Lee |
