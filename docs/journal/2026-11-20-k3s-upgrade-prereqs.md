@@ -1,6 +1,6 @@
 # k3s upgrade prerequisites (2026-11-20)
 
-Status: done except P4 (vega uncordon), which was stopped on purpose. The SUC controller bump is deferred.
+Status: done except P4 (vega uncordon), which was stopped on purpose; vega is now out of the campaign (hung under load 2026-11-21). The SUC controller bump was done on 2026-11-23 (`3d97f22`, `673b2b7`, see the last section).
 
 Plan: `docs/k3s-upgrade-plan.md` (draft PR #3). Go-ahead: Lee, 2026-11-20 18:31 UTC, prerequisites only. **No k3s version change was made and no Ansible playbook was run.** enterprise stayed cordoned the whole time.
 
@@ -9,7 +9,7 @@ Plan: `docs/k3s-upgrade-plan.md` (draft PR #3). Go-ahead: Lee, 2026-11-20 18:31 
 | # | Step | Status | Commit |
 |---|---|---|---|
 | 1 | Re-pin Ansible `k3s_release_version` to v1.27.3+k3s1 | done | `20bdb52` |
-| 2 | SUC Plans: drop `cordon` from server plan, add `drain` to agent plan | done; controller bump deferred | `002191f` |
+| 2 | SUC Plans: drop `cordon` from server plan, add `drain` to agent plan | done; controller bump v0.11.0 → v0.21.1 done 2026-11-23 | `002191f`, `3d97f22`, `673b2b7` |
 | 3 | Off-node etcd snapshots to titan (CronJob) | done | `5427837` |
 | 4 | Restore drill, off-cluster | done, passed | – |
 | 5 | kube-vip `vip_interface: enp3s0` | done | `3307982` (template) + hand edit on enterprise |
@@ -286,3 +286,55 @@ Lee power-cycled vega; it booted at 2026-11-21 16:07:38Z (08:07 PST). This pass 
 | 6 | Update the BIOS to the latest M720q release, then intel-microcode 3.20251111 and the current bookworm kernel. | Lee's go-ahead (firmware/packages; BIOS flash wants physical presence) |
 | 7 | After 2-6, rerun stage c in steps: (a) known-good 90 W+ brick, (b) PL2 capped, (c) `--hdd` off sda. Each takes ~15 min, under the same watcher. | Lee's go-ahead |
 | 8 | If it still hangs on a good brick with good RAM and current firmware, retire or RMA the board/CPU. Moving the SSD is not enough evidence on its own. | Lee |
+
+## SUC controller v0.11.0 → v0.21.1 (2026-11-23 03:19-03:31 UTC)
+
+Go-ahead: Lee's 2026-11-20 prerequisites approval (this was the deferred part of P3). No k3s version change, no Plan version change, no cordon or drain. Commits on main: `3d97f22` (bump) and `673b2b7` (drain timeout fix).
+
+### What changed (`kubernetes/apps/system-upgrade/system-upgrade-controller/app/kustomization.yaml`)
+
+- Upstream manifests and CRD at v0.21.1, image `rancher/system-upgrade-controller:v0.21.1`.
+- **ClusterRoleBinding renamed** `system-upgrade` → `system-upgrade-controller` with a JSON6902 patch. v0.21.1 points the binding at the new ClusterRole `system-upgrade-controller` instead of `cluster-admin`, and `roleRef` is immutable. Under the new name Flux creates the binding, then prunes the old one (the ks has `prune: true`). The `system-upgrade` SA lost `cluster-admin` and now has the upstream least-privilege ClusterRoles `system-upgrade-controller` and `system-upgrade-controller-drainer` (pods/eviction, nodes get/patch), plus the namespaced Role (jobs, secrets).
+- **Deployment runs on a worker.** The upstream nodeAffinity (`control-plane Exists`) is replaced with `control-plane DoesNotExist`, `hostname NotIn [vega]`, `os In [linux]`, and the tolerations with `[]`. The upstream hostname podAntiAffinity is kept.
+- **Strategy stays RollingUpdate** with `maxSurge: 0`, `maxUnavailable: 1`. Upstream's `Recreate` failed the server-side dry-run (`spec.strategy.rollingUpdate: Forbidden: may not be specified when strategy type is 'Recreate'`), because the live object has a defaulted `rollingUpdate` block. With one replica this behaves the same as Recreate.
+
+### Checks before the push
+
+- **Plan hash.** `DigestStatus` and `MungeVersion` are identical in v0.11.0 and v0.21.1: sha224 of `latestVersion` + `serviceAccountName` (no secrets, no include-in-digest annotation). Recomputed locally, the hash is `e1d892a3…`, which every node already carries, so no node is selected and no Job is created.
+- **Server-side dry-run** (`--server-side --field-manager=kustomize-controller --dry-run=server`) of the full render passed after the strategy fix. A negative control applying the unrenamed `system-upgrade` CRB with the new roleRef failed with `cannot change roleRef`, as expected.
+- The render with kustomize v5.3.0 (the version in kustomize-controller v1.2.2) was byte-identical to kubectl's.
+
+### Problem found after the push: drain.timeout int overflow (fixed in `673b2b7`)
+
+- After `3d97f22` the new controller started on nova and took the lease, but could not list Plans: `json: cannot unmarshal number 900000000000 into Go struct field DrainSpec.items.spec.drain.timeout of type int32`.
+- Cause: SUC ≥ v0.16.3 types `drain.timeout` as `IntOrString`, whose int is an int32. 900 s in nanoseconds does not fit. The v0.11.0 CRD only accepted an int (see §2 above), so the old value was valid until now.
+- Effect: fully inert (no Plans visible, so no Jobs), but the controller did nothing.
+- Fix: `timeout: "900s"` (the v0.21.1 CRD accepts int-or-string, and a string goes straight to `kubectl drain --timeout`). `drain` is not part of the hash. The coordinator approved fixing forward instead of rolling back, since the state was inert. The server Plan has no duration fields.
+- **Rule from now on: Plan durations must be strings.** An int is only usable below ~2.1 s.
+- At 03:28:15 the controller started its Plan controller and logged `Jobs complete for version v1.27.3-k3s1. Hash: e1d892a3…` for both Plans. Since then there have been 0 errors.
+
+### Verification (03:20-03:31, plus a 5 s watcher on jobs and cordons from 03:20 to 03:45)
+
+- `system-upgrade-controller` 1/1 Running on **nova**, image v0.21.1, 0 restarts.
+- Both ks (`cluster-apps-system-upgrade-controller`, `-plans`) Ready at `673b2b7`.
+- Plans `server` and `agent`: version v1.27.3+k3s1, `Validated=True`, `LatestResolved=True`, `Complete=True`, `applying` empty, hash `e1d892a3…`.
+- **0 Jobs and 0 upgrade pods** in `system-upgrade` at every check. The only events are the controller's own rollout and the two `Complete` events.
+- Cordons unchanged: enterprise and vega `unschedulable=true`, nova and ziti schedulable. All 4 nodes v1.27.3+k3s1.
+- `clusterrolebinding/system-upgrade` is gone (pruned); `system-upgrade-controller` and `system-upgrade-drainer` exist.
+
+### Notes for hop 1
+
+- SUC's agent order is deterministic: nodes are sorted by sha256(node UID + plan UID + latestHash). With vega excluded, hop 1 (v1.28.15+k3s1) runs **ziti, then nova**. The order for every hop is in the plan (§4).
+- The agent Plan's nodeSelector still matches vega (no control-plane label). Before any agent version bump, vega must be excluded (`kubernetes.io/hostname NotIn [vega]` in the agent Plan), otherwise SUC would drain and then **uncordon** vega. SUC v0.21.1 also skips any node labelled `plan.upgrade.cattle.io/agent=disabled`, but that is a kubectl label outside Git, so prefer the nodeSelector.
+- The upstream ConfigMap sets the drain/cordon kubectl image to `rancher/kubectl:v1.30.3`. Against a 1.28 API server that is +2 minors of client skew. Drain uses only GA APIs, so this is fine, but consider pinning it to the hop's minor if a drain misbehaves.
+
+### Rollback
+
+A plain `git revert 673b2b7 3d97f22` is **not** enough. The v0.11.0 Deployment requires `node-role.kubernetes.io/master` and has no `node.kubernetes.io/unschedulable` toleration. The old pod only ran on enterprise because it was scheduled 8 minutes before the 2026-08-04 cordon, so after a revert the new pod would stay Pending and the ks (`wait: true`) would go NotReady.
+
+Rollback is a single commit that:
+1. Restores the v0.11.0 kustomization (the revert brings back the `system-upgrade` CRB with `cluster-admin`, and Flux prunes the two new CRBs).
+2. Keeps a worker nodeAffinity patch on the v0.11.0 Deployment.
+3. Restores the int `drain.timeout: 900000000000`, because the v0.11.0 Go type (`time.Duration`) cannot decode `"900s"`.
+
+Server-side dry-run it before pushing. Nothing else was touched by hand, so no manual restore is needed.
