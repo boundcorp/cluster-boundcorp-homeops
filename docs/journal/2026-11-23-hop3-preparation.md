@@ -1,0 +1,35 @@
+# Hop 3 preparation: disks, Jellyfin GPU and readiness (2026-11-23)
+
+Scope: Lee's 20:53/20:54 UTC requests, clarified by the coordinator after the dispatch text was truncated. Disk inspection only, one GitOps Jellyfin rollout, an offloaded etcd snapshot, and readiness documentation. No hop 3 or k3s/SUC version change is authorized. Enterprise and vega remain cordoned. The hop-2 incident and GPU failure are recorded in `2026-11-23-k3s-hop2.md`; whether the GPU permission defect predates hop 2 remains unknown.
+
+## 1. Ziti storage inspection (20:58–21:03 UTC)
+
+`~/ENVIRONMENT.md` was read first. `envcheck` was absent from PATH; `/home/dev/bin/envcheck` passed home/API and documented SSH routes. No SSH to nova/ziti, host-key edits, host writes, pruning or storage changes. Read-only node-exporter mounts, kubelet stats/configz and temporary privileged BusyBox node-debug pods were used. Each debug pod was deleted immediately after inspection; ziti DiskPressure was False before creating either ziti pod.
+
+| Host | Physical storage and layout | Effective k3s/image filesystem |
+|---|---|---|
+| ziti | One PNY CS900 500GB SATA SSD (465.8 GiB); sda1 EFI 976 MiB, sda2 root 29.7 GiB, sda3 `/var` 11.9 GiB, sda4 active swap 977 MiB, sda5 `/srv` 422.2 GiB. Plain ext4; no LVM tools or mapper volumes. No unused physical disks/partitions (zero-sized nbd devices are virtual). | `/var` filesystem capacity 12,459,843,584 bytes; available 2,786,013,184 bytes (2.59 GiB), about 9.02 GB used. `/` has about 24 GiB free; `/srv` has about 394 GiB available, 2.1 MiB used. |
+| nova | One KingFast NVMe, 953.9 GiB; root 55.5 GiB, `/var` 22.2 GiB, swap 976 MiB, `/srv` 875.2 GiB. No LVM tools. | **Already bind-mounts `/srv/k3s` at `/var/lib/rancher/k3s`**. Imagefs capacity 923,869,966,336 bytes; available 806,831,136,768 bytes. `/var` independently has 21.16 GB available. |
+| enterprise | Patriot P210 128GB SATA, root partition 110.3 GiB, EFI 512 MiB; `/var` and `/srv` are on root. No LVM tools. | Root about 109 GiB filesystem, 11 GiB used, 92 GiB available. Read-only sfdisk reports ~976 MiB free using the current GPT and warns its backup GPT/PMBR reflect the old disk size. No partition-table repair attempted. |
+
+Ziti `sfdisk --list-free` proves **only 1,056,256 bytes (~1 MiB) unpartitioned**, after sda5. `/var` is immediately followed by swap and `/srv`; it cannot simply grow into contiguous free space. Its problem is partition allocation, not lack of total SSD capacity. Nova's live bind mount provides a directly relevant precedent for using the large `/srv` partition.
+
+K3s uses the default `/var/lib/rancher/k3s`; generated containerd config explicitly has `root = "/var/lib/rancher/k3s/agent/containerd"`, `state = "/run/k3s/containerd"`. Ziti has no separate bind mount there. `du -x` reports about 8.0 GiB under `/var/lib/rancher`: 7.4 GiB containerd and 572 MiB k3s binaries/data. Kubelet CRI imagefs accounting reports 5.73 GB, which is a different accounting scope from on-disk `du` and compressed image sizes. Logs total about 172 MiB (journal 79 MiB, pod logs 77 MiB); cache 101 MiB. Inodes are plentiful (~700k free of 780k). This is runtime/image capacity, not a multi-GB log runaway.
+
+29 CRI images report ~2.204 GB summed image sizes (shared/compressed layers are not unique filesystem occupancy). Largest: Jellyfin 751 MB, Cilium 255 MB, PGO operator 199 MB, ingress 116 MB, radarr 86 MB, Vector/sonarr ~81 MB each. Jellyfin's cached image remains on ziti after hop 2; it was not pruned. Configz on both workers: image-GC high/low **85/80%**; hard eviction imagefs/nodefs available **5%**; minimum reclaim **10%**; pressure transition **5 min**. At ziti's size, these are ~1.87/2.49 GB available for high/low GC and only ~0.623 GB at eviction: too little margin for concurrent upgrade/cold-unpack churn.
+
+SMART on ziti: **PASSED**, 33 C, CRC/PHY errors 0, raw read errors 0, reported life left 89, 50,693 power-on hours, 170 unsafe shutdowns, vendor bad-block field 0/22. These are a read-only health snapshot, not a guarantee against failure. No tests were started. Nova's SMART/free-partition follow-up used its actual NVMe path (see final addendum if applicable); the initial generic `/dev/sda` probe correctly failed because nova has no SATA disk.
+
+### Options for Lee (none implemented)
+
+| Option | Cost / risk | Expected interruption / physical presence |
+|---|---|---|
+| Grow an LV or `/var` into free space | No LV or useful unallocated space exists. Rebuilding/moving swap and `/srv` can create room, but partition/filesystem surgery is the highest-risk option and unnecessary here. | Offline/recovery window, likely tens of minutes to hours; recovery console/physical access advisable. |
+| **Use existing `/srv` for k3s, following nova's bind-mount pattern (recommended)** | No hardware cost; controlled copy preserving ownership/xattrs/hardlinks, quiesced runtime, persistent mount ordering, and verification/rollback required. Keep the ordinary k3s path so SUC and containerd paths still agree. Do not copy a live runtime or leave both trees active. | Reserve a supervised 15–30+ min worker maintenance window; k3s/container workloads may need interruption. No physical visit expected if a separately approved debug/host-management route is reliable; verified SSH/console fallback strongly recommended. |
+| Add/replace SSD | Hardware cost; still requires migration/layout correction. One SATA disk is observed, with no unused device; do not assume a spare NVMe slot from software inventory. Larger SSD alone does not enlarge `/var`. | Lee physically installs hardware; planned shutdown/migration, typically 30–60+ min. Confirm exact chassis/slot support before buying. |
+| Earlier GC thresholds plus `crictl rmi --prune` | No hardware cost; can remove unused images but leaves active-image floor and future cold-pull risk. A proposed 70/60% policy would reclaim sooner, but measured capacity gates still govern. No tuning/prune was run. | Kubelet config/restart requires separate approval; prune causes future downloads. No physical visit expected. A stopgap, not capacity resolution. |
+| Keep large images off ziti | App nodeAffinity is low risk but reduces failover options. Do this for Jellyfin in part 2; other large apps need individual review. A broad taint could evict/block other workloads and is not authorized. | Jellyfin's one authorized rollout only; no physical visit. Does not recover its already cached image or satisfy storage headroom by itself. |
+
+The recommended migration is a **separate Lee-approved infrastructure operation**, with a concrete runbook and safe workload handling before execution. Current 2.79 GB free fails the proposed **5,000,000,000 bytes minimum imagefs available** pre-hop gate; no further agent upgrade should start on this storage layout without resolving the gate and cold-pull/unpack headroom.
+
+Evidence retained outside Git: `/home/dev/orca/artifacts/hop3-prep-20261123-task_8e5c5990eeae/` (node/pod/Flux/revision baseline, disk inspection, CRI inventory, and original draft plan).
