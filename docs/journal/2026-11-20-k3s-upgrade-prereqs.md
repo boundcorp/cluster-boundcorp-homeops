@@ -379,3 +379,109 @@ Result: **no `helm-delete-*` or `helm-install-*` job at any sample**, no HelmCha
 Rollback: none needed. The object was a dead duplicate of Flux's release, and re-creating it would bring the hazard back.
 
 Remaining caveat: `ansible/inventory/group_vars/kubernetes/main.yaml` still lists `custom-coredns-helmchart.yaml.j2` in `k3s_server_manifests_templates`. That is right for a fresh bootstrap (CoreDNS has to exist before Flux), but **running `cluster-installation.yaml` against the live cluster would re-create this HelmChart**. Its "wait for rollout" step would then time out on the cordoned enterprise before the unmanage step runs. Do not run that playbook against the live cluster. It is not part of the hop procedure.
+
+### Item 2: ingress-nginx 2 replicas, PDB, spread over nova and ziti (`33f0d04`, 18:26-18:29Z)
+
+- Before: Deployment 1/1 on nova (100m / 90Mi requests), no PDB. A leftover `Completed` pod on ziti from 2026-10-23 is still there; it is harmless and was left alone.
+- Checks: no hostNetwork, no hostPorts. The Service is a LoadBalancer on Cilium LB-IPAM (`10.20.30.200`, L2 announcement, `externalTrafficPolicy: Cluster`), so 2 replicas don't conflict. Room: nova requests 36% CPU / 37% memory, ziti 10% / 68%; the pod needs 100m / 90Mi.
+- Values added: `replicaCount: 2`, `minAvailable: 1` (the chart creates the PDB whenever replicas > 1), and a `topologySpreadConstraints` entry on `kubernetes.io/hostname` with `maxSkew: 1`, `DoNotSchedule`, `nodeTaintsPolicy: Honor` and `matchLabelKeys: [pod-template-hash]`.
+  - `Honor` matters: with the default `Ignore`, the cordoned enterprise and vega count as empty domains, and a third pod during a rollout could never satisfy the skew.
+  - `matchLabelKeys` counts only the current ReplicaSet, so rollouts don't stall.
+  - Rendered chart 4.15.1 locally, then a server-side dry-run of the Deployment and PDB. The API server kept both fields; the feature gates are on in 1.28.
+- Result: Helm **rev 2 → 3**, the intended upgrade. Pods `ingress-nginx-controller-79cfc496bb-fb75k` on nova and `-gqnrn` on ziti, both 1/1. PDB `ALLOWED DISRUPTIONS 1`. Endpoints list both pods. `hass` answered 200 at every 10 s sample during the rollout (18:27-18:29). The old pod went through its normal graceful shutdown.
+- Health 18:29Z: 44/44 ks, 34/34 hr, **52/52** Prometheus targets (the second controller's metrics endpoint is new), DNS ok, cordons unchanged, 0 SUC Jobs, no restart changes against the baseline.
+- Rollback: `git revert 33f0d04` (Helm upgrade back to 1 replica; the PDB is removed by the chart).
+
+### Item 3: Flux 2.2.3 → 2.3.0 and the API migration (18:31-18:53Z)
+
+Bump (`52aab2b`):
+- 2.3.0 is the only 2.3.x release: helm-controller v1.0.1, kustomize/source/notification v1.3.0, image-reflector v0.32.0, image-automation v0.38.0. Same method as `d2ab9e9`: the OCI tag in `kubernetes/flux/config/flux.yaml`. All patches kept unchanged.
+- Render check: pulled `flux-manifests:v2.2.3` and `:v2.3.0` with a checksum-verified flux 2.3.0 CLI (scratchpad), and built both with the ks patches. The 2.2.3 render matched live except for kustomize-controller's own labels. The 2.3.0 render passed a server-side dry-run (`--field-manager=kustomize-controller`) for every object.
+- The helm-controller patch still passes `--feature-gates=DetectDrift=true,CorrectDrift=false`. Both gates still exist in v1.0.1 (no crash on start), but nothing outside `features.go` reads them. Drift detection is per HR (`spec.driftDetection`) and no HR sets it, so the behaviour is unchanged or quieter.
+- Applied 18:36Z, OCI digest `sha256:5870003e…` (the one rendered). All 6 controllers 1/1 on the new images. On start, helm-controller logged `release in-sync with desired state` for all 33 active HRs.
+- Short `DependencyNotReady` events on grafana and kube-prometheus-stack at start-up (local-path-provisioner not re-reconciled yet) cleared on their own.
+
+Migration, in 6 batches. Each batch: `sed` of the apiVersion line only, a strict server-side dry-run of every changed file, push, reconcile the owning ks, `flux reconcile hr` (no `--force`) of each HR, then compare `status.history[0].version` and the newest Helm release secret for **every** HR, plus the total secret count:
+
+| Commit | Batch | Content | Result |
+|---|---|---|---|
+| `8b7e0c0` | sources | 22 HelmRepository (v1beta2/v1beta1 → v1), GitRepository `external-snapshotter-source` (v1beta1 → v1), Kustomization `external-snapshotter-crds` (v1beta2 → v1). OCIRepository stays v1beta2, the only version 2.3 serves. | generations unchanged, all Ready |
+| `73c7055` | H1 canary | reloader, esphome | identical revisions, `in-sync` |
+| `bfdfb73` | H2 apps | home (frigate, zwave-js-ui, mosquitto, speakr, home-assistant, zigbee2mqtt*), media (sonarr, radarr, sabnzbd, jellyfin), games/satisfactory, backups/syncthing, plus 6 `ks.yaml` healthChecks | identical |
+| `c1a027e` | H3 monitoring/db | immich (+ks), crunchydata-pgo, loki, grafana, kube-prometheus-stack, vector-agent, vector-aggregator, speedtest-exporter (ks suspended), node-problem-detector* | identical |
+| `ebd2372` | H4a infra | metrics-server, node-feature-discovery, intel-gpu-plugin, local-path-provisioner, csi-driver-nfs, k8s-gateway, external-dns, cloudflared | identical |
+| `a2ba928` | H4b core | cilium, coredns, cert-manager, ingress-nginx | identical |
+
+\* file is in the repo but not deployed.
+
+- None of the fields removed in v2 (`valuesFile`, `postRenderers…patchesStrategicMerge/patchesJson6902`) is used anywhere.
+- **Helm revisions, before → after (every HR identical; 129 Helm release secrets before and after):** syncthing 3, cert-manager 2533, crunchydata-pgo 2, immich 6, satisfactory 16, esphome 2, frigate 14, home-assistant 11, mosquitto 6, speakr 6, zwave-js-ui 5, cilium 22, coredns 8, csi-driver-nfs 2, intel-gpu-plugin 1, local-path-provisioner 1, metrics-server 1, node-feature-discovery 1, reloader 1, filebrowser 7, jellyfin 4, radarr 17, sabnzbd 17, sonarr 23, grafana 2, kube-prometheus-stack 10, loki 4, speedtest-exporter 1 (suspended, no history), vector-agent 7, vector-aggregator 1, cloudflared 2, external-dns 1, ingress-nginx 3 (2 → 3 was item 2), k8s-gateway 2.
+  - cert-manager's 2533 is historical churn; the last release was 2025-10-16.
+- After 18:53Z: 44/44 ks, 34/34 hr, 52/52 targets, DNS and ingress ok, no restarts, 0 SUC Jobs. The repo has no `toolkit.fluxcd.io/v*beta*` left except the OCIRepository (a few `$schema` editor comments still name v2beta1; harmless).
+
+Still needed before Flux 2.7 (which removes the betas):
+- Run `flux migrate` (a ≥ 2.6 CLI) in-cluster, then check that CRD `status.storedVersions` holds only `v1`/`v2`. Now:
+
+  | CRD | storedVersions |
+  |---|---|
+  | HelmRelease | `[v2beta1, v2beta2, v2]` |
+  | HelmRepository, HelmChart | `[v1beta2, v1]` |
+  | Alert, Provider | `[v1beta2, v1beta3]` |
+  | ImageUpdateAutomation | `[v1beta1, v1beta2]` |
+  | Bucket, Image* | `v1beta2` (their v1 comes later) |
+- kustomize-controller skips unchanged objects, so the migrated HRs keep a `kustomize-controller` managedFields entry at v2beta1 until their spec next changes. `flux migrate` and a check of managedFields belong to the same step.
+- **Orphan `media/filebrowser`**: Git removed it in `87a6f54` (archived, unpatchable CVE), but it is still live and Ready because `cluster-apps` has `prune: false`. A repo migration can't cover it. Delete it (and its workload) or migrate it before 2.7 (🔒 Lee; not touched here).
+- Leave `kubernetes/bootstrap/` (v2.9.6) alone, as before.
+
+Rollback:
+- **Not a plain revert.** The 2.2.3 CRDs don't have HelmRelease `v2` or HelmRepository/HelmChart `v1`, and those versions are now in `status.storedVersions`, so the API server would reject the old CRDs and the `flux` ks would fail.
+- Prefer fixing forward. If a rollback is unavoidable (🔒):
+  1. Revert the migration commits, newest first.
+  2. Re-store every object in the beta versions (`flux migrate`-style rewrite).
+  3. Patch the CRDs' `status.storedVersions` by hand.
+  4. Revert `52aab2b`.
+
+### Item 4: SUC agent ordering (`ccddf12`, 18:55Z)
+
+What actually happens (SUC v0.21.1 `handle_batch.go` and `plan.go`, plus the hop-1 controller log):
+- When an agent Job completes, the Job handler writes the plan-hash label **and** `Unschedulable=false` in one `nodes.Update`. `SelectConcurrentNodes` treats every selected node without the hash as still applying, and with `concurrency: 1` it picks the next node only once the previous one has the hash.
+- Hop 1's log: `JobComplete … ziti` at 17:30:07.066, then `Jobs synced` (nova's Job) at 17:30:07.089. ziti was uncordoned **before** nova's Job existed.
+- The "~10 s before the uncordon" in the hop-1 journal (Issue 5) was an artefact of the 13 s watcher. Two agents were never cordoned at once. The real weakness is that ziti had only ~40 s after its kubelet restart before nova was cordoned (17:30:20) and restarted (17:30:46).
+
+Change:
+- `postCompleteDelay: "300s"` on the agent Plan. SUC still uncordons the node immediately on completion ("so that workloads can resume scheduling"), but it sets the hash label only after the delay, so the next node's Job waits 5 min. The Job TTL is raised to delay + 1 min automatically.
+- It is a string (`metav1.Duration`, CRD `type: string`), so the int-overflow rule doesn't apply, and it is not part of `DigestStatus`.
+- Not patched: SUC itself. Considered and not done: one Plan per agent. New Plan UIDs would change the precomputed order and double the Plan objects. Per-node gating with the existing Plan is simpler: the hop's agent commit is split into B1 (version bump plus `NotIn [vega, nova]`) and B2 (drop nova). `nodeSelector` is not hashed, so B2 doesn't re-run ziti. See the plan's §4.7.
+
+Verification:
+- Server-side dry-run diff before the push: only `spec.postCompleteDelay`.
+- Live from 18:56:00Z: `postCompleteDelay: 300s`, both Plans `v1.28.15+k3s1`, hash `f9eb9866…` unchanged, `applying` empty, Complete.
+- Watcher every ~6 s, 18:55:41-18:57:15 and again from 18:57:33 to 19:02:54 (37 samples, 5 min 21 s): **0 Jobs, 0 upgrade pods**, cordons unchanged (enterprise and vega true, nova and ziti schedulable), and 0 error lines in the controller log.
+
+Rollback: `git revert ccddf12`. It is inert either way.
+
+### Final sweep (19:03Z)
+
+- Nodes: enterprise, nova, ziti **v1.28.15+k3s1**; vega v1.27.3+k3s1; all Ready. Cordons unchanged: enterprise and vega `unschedulable=true`, nova and ziti schedulable.
+- Flux: **44/44** Kustomizations, **34/34** HelmReleases Ready; Flux v2.3.0 (`sha256:5870003e…`). 129 Helm release secrets (same as at 18:31).
+- No pod outside Running/Completed, none partially ready, every DaemonSet full, **no restart changes** against the 18:13 baseline.
+- Prometheus **52/52** targets up (51 + the second ingress controller).
+- DNS from a test pod: `kubernetes.default.svc.cluster.local` → 10.43.0.1 via 10.43.0.10. Ingress `10.20.30.200`: hass, esphome, photos, sync 200; grafana 302.
+- ingress-nginx 2/2, PDB allowed disruptions 1. `kubectl get helmchart -A`: none.
+- SUC: **0 Jobs**; Plans Complete at v1.28.15+k3s1, hash `f9eb9866…`, agent `postCompleteDelay: 300s`.
+- etcd: `pre-hop2-prereqs-20261123T1814Z-enterprise-1795457679` on titan, sha256 `cca496a36d28d830400bfd1609bb93637b19a5198c59ff144e9df91b8358d548` (matches enterprise).
+
+### Hand-run commands that changed something
+
+1. `ssh enterprise sudo k3s etcd-snapshot save --name pre-hop2-prereqs-20261123T1814Z`
+2. `kubectl --context home -n kube-system create job --from=cronjob/etcd-snapshot-offload pre-hop2-prereqs-20261123t1814z`
+3. Item 1: `annotate` / `patch` (finalizer) / `delete` on HelmChart `kube-system/coredns` (above).
+4. `flux reconcile` (flux 2.3.0 CLI from the scratchpad) of the touched ks and HRs, without `--force`.
+
+Not done: no k3s or Plan version change, no cordon/uncordon, no Ansible, no ssh to nova/ziti, no change to the k3s server config or `server/manifests`, no k3s restart.
+
+### Hop 2 verdict
+
+**GO for hop 2 once Lee approves it.** Procedure: plan §4.7 (A server, B1 ziti with nova excluded, B2 nova). Lee needs to approve:
+1. "Go for hop 2": commits A, B1, B2 (cordon-only), a window and a fresh `pre-hop2-*` snapshot.
+2. Separately, later: Flux 2.4.x at 1.29; the orphan `media/filebrowser` HR; `flux migrate` before Flux 2.7; P13 (vega removal) before hop 4.
