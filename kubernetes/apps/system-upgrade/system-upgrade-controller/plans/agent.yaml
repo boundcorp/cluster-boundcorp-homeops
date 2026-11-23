@@ -15,6 +15,13 @@ spec:
   # if a drain block comes back, every duration in it must be a string ("900s"):
   # suc >= v0.16.3 decodes an int into IntOrString int32 and stops listing Plans.
   cordon: true
+  # pause between agents: when a node's job completes SUC uncordons it at once,
+  # but labels it with the plan hash only after this delay, and with
+  # concurrency 1 the next node's job is created only after that label. gives
+  # the upgraded node 5 min to settle before the next one is cordoned and its
+  # kubelet restarts. not part of the plan hash, so adding it is inert.
+  # hop procedure also gates per node via nodeSelector, see docs/k3s-upgrade-plan.md.
+  postCompleteDelay: "300s"
   nodeSelector:
     matchExpressions:
       - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
