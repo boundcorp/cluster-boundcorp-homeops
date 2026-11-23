@@ -30,6 +30,25 @@ spec:
       namespace: networking
   values:
     controller:
+      # 2 replicas, one per worker (nova, ziti), so a cordoned or restarting
+      # agent doesn't take ingress down. The chart creates a PDB
+      # (minAvailable 1) whenever replicaCount > 1.
+      replicaCount: 2
+      minAvailable: 1
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          # cordoned nodes (enterprise, vega) don't count as empty domains
+          nodeTaintsPolicy: Honor
+          # count only the current ReplicaSet's pods, so rollouts don't stall
+          matchLabelKeys:
+            - pod-template-hash
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/instance: ingress-nginx
+              app.kubernetes.io/component: controller
       extraEnvs:
         - name: TZ
           value: "${TIMEZONE}"
