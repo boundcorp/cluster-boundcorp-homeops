@@ -1,6 +1,6 @@
 # k3s upgrade plan: v1.27.3+k3s1 → v1.36.6+k3s1
 
-Status: **hop 1 done (1.28.15); hop-2 prerequisites done. Next gate: hop 2 (1.28 → 1.29), §11 and §4.7.**
+Status: **hop 2 complete with storage/GPU qualifications; Jellyfin GPU now fixed. Hop 3 preparation only: NO-GO on ziti storage and pending Lee decisions, §4.8 and §11.**
 - Written 2026-11-19 from read-only checks of the `home` cluster, read-only SSH to `enterprise` and `vega`, this repo, and upstream release notes.
 - Updated 2026-11-23:
   - Prerequisites done 2026-11-20 to 2026-11-23 (§3). Full record: `docs/journal/2026-11-20-k3s-upgrade-prereqs.md`.
@@ -10,6 +10,7 @@ Status: **hop 1 done (1.28.15); hop-2 prerequisites done. Next gate: hop 2 (1.28
   - **Hop 1 done** 2026-11-23 17:25–17:31Z, no rollback: enterprise, ziti and nova on v1.28.15+k3s1, vega still v1.27.3+k3s1. Record: `docs/journal/2026-11-23-k3s-hop1.md`.
   - **Hop-2 prerequisites done** 2026-11-23 18:14–19:05Z (§3, "Hop-2 prerequisites"): stale k3s `coredns` HelmChart removed, ingress-nginx at 2 replicas with a PDB, Flux 2.3.0 with every repo manifest on HelmRelease v2 / source v1, SUC agent `postCompleteDelay`. Record: `docs/journal/2026-11-20-k3s-upgrade-prereqs.md`, last section.
   - Hop-2 readiness and the revised procedure added (§4.7).
+  - Hop 2 completed 2026-11-23 with DiskPressure eviction recovery and a failed GPU gate; separate preparation fixed Jellyfin (`d6acf50`) and added hop-3 storage/DB/Patroni/kube-vip gates (§4.8). No hop 3 or Flux upgrade authorized.
 
 Every step that changes the cluster, a node, or Git `main` needs Lee's approval at the gates marked **🔒 APPROVAL**. The k3s control plane, etcd, ingress, Flux and NetBird are load-bearing infrastructure, so none of this is auto-approved under the Sandbox tier.
 
@@ -46,6 +47,8 @@ Usage figures are from 2026-11-23 03:30Z (`kubectl top nodes`, `kubectl describe
 | nova (.114) | agent | Ready | v1.27.3+k3s1 | Debian 13, 6.12 | 8 CPU, 16 GiB (15.5 GiB allocatable) | 41 non-DS pods. Memory requests 5.9 GiB (37%). Working set **13.0 GiB (83%)**. Runs Frigate (Coral), Z-Wave (USB) and now the SUC controller. |
 
 **After hop 1 (2026-11-23):** enterprise, ziti and nova are v1.28.15+k3s1 (containerd 1.7.22-k3s1.28); vega is v1.27.3+k3s1 (containerd 1.7.1-k3s1), still cordoned and excluded. The table above is the pre-hop-1 snapshot. The API server certificate is valid until 2027-04-16 and the CAs until 2034.
+
+**After hop 2 and preparation (2026-11-23):** enterprise/nova/ziti Ready v1.29.15+k3s1, containerd 1.7.26-k3s1; vega Ready v1.27.3, cordoned/excluded. Enterprise remains cordoned. The single Postgres primary now runs on nova after ziti's pressure eviction. Flux remains 2.3.0; Jellyfin now requires nova and GID 992. See §4.8.
 
 ### 1.2 How k3s is installed and managed
 
@@ -399,7 +402,9 @@ For agents, run `kubectl --context home drain <node> --ignore-daemonsets --delet
   3. A cordoned node left behind by a failed job stays cordoned until the job succeeds or someone uncordons it (🔒).
 - **Drain mode only:** revert the scale-down commit last.
 
-### 4.7 Hop 2 (v1.28.15 → v1.29.15+k3s1): readiness and revised procedure
+### 4.7 Hop 2 (v1.28.15 → v1.29.15+k3s1): completed with qualifications
+
+**Historical preflight/procedure below.** Actual execution and qualifications: `docs/journal/2026-11-23-k3s-hop2.md` on main. Use §4.8 for the next gate.
 
 #### Readiness, 2026-11-23 ~19:05Z (read-only, after the hop-2 prerequisites)
 
@@ -425,7 +430,7 @@ For agents, run `kubectl --context home drain <node> --ignore-daemonsets --delet
 
 `V=v1.29.15+k3s1`. Agent mode stays **cordon-only**.
 
-1. **Pre-hop gate** (§4.1). For kube-vip, compare the container `startedAt`, not `restartCount`; the static pod is recreated by every kubelet upgrade.
+1. **Pre-hop gate** (§4.1). For kube-vip, compare UID, restartCount, startedAt and termination/log evidence together; hop 2 kept the mirror UID and restarted its container, with exact prior termination cause uncertain.
 2. **Snapshot**: `ssh enterprise "sudo k3s etcd-snapshot save --name pre-hop2-<UTC ts>"`, offload Job to titan, check the sha256 on both sides.
 3. **Commit A (server)**: `plans/server.yaml` `version: "v1.29.15+k3s1"` and the Ansible `k3s_release_version`. Push, reconcile `cluster-apps-system-upgrade-controller-plans`.
    - Expect: Job `apply-server-on-enterprise-with-59d1…`, API outage about 30 s (hop 1: 28 s), enterprise briefly NotReady, still SchedulingDisabled afterwards. kube-vip static pod recreated.
@@ -446,6 +451,60 @@ Time: A about 3 min, B1 about 2 min plus the 5 min delay and checks, B2 the same
 
 ---
 
+### 4.8 Hop 3 (v1.29.15+k3s1 → v1.30.14+k3s2): preparation only, NO-GO
+
+Updated 2026-11-23 after hop 2. **No hop-3 execution, k3s/SUC version change, storage migration or Flux upgrade is approved by this preparation task.** Records: `docs/journal/2026-11-23-k3s-hop2.md` and `docs/journal/2026-11-23-hop3-preparation.md` on main.
+
+Hop 2 completed with qualifications: ziti DiskPressure evicted Jellyfin, Grafana, Loki gateway and the single Postgres primary; recovery was automatic. Jellyfin GPU verification then failed (whether it was already broken before hop 2 is unknown). The separate preparation fixed Jellyfin's missing GID 992 and required nova affinity (`d6acf50`, Helm revision 4 → 5); read/write, VAAPI profiles, a 60-frame hardware decode/encode test and ingress HTTP 200 passed. Storage remains unresolved.
+
+#### Readiness and decisions
+
+| Gate | Evidence / required decision |
+|---|---|
+| Exact target | [k3s v1.30.14+k3s2](https://github.com/k3s-io/k3s/releases/tag/v1.30.14%2Bk3s2) exists (2025-07-26). Plans remain v1.29.15+k3s1; no hop-3 target has been applied. |
+| **Ziti storage: BLOCKED** | `/var` on sda3 is the effective imagefs, 12.46 GB capacity, ~2.79 GB available. Separate `/srv` has ~394 GiB available on the same 500 GB SSD; only ~1 MiB is unpartitioned, no LVM. Recommend a separately approved, quiesced migration/bind mount following nova's existing `/srv/k3s` pattern. No host change/prune was performed. |
+| Storage acceptance | Require **imagefs available ≥5,000,000,000 bytes**, DiskPressure False, no pressure taint/evictions or ImageGCFailed events, and sufficient additional cold-pull/unpack margin for the actual images. Recheck before A, before each agent commit, after each node and through the stability watch. 5 GB is a conservative operational floor, not a guarantee against an arbitrarily large pull. Root or `/srv` free space alone does not pass the gate. |
+| **Single-primary database: Lee accepts outage risk** | Patroni has one primary and zero standbys. Hop-2 server API/DCS outage caused ~21 s demotion; ziti eviction later caused a primary relocation. Cordon-only does not guarantee database availability. No HA/standby changes authorized. |
+| Flux | **2.3.0 supports Kubernetes 1.28–1.30**, so it is not a technical blocker for hop 3. Campaign's next recommended step is **2.4.0** (supports 1.29–1.31), separately approved before hop 3 or explicitly deferred by Lee. No Flux change here. [2.3 support](https://fluxcd.io/blog/2024/05/flux-v2.3.0/), [2.4 support](https://fluxcd.io/blog/2024/09/flux-v2.4.0/). |
+| Ingress support exception: Lee reconfirms | Live chart 4.15.1/controller 1.15.1 is tested for Kubernetes **1.31–1.35**, excluding 1.30. Its observed success on 1.29 does not establish 1.30 support. Explicitly accept the existing exception for hop 3, or separately review an ingress change; no automatic downgrade/migration. [Upstream matrix](https://github.com/kubernetes/ingress-nginx#supported-versions-table). |
+| Vega | Ready but cordoned, v1.27.3, excluded from SUC. At API server 1.30 this is exactly n−3 and allowed. **Before hop 4 (1.31)** Lee must approve removal (recommended) or an idle-only upgrade to ≥1.28 (prefer ≥1.30); never uncordon the faulty node. [Skew policy](https://kubernetes.io/releases/version-skew-policy/). |
+| Backup | Preparation snapshot `hop3-prep-20261123T2108Z-enterprise-1795468092`, 37,687,328 bytes, sha256 `aa069a2b6c69f59ede2e63092b4fc8bb1feea4fa6b21455b1e948362ac97ba01` matches enterprise and titan after offload reread. Take a fresh `pre-hop3-*` at the actual window, especially after any storage/Flux change. |
+| Stability / authorization | Re-run all §4.1 checks and the inter-hop stability interval after the last prerequisite change. Lee must approve the storage operation/acceptance, Flux timing, existing support exceptions, single-primary outage risk, then hop-3 A/B1/B2 and a window. This preparation is not that approval. |
+
+**Verdict: NO-GO.** Hard technical blocker is ziti imagefs headroom. Flux 2.3.0 is compatible with 1.30; the proposed 2.4.0 step is an unapproved campaign change, not a fabricated compatibility prerequisite. GPU is fixed. Ingress exception, DB outage risk and the actual hop/window remain explicit Lee decisions.
+
+#### API and add-on review (versions actually running)
+
+The [Kubernetes API migration guide](https://kubernetes.io/docs/reference/using-api/deprecation-guide/) lists no beta/GA resource API removal for 1.30. The [1.30 release notes](https://kubernetes.io/blog/2024/04/17/kubernetes-v1-30-release/#deprecations-and-removals) remove the `SecurityContextDeny` admission plugin; neither the repo nor enterprise's config enables it. Repo scan and live API discovery/deprecated-request metrics found no built-in API removal blocker. The sole live deprecated-request series is Flux HelmRelease v2beta1, with `removed_release=""`; it is a Flux migration concern, not Kubernetes 1.30 removal. Kustomize's local `kustomize.config.k8s.io/v1beta1` files and PGO's CRD v1beta1 are not removed built-in APIs. Metrics are observations since the API server restart, not proof of every intermittent client; repeat at execution time.
+
+| Component | Running version | 1.30 assessment |
+|---|---|---|
+| Cilium | chart/images 1.18.16 | In documented 1.30–1.33 test matrix. [Pinned source](https://github.com/cilium/cilium/blob/v1.18.16/Documentation/network/kubernetes/compatibility.rst). |
+| cert-manager | chart/images 1.17.2 | Compatible with 1.29–1.33, though upstream 1.17 is EOL; preserve the campaign's explicit lifecycle exception. [Release matrix](https://cert-manager.io/docs/releases/#old-cert-manager-releases). |
+| ingress-nginx | chart 4.15.1 / controller 1.15.1 | Outside its tested range at 1.30; Lee decision above. |
+| Crunchy PGO | chart/operator 5.8.9 | 5.8.x lists 1.30–1.36. This is operator compatibility, not database HA or failover assurance. [Platforms](https://access.crunchydata.com/documentation/postgres-operator/latest/overview/supported-platforms). |
+| NFS CSI | 4.13.5 | Driver lists 1.21+. Verify sidecars, CSI readiness/PVC mounts after each node; no CSI change. [Driver matrix](https://github.com/kubernetes-csi/csi-driver-nfs#container-images--kubernetes-compatibility). |
+| kube-prometheus-stack | chart 47.1.0, operator 0.66.0, Prometheus 2.45.0 | Chart minimum is ≥1.16.0-0 (correcting the earlier ≥1.25 shorthand). Operator uses client-go 0.27.2; cross-version compatibility is best effort, not an explicit 1.30 certification. Current 52/52 targets healthy. Retain metric/target gates and defer modernization as a separate project. [Pinned chart](https://github.com/prometheus-community/helm-charts/blob/kube-prometheus-stack-47.1.0/charts/kube-prometheus-stack/Chart.yaml), [operator compatibility](https://github.com/prometheus-operator/prometheus-operator/blob/v0.66.0/Documentation/compatibility.md). |
+| SUC | controller 0.21.1; job kubectl 1.30.3 | GA core/batch/apps/RBAC APIs and Plan v1; job kubectl matches 1.30. Existing controller works on 1.29 and completed hop 2; no formal upstream 1.30 test guarantee identified. Keep concurrency 1, cordon-only, `postCompleteDelay: "300s"`, vega exclusion and explicit per-node gating. [Pinned manifests](https://github.com/rancher/system-upgrade-controller/tree/v0.21.1/manifests). |
+
+For a separately approved **Flux 2.4.0** step: same OCI-tag method in `kubernetes/flux/config/flux.yaml`; preserve/review patches and feature flags, pull the exact artifact, render and server-side dry-run, baseline every Helm revision/Secret, then verify all six controllers and all ks/hr with zero unintended Helm upgrades. The 2.4 Bucket v1/storage-version changes require rollback review; do not assume a plain tag revert is safe. Leave `kubernetes/bootstrap` untouched. The existing Flux `storedVersions`/managedFields cleanup and orphan `media/filebrowser` remain prerequisites before Flux 2.7 removes beta APIs, not new authorization to fix them now.
+
+#### Procedure after all gates and a separate 🔒 go for hop 3
+
+1. Baseline API/VIP/direct endpoint, etcd, enterprise memory, node conditions/cordons, pod UIDs/restarts, all Helm revisions, Flux readiness, PVCs, DNS, ingress, targets and imagefs capacity. Inventory workloads that could land on ziti: Jellyfin must have required nova affinity; audit other large images/rollout surge capacity before proceeding. Cached Jellyfin on ziti is not removed by affinity. No broad taint or affinity edits without separate scope.
+2. Take and independently verify the fresh offloaded pre-hop snapshot. Start bounded watchers for API/VIP, node/Plan state, imagefs capacity/events, and **Patroni leader/demotion logs plus SQL**. Check `SELECT pg_is_in_recovery(), current_setting('transaction_read_only')` returns `false, off`; zero `pg_stat_replication` rows means no standby, not zero lag. Exec transport failure during kubelet restart means **unknown**, not a proved read-only database; recheck promptly.
+3. **A: server only**, exact v1.30.14+k3s2 server Plan and Ansible pin. Preserve enterprise cordon. Observe the expected API outage and Patroni demotion/re-promotion; don't call it zero DB downtime. Hold all agent changes until enterprise is Ready at target, etcd/API/VIP healthy, SQL writable, database clients recovered, and ≥10 min runtime/DB stability. All ks/hr must be Ready immediately before the next commit.
+4. **B1: nova only** (the documented hop-3 order is nova → ziti): agent target v1.30.14+k3s2 with hostname exclusion **[vega, ziti]**. This explicit exclusion matters more than concurrency. Check Jellyfin device-plugin admission and VAAPI, Frigate/Z-Wave, database writability and ingress while nova returns; wait Plan Complete after the full 300 s delay and ≥10 min clean runtime/DB checks before B2.
+5. **B2: ziti only**: remove only ziti's temporary exclusion (retain vega); nova already carries the target hash and must not rerun. Recheck ≥5 GB imagefs available and cold-pull margin immediately before this commit. Verify recovery, SQL, imagefs/evictions, all Flux/Helm/PVC/target/DNS/ingress/GPU gates, and full postCompleteDelay. Watch ≥10 min after the last pressure/restart/regression clears; require a post-hop snapshot verified on titan.
+
+**Stop and containment:** retain the earlier timeouts (server Ready ≤15 min, API/VIP outage ≤5 min, agent job ≤20 min, enterprise available memory ≥500 MiB). Any DiskPressure/eviction, insufficient headroom, renewed DB unwritability/demotion after API recovery, unexpected cordon/version change, unhealthy etcd or unexplained restart holds the next commit. A single recovered leader-election exit with explicit logs/termination evidence may be an expected API-outage effect; annotate it and re-establish the stability window. More than three affected previously healthy pods still triggers escalation/hold even when leader election is suspected; classification never waives the threshold automatically. Unexpected exit 137, device admission failure, eviction, repeated exit after API recovery, or CrashLoopBackOff is a real application regression and must not be dismissed as leader election.
+
+For kube-vip compare **UID, restart count, startedAt, previous termination and logs**. Hop 2 retained the mirror UID but restarted its container (0 → 1, 19:53:34Z), with no proved prior fatal message; do not claim every hop recreates the static pod or that the exact cause is known. Keep direct/VIP probes separate; a transient devbox probe failure alone does not prove a server restart.
+
+On a failed gate, stop future commits and explicitly isolate remaining ineligible SUC nodes if the separately approved containment procedure requires it; changing a Plan's version back is **not** a safe binary rollback. Do not downgrade ziti as a disk-pressure response. Storage migration rollback must be prepared before that separate operation (quiesce, restore the original mount/path, verify data); running upgrade jobs may not be interrupted casually. Any etcd restore, destructive cleanup or extra infrastructure restart needs Lee's decision under §6.4.
+
+---
+
 ## 5. Add-on compatibility
 
 Sources: upstream release notes and READMEs, gathered 2026-11-19. Items marked *unverified* need a recheck at execution time.
@@ -460,7 +519,7 @@ Sources: upstream release notes and READMEs, gathered 2026-11-19. Items marked *
 | **NFS CSI** (csi-driver-nfs) | 4.13.5 | 1.21+ | same | Optional bump to 4.13.6. Titan exports are unaffected. |
 | **intel-gpu-plugin** | image 0.27.0 (app-template 1.5.1) | old but device-plugin v1beta1 API is stable | 0.36.x lists 1.36 | Bump at about 1.34. Not a blocker. 64/93 restarts are worth a look. |
 | **node-feature-discovery** | chart 0.13.3 | 1.24+ | 0.17+ recommended (0.20 built on 1.37 libs) | Bump at about 1.34; CRDs are applied separately (`nfd-api-crds.yaml`). The worker has 537/915 restarts, so investigate during the bump. Not a blocker. |
-| **kube-prometheus-stack** | 47.1.0 (operator ≈0.66, Prometheus 2.45) | `>=1.25` | same | Not a blocker. The 47 → 93 jump is its own project: CRDs are not upgraded by Helm, plus Prometheus 3.0, Grafana 11/13 and value-schema changes. The Ansible-installed PodMonitor/PrometheusRule/ServiceMonitor CRDs are at v0.66.0. Schedule after the campaign. |
+| **kube-prometheus-stack** | 47.1.0 (operator 0.66, Prometheus 2.45) | chart `>=1.16.0-0`; client-go 0.27.2, later k8s best effort (§4.8) | same | Not a blocker. The 47 → 93 jump is its own project: CRDs are not upgraded by Helm, plus Prometheus 3.0, Grafana 11/13 and value-schema changes. The Ansible-installed PodMonitor/PrometheusRule/ServiceMonitor CRDs are at v0.66.0. Schedule after the campaign. |
 | **metallb** | not deployed | – | – | LB IPs come from Cilium L2 announcements |
 | **NetBird** | DaemonSet `netbirdio/netbird:latest`, hostNetwork | no k8s API dependency | – | Pin a version (latest v0.83.1) so node restarts don't pull a surprise client. Not a blocker. |
 | **cloudflared** | 2026.10.3 | no k8s dependency | – | none (2026.11.1 available) |
@@ -762,16 +821,16 @@ Measured at hop 1 (cordon-only): API outage about 28 s, about 13–26 s of kubel
 
 ## 11. Where Lee's approval is required
 
-### ▶ Next gate: hop 2 (1.28.15 → 1.29.15)
+### ▶ Next gate: hop 3 (1.29.15 → 1.30.14+k3s2), NO-GO pending prerequisites
 
-Hop 1 is done (2026-11-23, Lee's go 17:13 UTC, cordon-only). The hop-2 prerequisites are done (§3). Ask for these together as "go for hop 2". The readiness check and the procedure are in §4.7.
+Hop 2 is complete with qualifications (Lee's go 19:47 UTC); the separate preparation fixed Jellyfin GPU but did not resolve ziti storage. Resolve/accept the gates in §4.8 before requesting "go for hop 3". Flux 2.3.0 supports 1.30; Lee must approve the recommended 2.4.0 change or explicitly defer it. No hop 3 is currently authorized.
 
 | Decision | Options | Recommendation |
 |---|---|---|
 | Agent mode | cordon-only (as hop 1) | **cordon-only** |
-| Commit A (server) | `server.yaml` version and the Ansible pin → v1.29.15+k3s1 | – |
-| Commit B1 (ziti) | `agent.yaml` version → v1.29.15+k3s1 with nova excluded | after the server gate |
-| Commit B2 (nova) | drop the nova exclusion | after ziti is verified; Lee can pre-approve B2 conditional on a clean ziti check, or batch A+B1+B2 as "hop 2 end-to-end" |
+| Commit A (server) | `server.yaml` version and Ansible pin → v1.30.14+k3s2 | only after §4.8 storage/DB/compatibility/window gates |
+| Commit B1 (nova) | `agent.yaml` version → v1.30.14+k3s2 with ziti and vega excluded | after server/DB/Patroni/stability gate |
+| Commit B2 (ziti) | drop only the ziti exclusion; retain vega | after nova/DB/GPU gate and fresh ≥5 GB ziti imagefs gate; conditional Lee approval |
 | Window | Date and time, announced (P10) | – |
 
 ### Gate status
@@ -784,7 +843,7 @@ Hop 1 is done (2026-11-23, Lee's go 17:13 UTC, cordon-only). The hop-2 prerequis
 | 3b | P13 | Remove vega from the cluster (recommended) or upgrade it idle-only | ☐ open, **due before hop 4** |
 | 4 | P5 | kube-vip static-pod change on enterprise, and optional IPv6 RA change | ✅ done (vip_interface). IPv6 RA change not made; Lee's call. |
 | – | P3 / P6 / add-ons | Each Git PR to `main` touching SUC, Flux, Cilium, cert-manager, external-dns or ingress (infra tier: diff shown first) | ✅ P3, P3b (SUC v0.21.1), P6 done. ✅ Hop-2 prerequisites H1–H4 done (Lee 2026-11-23 18:09). Next add-on: Flux 2.4 at 1.29. |
-| **per hop** | §4.3 / §4.6 / §4.7 | Go for hop N: server commit A, then agents commit B (from hop 2: B1/B2 per node). Lee can batch them as "go for hop N end-to-end" | ✅ hop 1 done 2026-11-23. **▶ hop 2 is next** |
+| **per hop** | §4.3 / §4.6 / §4.7 / §4.8 | Go for hop N: server commit A, then agents commit B (from hop 2: B1/B2 per node). Lee can batch them as "go for hop N end-to-end" | ✅ hops 1–2 done, hop 2 qualified. **▶ hop 3 NO-GO; §4.8 gates open** |
 | 5 | §5.3 | ingress-nginx: stop at 1.35, run unsupported on 1.36, or migrate first | ☐ needed before hop 9 |
 | 6 | §6.4 | Declaring a hop failed and restoring etcd from snapshot | as needed |
 | 7 | §7.3 | Any second control-plane / HA work (separate project) | later |
