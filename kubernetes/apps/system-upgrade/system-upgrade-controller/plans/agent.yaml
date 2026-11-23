@@ -26,7 +26,7 @@ spec:
     matchExpressions:
       - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
       # vega is out of the upgrade campaign (hangs under load, stays cordoned)
-      - {key: kubernetes.io/hostname, operator: NotIn, values: ["vega", "nova"]}
+      - {key: kubernetes.io/hostname, operator: NotIn, values: ["vega"]}
   prepare:
     image: rancher/k3s-upgrade
     args: ["prepare", "server"]
