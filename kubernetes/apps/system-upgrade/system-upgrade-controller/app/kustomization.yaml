@@ -3,18 +3,64 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   # renovate: datasource=docker image=rancher/system-upgrade-controller
-  - https://github.com/rancher/system-upgrade-controller/releases/download/v0.11.0/crd.yaml
-  - https://github.com/rancher/system-upgrade-controller?ref=v0.11.0
+  - https://github.com/rancher/system-upgrade-controller/releases/download/v0.21.1/crd.yaml
+  - https://github.com/rancher/system-upgrade-controller?ref=v0.21.1
 images:
   - name: rancher/system-upgrade-controller
-    newTag: v0.11.0
+    newTag: v0.21.1
 commonLabels:
   app.kubernetes.io/name: system-upgrade-controller
   app.kubernetes.io/instance: system-upgrade-controller
-patchesStrategicMerge:
-  - |
-    $patch: delete
-    apiVersion: v1
-    kind: Namespace
-    metadata:
+patches:
+  # the namespace is managed in kubernetes/apps/system-upgrade/namespace.yaml
+  - patch: |
+      $patch: delete
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: system-upgrade
+  # upstream v0.21.1 points ClusterRoleBinding/system-upgrade at a new ClusterRole
+  # instead of cluster-admin, and roleRef is immutable. give the binding a new
+  # name so flux creates it and prunes the old cluster-admin one.
+  - target:
+      kind: ClusterRoleBinding
       name: system-upgrade
+    patch: |
+      - op: replace
+        path: /metadata/name
+        value: system-upgrade-controller
+  # upstream requires a control-plane node, but enterprise (the only one) stays
+  # cordoned. run the controller on a worker (nova or ziti), never on vega,
+  # which is cordoned after the 2026-11-21 load-test hang.
+  # see docs/k3s-upgrade-plan.md 7.1
+  - target:
+      kind: Deployment
+      name: system-upgrade-controller
+    patch: |
+      - op: replace
+        path: /spec/template/spec/affinity/nodeAffinity
+        value:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-role.kubernetes.io/control-plane
+                    operator: DoesNotExist
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values: ["vega"]
+                  - key: kubernetes.io/os
+                    operator: In
+                    values: ["linux"]
+      - op: replace
+        path: /spec/template/spec/tolerations
+        value: []
+      # upstream switched to Recreate, but the live object carries a defaulted
+      # rollingUpdate block and the api rejects Recreate next to it. with one
+      # replica, maxSurge 0 / maxUnavailable 1 behaves the same.
+      - op: replace
+        path: /spec/strategy
+        value:
+          type: RollingUpdate
+          rollingUpdate:
+            maxSurge: 0
+            maxUnavailable: 1
