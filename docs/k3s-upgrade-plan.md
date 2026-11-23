@@ -1,13 +1,15 @@
 # k3s upgrade plan: v1.27.3+k3s1 → v1.36.6+k3s1
 
-Status: **prerequisites done, no k3s version changed yet. Next gate: hop 1 (1.27 → 1.28), §11.**
+Status: **hop 1 done (1.28.15); hop-2 prerequisites done. Next gate: hop 2 (1.28 → 1.29), §11 and §4.7.**
 - Written 2026-11-19 from read-only checks of the `home` cluster, read-only SSH to `enterprise` and `vega`, this repo, and upstream release notes.
 - Updated 2026-11-23:
   - Prerequisites done 2026-11-20 to 2026-11-23 (§3). Full record: `docs/journal/2026-11-20-k3s-upgrade-prereqs.md`.
   - **vega is unavailable**; it is excluded from the campaign (§7.2).
   - Drain capacity recomputed for two workers (§7.2), with downtime figures to match (§9).
   - Hop-1 readiness check and exact procedure added (§4.6).
-- All 4 nodes are still v1.27.3+k3s1.
+  - **Hop 1 done** 2026-11-23 17:25–17:31Z, no rollback: enterprise, ziti and nova on v1.28.15+k3s1, vega still v1.27.3+k3s1. Record: `docs/journal/2026-11-23-k3s-hop1.md`.
+  - **Hop-2 prerequisites done** 2026-11-23 18:14–19:05Z (§3, "Hop-2 prerequisites"): stale k3s `coredns` HelmChart removed, ingress-nginx at 2 replicas with a PDB, Flux 2.3.0 with every repo manifest on HelmRelease v2 / source v1, SUC agent `postCompleteDelay`. Record: `docs/journal/2026-11-20-k3s-upgrade-prereqs.md`, last section.
+  - Hop-2 readiness and the revised procedure added (§4.7).
 
 Every step that changes the cluster, a node, or Git `main` needs Lee's approval at the gates marked **🔒 APPROVAL**. The k3s control plane, etcd, ingress, Flux and NetBird are load-bearing infrastructure, so none of this is auto-approved under the Sandbox tier.
 
@@ -22,9 +24,9 @@ Every step that changes the cluster, a node, or Git `main` needs Lee's approval 
 | **Fallback stop point** | **v1.35.10+k3s1** if the ingress-nginx decision (§5.3) is not made in time. Upstream supports 1.35 until about Feb 2027. |
 | **Hops** | **9** server hops, one minor at a time: 1.28.15 → 1.29.15 → 1.30.14+k3s2 → 1.31.14 → 1.32.13 → 1.33.13+k3s2 → 1.34.13 → 1.35.10 → 1.36.6 |
 | **Mechanism** | The system-upgrade-controller (SUC, now v0.21.1) Plans, driven by Git commits (GitOps). Manual binary swap over SSH is the fallback for `enterprise` only (vega is out; nova/ziti host keys are unverified). |
-| **Workers** | **nova and ziti only.** vega hung hard under load on 2026-11-21 and stays cordoned. Exclude it from the agent Plan (§4.6 commit A0) and **remove it from the cluster before hop 4** (kubelet skew, §7.2). |
-| **Flux** | Flux has to move in lockstep. It is now **v2.2.3** (supports 1.26–1.28), and Flux 2.10 needs ≥1.35. Bump it via `kubernetes/flux/config/flux.yaml` between hops. **Do not** `kubectl apply -k kubernetes/bootstrap` (it is pinned to v2.9.6, which needs k8s ≥1.34). |
-| **Hard prerequisites** | **Done:** off-node etcd snapshots to titan plus a restore drill; Plan fixes so SUC doesn't uncordon `enterprise`; the kube-vip interface fix; Flux 2.2.3; SUC v0.21.1 on a worker (§3). **Still open:** exclude vega from the agent Plan, and choose the agent mode (§7.2). Both are part of hop 1's approval. |
+| **Workers** | **nova and ziti only.** vega hung hard under load on 2026-11-21 and stays cordoned. It is excluded from the agent Plan (A0, `e80d04b`) and **remove it from the cluster before hop 4** (kubelet skew, §7.2). |
+| **Flux** | Flux has to move in lockstep. It is now **v2.3.0** (supports 1.28–1.30), and Flux 2.10 needs ≥1.35. Bump it via `kubernetes/flux/config/flux.yaml` between hops. **Do not** `kubectl apply -k kubernetes/bootstrap` (it is pinned to v2.9.6, which needs k8s ≥1.34). |
+| **Hard prerequisites** | **Done:** off-node etcd snapshots to titan plus a restore drill; Plan fixes so SUC doesn't uncordon `enterprise`; the kube-vip interface fix; Flux 2.2.3; SUC v0.21.1 on a worker (§3). Hop 1 done with vega excluded and cordon-only agents. Hop-2 prerequisites done: Flux 2.3.0 plus HelmRelease v2, ingress-nginx ×2 with a PDB, stale `coredns` HelmChart gone, SUC agent pause (§3). |
 | **Agent mode** | With two 16 GiB workers, **neither can absorb the other's drain** (§7.2). Recommended: **cordon-only agent upgrades** (no drain; pods keep running through the k3s restart), with drain plus a scale-down only at hop 4 (containerd 2). The alternative is to drain every hop and scale down Loki and Immich (and optionally speakr and *arr) each time. |
 | **Estimated downtime** | Control-plane API: about 2–5 min per hop, roughly 20–45 min total. Cordon-only agents: about 0 app downtime per hop, apart from a ~1 min kubelet gap per node. Drain variant: Loki/Immich down about 20–40 min per hop, each singleton 1–5 min twice per hop, and Frigate/Z-Wave 5–15 min per hop. Wall-clock: about 3–4 evenings (§9). |
 
@@ -43,7 +45,7 @@ Usage figures are from 2026-11-23 03:30Z (`kubectl top nodes`, `kubectl describe
 | ziti (.113) | agent | Ready | v1.27.3+k3s1 | Debian 13, 6.12 | 8 CPU, 16 GiB (15.5 GiB allocatable) | 14 non-DS pods. Memory requests **10.7 GiB (68%)**, 9.6 GiB of it `loki-chunks-cache-0`. Working set 7.0 GiB (45%). Runs the Postgres primary. |
 | nova (.114) | agent | Ready | v1.27.3+k3s1 | Debian 13, 6.12 | 8 CPU, 16 GiB (15.5 GiB allocatable) | 41 non-DS pods. Memory requests 5.9 GiB (37%). Working set **13.0 GiB (83%)**. Runs Frigate (Coral), Z-Wave (USB) and now the SUC controller. |
 
-All nodes run containerd 1.7.1-k3s1. The API server certificate is valid until 2027-04-16 and the CAs until 2034.
+**After hop 1 (2026-11-23):** enterprise, ziti and nova are v1.28.15+k3s1 (containerd 1.7.22-k3s1.28); vega is v1.27.3+k3s1 (containerd 1.7.1-k3s1), still cordoned and excluded. The table above is the pre-hop-1 snapshot. The API server certificate is valid until 2027-04-16 and the CAs until 2034.
 
 ### 1.2 How k3s is installed and managed
 
@@ -66,26 +68,28 @@ All nodes run containerd 1.7.1-k3s1. The API server certificate is valid until 2
   3. **The agent plan still selects vega.** vega has no control-plane label, so the agent plan would drain or cordon vega, upgrade it, and then **uncordon** it. That violates "vega stays cordoned". Exclude it in Git (`kubernetes.io/hostname NotIn [vega]`) before any agent version bump (§4.6, A0).
   4. **Agent order is deterministic.** SUC sorts candidates by sha256(node UID + plan UID + latestHash), so it can be computed in advance (§4.3). The agent plan's `prepare: [prepare, server]` init step blocks agents until the server plan has completed, which is a good safety net.
   5. **Plan durations must be strings** (e.g. `timeout: "900s"`). SUC ≥ v0.16.3 decodes an int into an int32 `IntOrString`, so 900 s in ns overflows and the controller stops listing Plans (seen and fixed on 2026-11-23).
+  6. **Agent sequencing (checked 2026-11-23 in the v0.21.1 source and the hop-1 controller log).** When an agent's Job completes, SUC writes the plan-hash label and `Unschedulable=false` in **one** node update; with `concurrency: 1` the next node is only selected once the previous one carries the hash. Hop 1's log: `JobComplete` on ziti at 17:30:07.066, nova's Job created at 17:30:07.089. So the two agents were never cordoned together; the "~10 s overlap" in the hop-1 journal was the 13 s watcher sampling. The real gap was that ziti had only ~40 s after its kubelet restart before nova was cordoned. Fixed with `postCompleteDelay: "300s"` on the agent Plan (`ccddf12`): the node is uncordoned at once, but its hash label (and therefore the next node's Job) waits 5 min. It is not part of the hash. The hop procedure additionally gates per node via `nodeSelector` (§4.7).
 
 ### 1.3 Flux
 
-- **Running:** distribution **v2.2.3** since P6 (`d2ab9e9`, 2026-11-20): helm-controller v0.37.4, kustomize v1.2.2, source v1.2.4, notification v1.2.4. It is self-managed via `kubernetes/flux/config/flux.yaml` (OCIRepository `flux-manifests` tag `v2.2.3`). It was v2.0.1 when this plan was written. The HelmRelease CRD now serves v2beta1 and v2beta2.
+- **Running:** distribution **v2.3.0** since 2026-11-23 (`52aab2b`): helm-controller v1.0.1, kustomize/source/notification v1.3.0, image-reflector v0.32.0, image-automation v0.38.0. It was v2.0.1 when this plan was written and v2.2.3 from P6 (`d2ab9e9`) through hop 1. It is self-managed via `kubernetes/flux/config/flux.yaml` (OCIRepository `flux-manifests` tag `v2.3.0`). 2.3.0 is the only 2.3.x release. The HelmRelease CRD serves v2 (storage), v2beta2 and v2beta1 (deprecated).
 - **CLI on devbox:** v2.9.6. It does not match the cluster: `flux reconcile ks` works, but it can't read OCIRepository, and `flux get hr` is unreliable. **Use `kubectl get ks,hr -A`**, or a CLI matching the cluster version, downloaded per step to the scratchpad.
 - **`kubernetes/bootstrap/kustomization.yaml`** was bumped to `flux2/manifests/install?ref=v2.9.6` in 87a6f54 and was "pending manual apply". **Do not apply it.**
   - Flux 2.9 needs k8s 1.34–1.36 and has removed `helm v2beta1`, `source v1beta1` and `v1beta2`, which this repo still uses.
-  - It would also fight `flux.yaml`, which pins the OCI tag (now v2.2.3).
+  - It would also fight `flux.yaml`, which pins the OCI tag (now v2.3.0).
   - Flux upgrades in this plan go through `flux.yaml`. Leave `bootstrap/` alone until the end, then re-align it to the final version.
-- **Repo Flux API usage:**
+- **Repo Flux API usage** (migrated 2026-11-23, `8b7e0c0` sources, `73c7055` `bfdfb73` `c1a027e` `ebd2372` `a2ba928` HelmReleases; zero Helm upgrades):
 
   | API | Objects | Notes |
   |---|---|---|
-  | `helm.toolkit.fluxcd.io/v2beta1` | 35 | |
-  | `source.toolkit.fluxcd.io/v1beta2` | 21 | |
-  | `source.toolkit.fluxcd.io/v1beta1` | 3 | `flux/repositories/helm/vector.yaml`, `rook-ceph-charts.yaml`, and `apps/kube-system/external-snapshotter/app/crds.yaml` |
-  | `kustomize.toolkit.fluxcd.io/v1beta2` | 1 | |
+  | `helm.toolkit.fluxcd.io/v2` | 35 files | was v2beta1; plus 7 `ks.yaml` healthChecks |
+  | `source.toolkit.fluxcd.io/v1` | 22 HelmRepository + 1 GitRepository | were v1beta2 / v1beta1 |
+  | `source.toolkit.fluxcd.io/v1beta2` | 1 | OCIRepository `flux-manifests`: the only version Flux 2.3 serves (v1 arrives in 2.6) |
+  | `kustomize.toolkit.fluxcd.io/v1` | all | `external-snapshotter-crds` was v1beta2 |
   | `notification.toolkit.fluxcd.io/v1` | 1 | |
 
-  - Cluster storedVersions are still `v2beta1` for HelmRelease and `v1beta2` for most sources. These must be migrated before Flux 2.7, which removes them.
+  - **Still needed before Flux 2.7** (which drops the beta versions): run `flux migrate` in-cluster to rewrite stored objects, then confirm CRD `status.storedVersions` hold only `v1`/`v2`. Today they are HelmRelease `[v2beta1, v2beta2, v2]`, HelmRepository and HelmChart `[v1beta2, v1]`, Alert/Provider `[v1beta2, v1beta3]`, ImageUpdateAutomation `[v1beta1, v1beta2]`. kustomize-controller skips unchanged objects, so the migrated HRs still carry a `kustomize-controller` managedFields entry for v2beta1 until their spec next changes.
+  - The orphan HelmRelease `media/filebrowser` (removed from Git in `87a6f54`, still live because `cluster-apps` has `prune: false`) is not covered by a repo migration. Delete or migrate it before 2.7 (🔒 Lee).
 
 ### 1.4 Deprecated / removed Kubernetes APIs
 
@@ -104,7 +108,7 @@ All nodes run containerd 1.7.1-k3s1. The API server certificate is valid until 2
 
 | Before | Object(s) | Change |
 |---|---|---|
-| Flux 2.3 (after hop 1) | 35 HelmReleases | `helm.toolkit.fluxcd.io/v2beta1` → `v2` (`flux migrate`, see §4) |
+| Flux 2.3 (after hop 1) | 35 HelmReleases | ✅ done 2026-11-23: `helm.toolkit.fluxcd.io/v2beta1` → `v2` in the repo, plus sources → `v1` |
 | Flux 2.6/2.7 (after hops 4–5) | 3 `source v1beta1`, 21 `source v1beta2`, 1 `kustomize v1beta2`; cluster storedVersions | → `source.toolkit.fluxcd.io/v1` and `kustomize v1`; run `flux migrate` in-cluster. **Must be done before Flux 2.7.** |
 | hop 6 (1.33) | `external-dns` chart 1.13.0 (app 0.13.5) | ≥ app 0.18 (EndpointSlices); the latest is chart 1.24.0 / app 0.24.0 |
 | Cilium 1.19/1.20 bump | `CiliumL2AnnouncementPolicy` (v2alpha1, the only served version) and `CiliumLoadBalancerIPPool` (v2alpha1 in repo; v2 is already served) | Move the IP pool to `cilium.io/v2` now. Recheck the L2 policy's API in the Cilium 1.19/1.20 upgrade notes when bumping. Both objects are in the repo and in the Ansible template `custom-cilium-l2.yaml.j2`. |
@@ -142,7 +146,7 @@ Each row is a separate PR or commit. Do them while the cluster sits at the state
 | When (cluster at) | Flux (via `flux.yaml` tag) | Other add-ons |
 |---|---|---|
 | 1.27 (before hop 1) | 2.0.1 → **2.2.3** ✅ done (`d2ab9e9`) | SUC v0.11.0 → v0.21.1 ✅ done (`3d97f22`, `673b2b7`). Still open, not blocking: external-snapshotter / source v1beta1 cleanup, Cilium IP pool → v2. |
-| 1.28 (after hop 1) | → **2.3.x** (1.28–1.30). Migrate repo HelmReleases to `helm.toolkit.fluxcd.io/v2`. | |
+| 1.28 (after hop 1) | → **2.3.0** ✅ done (`52aab2b`). Repo HelmReleases → `helm.toolkit.fluxcd.io/v2`, sources → v1 ✅ done (zero Helm upgrades). | stale k3s `coredns` HelmChart removed ✅; ingress-nginx ×2 + PDB ✅ (`33f0d04`); SUC agent `postCompleteDelay` ✅ (`ccddf12`) |
 | 1.29 | → **2.4.x** (1.29–1.31) | |
 | 1.30 (before hop 4) | → **2.5.x** (1.30–1.32) | metrics-server chart → app 0.7.x. **vega removed from the cluster** (or upgraded idle-only to 1.30) before hop 4, see §7.2. |
 | 1.31 | → **2.6.x** (1.31–1.33). `flux migrate -v 2.6 -f .` on the repo, then `flux migrate` in-cluster (storedVersions → v1/v2) | Cilium 1.18 → **1.19** latest patch (1.31–1.34). cert-manager 1.17 → next minors one at a time (per cert-manager's support table). metrics-server → 0.8.x |
@@ -180,7 +184,18 @@ Each row is a separate PR or commit. Do them while the cluster sits at the state
 Rules learned during the prerequisites:
 - **Plan durations must be strings** (`"900s"`), see §1.2 item 5.
 - `kubectl --context home -n kube-system create job --from=cronjob/etcd-snapshot-offload <name>` copies an on-demand snapshot to titan.
-- Leave both Plans' `version` alone outside an approved hop. The plan hash only covers `latestVersion`, `serviceAccountName` and secrets, so edits to `drain`, `cordon`, `nodeSelector` or `tolerations` are inert.
+- Leave both Plans' `version` alone outside an approved hop. The plan hash only covers `latestVersion`, `serviceAccountName` and secrets, so edits to `drain`, `cordon`, `nodeSelector`, `tolerations` or `postCompleteDelay` are inert.
+
+### Hop-2 prerequisites (2026-11-23, after hop 1)
+
+Go-ahead: Lee, 2026-11-23 18:09 UTC, items H1–H4 only. No k3s or Plan version change. Pre-change snapshot `pre-hop2-prereqs-20261123T1814Z-enterprise-1795457679` on titan, sha256 `cca496a3…` verified. Details: `docs/journal/2026-11-20-k3s-upgrade-prereqs.md`, last section.
+
+| # | Step | Status | Commit |
+|---|---|---|---|
+| H1 | Stale k3s HelmChart `kube-system/coredns` (chart 1.24.1, same Helm release `kube-system/coredns` as Flux's HelmRelease) | ✅ removed without a helm-delete job: annotate `helmcharts.helm.cattle.io/unmanaged`, drop the finalizer, delete. CoreDNS untouched (rev 8). Not re-created: no manifest file, `disable: coredns` set. Don't run `cluster-installation.yaml` against the live cluster; its template would re-create it. | journal `03eaf9f` |
+| H2 | ingress-nginx 2 replicas, PDB minAvailable 1, topologySpread over nova/ziti (`nodeTaintsPolicy: Honor`, `matchLabelKeys: [pod-template-hash]`) | ✅ one pod per worker; LB via Cilium L2, no hostPort/hostNetwork | `33f0d04` |
+| H3 | Flux 2.2.3 → 2.3.0, repo → HelmRelease v2 / source v1 / kustomize v1 | ✅ zero Helm upgrades across all 34 HRs (history and secret revisions identical, 129 release secrets before and after) | `52aab2b`, `8b7e0c0`, `73c7055`, `bfdfb73`, `c1a027e`, `ebd2372`, `a2ba928` |
+| H4 | SUC agent pause between nodes | ✅ `postCompleteDelay: "300s"`, inert (hash `f9eb9866` unchanged, 0 Jobs over 5 min); per-node gating moved into the hop procedure (§4.7) | `ccddf12` |
 
 ---
 
@@ -241,6 +256,7 @@ kubectl --context home -n kube-system get pods -o wide | grep -E 'kube-vip|ciliu
 **Commit B (agents):**
 - Bump `version: "$V"` in `plans/agent.yaml`, push, reconcile the same ks.
 - SUC upgrades **nova and ziti** one at a time (`concurrency: 1`), then uncordons each. vega must already be excluded (§4.6 A0).
+- From hop 2 on, commit B is split per node (B1 first agent only, B2 the second) and the agent Plan has `postCompleteDelay: "300s"`. See §4.7.
 - Depending on the agent mode (§7.2):
   - **Cordon-only:** each node is cordoned, k3s restarts in place, and pods keep running (`KillMode=process`). Expect about 1 min of kubelet gap per node.
   - **Drain:** each node is drained. Commit B must be preceded by the scale-down commit (§7.2) and followed by its revert.
@@ -383,6 +399,51 @@ For agents, run `kubectl --context home drain <node> --ignore-daemonsets --delet
   3. A cordoned node left behind by a failed job stays cordoned until the job succeeds or someone uncordons it (🔒).
 - **Drain mode only:** revert the scale-down commit last.
 
+### 4.7 Hop 2 (v1.28.15 → v1.29.15+k3s1): readiness and revised procedure
+
+#### Readiness, 2026-11-23 ~19:05Z (read-only, after the hop-2 prerequisites)
+
+| Check | Result | OK? |
+|---|---|---|
+| Nodes | enterprise, ziti, nova v1.28.15+k3s1; vega v1.27.3+k3s1 (excluded). enterprise and vega cordoned | ✅ |
+| Flux / k8s support | Flux **2.3.0** supports 1.28–1.30. All repo manifests on HelmRelease v2 / source v1 | ✅ |
+| Flux health | 44/44 Kustomizations, 34/34 HelmReleases Ready (`speedtest-exporter` suspended on purpose) | ✅ |
+| Stale `coredns` HelmChart | removed; no `helm-install-coredns` Job will be re-created by the server hop | ✅ |
+| Ingress | ingress-nginx 2/2, one pod on nova, one on ziti; PDB minAvailable 1 | ✅ |
+| SUC | v0.21.1; Plans Complete at v1.28.15 (hash `f9eb9866`); agent `postCompleteDelay: "300s"`; 0 Jobs | ✅ |
+| Removed APIs for 1.29 | 1.29 removes only `flowcontrol.apiserver.k8s.io/v1beta2`; nothing uses it. `apiserver_requested_deprecated_apis` has no series with `removed_release` set (only Flux CRD betas) | ✅ |
+| k3s 1.29 flag removals | `rotate-keys`, `multi-cluster-cidr`: not in enterprise `config.yaml` | ✅ |
+| Artifacts | GitHub release `v1.29.15+k3s1` (2025-03-25) and `rancher/k3s-upgrade:v1.29.15-k3s1` exist | ✅ |
+| Plan hash / order | `v1.29.15-k3s1` → hash `59d1797a…`; agent order **ziti → nova** (recomputed with the live node and Plan UIDs) | ✅ |
+| Add-ons | cert-manager 1.17 (1.29–1.33) ✅. Cilium 1.18 is officially 1.30+, but ran fine on 1.27/1.28; in range from hop 3. ingress-nginx 1.15.1 officially 1.31+, same situation | accepted |
+| etcd snapshot | `pre-hop2-prereqs-20261123T1814Z` on titan, sha256 verified. Take a fresh `pre-hop2-*` at the window | ☐ at the window |
+| Not blocking | P8 (nova/ziti host keys), P9 (binaries), P13 (vega removal, due before hop 4) | ☐ |
+
+**Verdict: GO for hop 2 once Lee approves it.** Re-run §4.1 at the start of the window.
+
+#### Procedure (needs 🔒 Lee's go for hop 2)
+
+`V=v1.29.15+k3s1`. Agent mode stays **cordon-only**.
+
+1. **Pre-hop gate** (§4.1). For kube-vip, compare the container `startedAt`, not `restartCount`; the static pod is recreated by every kubelet upgrade.
+2. **Snapshot**: `ssh enterprise "sudo k3s etcd-snapshot save --name pre-hop2-<UTC ts>"`, offload Job to titan, check the sha256 on both sides.
+3. **Commit A (server)**: `plans/server.yaml` `version: "v1.29.15+k3s1"` and the Ansible `k3s_release_version`. Push, reconcile `cluster-apps-system-upgrade-controller-plans`.
+   - Expect: Job `apply-server-on-enterprise-with-59d1…`, API outage about 30 s (hop 1: 28 s), enterprise briefly NotReady, still SchedulingDisabled afterwards. kube-vip static pod recreated.
+   - Server gate (§4.3). Also: no `helm-install-*` Job in kube-system, CoreDNS 2/2.
+4. **Commit B1 (first agent, ziti only)**: in `plans/agent.yaml`, set `version: "v1.29.15+k3s1"` **and** add nova to the exclusion, i.e. `{key: kubernetes.io/hostname, operator: NotIn, values: ["vega", "nova"]}`. Push, reconcile.
+   - SUC cordons ziti, restarts k3s on it (kubelet gap about 15–25 s), uncordons it on completion. The plan-hash label follows 300 s later, then the Plan shows Complete.
+   - Verify ziti before going on: v1.29.15, Ready, schedulable; all pods on ziti Ready (Postgres primary / PgBouncer, `loki-chunks-cache-0`, the ziti ingress pod); ingress answers; DaemonSets full; no new restarts.
+   - To stop here: just don't push B2. nova stays on 1.28.15 (1 minor of skew, allowed). **Do not** revert B1 after ziti has succeeded: SUC would then try to put ziti back to 1.28.15 (downgrade, unverified).
+5. **Commit B2 (second agent, nova)**: remove `"nova"` from the `NotIn` list (back to `["vega"]`). nodeSelector is not in the hash, so ziti is not re-run. Push, reconcile.
+   - SUC cordons nova (Frigate, Z-Wave, the SUC controller and the other ingress pod run there; all keep running), restarts k3s, uncordons it; Plan Complete 300 s later.
+   - Ingress stays up through both agents, because the other replica is on the other node.
+6. **Post-hop verification** (§4.4), `post-hop2-*` snapshot to titan, journal.
+7. **Next add-on step at 1.29** (separate approval): Flux → 2.4.x (1.29–1.31), same `flux.yaml` tag method.
+
+Time: A about 3 min, B1 about 2 min plus the 5 min delay and checks, B2 the same. About 30–40 min in all.
+
+**Rollback**: as hop 1 (§4.6), with `pre-hop2-*` as the restore point. Server failure → revert A, restore etcd per §6.4. Agent failure → SUC leaves the node cordoned with a failed Job; investigate before uncordoning (🔒).
+
 ---
 
 ## 5. Add-on compatibility
@@ -391,7 +452,7 @@ Sources: upstream release notes and READMEs, gathered 2026-11-19. Items marked *
 
 | Component | Deployed | Supports (deployed) | Needed for 1.36 | Action |
 |---|---|---|---|---|
-| **Flux** | 2.2.3 (was 2.0.1) | 1.26–1.28 | 2.9.x or 2.10.x | Step through 2.2 → 2.10 per §2. Migrate APIs (`flux migrate`) before 2.7. Any 2.x → 2.x jump is officially allowed, but each Flux minor only supports a 3-minor k8s window, so it has to track the hops. ✅ Moved to 2.2.3 before hop 1; next is 2.3.x right after hop 1. |
+| **Flux** | 2.3.0 (was 2.0.1, then 2.2.3) | 1.28–1.30 | 2.9.x or 2.10.x | Step through 2.2 → 2.10 per §2. Migrate APIs (`flux migrate`) before 2.7. Any 2.x → 2.x jump is officially allowed, but each Flux minor only supports a 3-minor k8s window, so it has to track the hops. ✅ 2.2.3 before hop 1; ✅ 2.3.0 plus the HelmRelease v2 migration after hop 1. Next: 2.4.x at 1.29. |
 | **Cilium** | chart 1.18.16 | 1.30–1.33 (already out of range on 1.27, but working) | 1.20.x (1.33–1.36) | 1.19 at k8s 1.31–1.33, then 1.20 at 1.33–1.34. One Cilium minor at a time; run the pre-flight check per the Cilium upgrade guide. `k8sServiceHost` = VIP, so it depends on kube-vip (§8). |
 | **cert-manager** | v1.17.2 (EOL) | 1.29–1.33 | v1.21.x (1.33–1.36) | Step minors 1.18 → 1.21 between hops 4 and 7. Check CRD upgrade notes per minor. |
 | **ingress-nginx** | chart 4.15.1 / controller 1.15.1 | 1.31–1.35 | **none: project retired, repo archived 2026-03** | See §5.3. 🔒 decision |
@@ -406,7 +467,7 @@ Sources: upstream release notes and READMEs, gathered 2026-11-19. Items marked *
 | **external-dns** | chart 1.13.0 / app 0.13.5 | old | **app ≥0.18 required for 1.33+** | Bump before hop 6 |
 | **system-upgrade-controller** | v0.21.1 (was v0.11.0) | uses only GA APIs; ships kubectl 1.30.3 for cordon/drain | v0.21.1 | ✅ Bumped 2026-11-23. Note the uncordon behaviour (§1.2) and string-only durations. |
 | metrics-server | chart 3.10.0 (app 0.6.x) | 1.25+ | 0.8 (1.31+) / 0.9 (1.34+) | Bump at 1.30 and 1.34 |
-| coredns | chart 1.49.0 | unverified | 1.50.x | Optional |
+| coredns | chart 1.49.0 (Flux HelmRelease) | unverified | 1.50.x | Optional. The stale k3s HelmChart for the same release was removed on 2026-11-23 (§3 H1). |
 | Crunchy PGO | 5.8.9 | 1.30–1.36 | same (6.0.x also OK) | none for 1.36; **blocks 1.37** |
 | k8s-gateway / reloader / local-path | 3.7.2 / 1.0.30 / 0.0.24 | old, generic APIs | – | Optional bumps |
 
@@ -645,6 +706,8 @@ Updated 2026-11-23 for two workers (nova, ziti), with vega out.
 
 ### Per hop
 
+Measured at hop 1 (cordon-only): API outage about 28 s, about 13–26 s of kubelet gap per agent, 5.5 min from commit A to all nodes done. The estimates below are conservative. From hop 2, add 5 min per agent for `postCompleteDelay`.
+
 | Event | Cordon-only agents (recommended) | Drain + scale-down agents |
 |---|---|---|
 | API unavailable (server k3s restart) | 1–3 min (hop 6: up to 5–10 min, etcd 3.6 data migration) | same |
@@ -652,7 +715,7 @@ Updated 2026-11-23 for two workers (nova, ziti), with vega out.
 | Loki and Immich (and optionally speakr, *arr) | 0 | down for the whole agent phase: **~20–40 min** (scale-down → both drains → revert) |
 | Singletons (HA, ESPHome, Mosquitto, Postgres/PgBouncer, cert-manager, Flux controllers, Prometheus, Grafana, Jellyfin…) | 0 | 1–5 min, **twice** (once per drain) |
 | Frigate, Z-Wave JS (pinned to nova) | 0 (~1 min if the kubelet restart restarts them) | 5–15 min |
-| Ingress | 0 (2 replicas, `concurrency: 1`) | about 0 |
+| Ingress | 0 (2 replicas, one per worker, PDB minAvailable 1, since 2026-11-23). Hop 1 still had 1 replica: a few seconds without a ready endpoint during nova's kubelet gap | about 0 |
 | **Total per hop, wall-clock** | ~30–45 min including checks; user-visible ~1–3 min (API only) | ~60–90 min; user-visible as above |
 
 ### Whole campaign (9 hops)
@@ -685,7 +748,7 @@ Updated 2026-11-23 for two workers (nova, ziti), with vega out.
 | 4 | **Flux / k8s version lockstep.** Flux is now 2.2.3 (good through 1.28); the 2.7/2.8 API removals break reconciliation if the migration is skipped; the stale `bootstrap/` v2.9.6 being applied early would break Flux | med / high (GitOps stalls, including for rollback) | §2 table; matching CLI per step; never apply `bootstrap/` mid-campaign; `flux migrate` before 2.7 |
 | 5 | **enterprise memory headroom** (119% of allocatable, about 2 GiB available, no swap) leading to OOM or leader-election loops during k3s start | med / high | Pre-hop gate; keep cordoned; ✅ SUC controller moved off; RAM upgrade |
 | 6 | **ingress-nginx retired**: no supported release for 1.36 and no security fixes | certain / med | Stop at 1.35, or migrate ingress (§5.3) |
-| 7 | **Drain capacity**: with only nova and ziti, neither drain fits on the other node, and the second drain of each hop needs the whole cluster on one node (§7.2). There are no PodDisruptionBudgets, so singletons go down on every drain | certain with drain / med | Cordon-only agents (recommended), or drain plus the §7.2 scale-down; right-size `loki-chunks-cache`; `concurrency: 1` |
+| 7 | **Drain capacity**: with only nova and ziti, neither drain fits on the other node, and the second drain of each hop needs the whole cluster on one node (§7.2). There are no PodDisruptionBudgets apart from ingress-nginx (since 2026-11-23), so singletons go down on every drain | certain with drain / med | Cordon-only agents (recommended), or drain plus the §7.2 scale-down; right-size `loki-chunks-cache`; `concurrency: 1` |
 | 7b | **vega** (platform hang under load, kubelet 1.27): SUC drains, upgrades and then **uncordons** it if it is still selected; out of skew policy from hop 4 | high if not excluded / med | A0 excludes vega from the agent Plan; remove vega from the cluster before hop 4 (P13) |
 | 7c | **SUC Plan field types**: int durations overflow in SUC ≥ v0.16.3, and the controller then stops listing Plans (seen on 2026-11-23) | low (fixed) / med (SUC inert, hop stalls) | `drain.timeout: "900s"`; strings for every duration; check the controller log after every Plan edit |
 | 8 | **Add-ons already outside support** (Cilium 1.18 on 1.27–1.29, cert-manager 1.17 EOL) | low-med / high (CNI) | Cilium and cert-manager step-ups at the stated versions; one Cilium minor at a time with pre-flight |
@@ -699,16 +762,16 @@ Updated 2026-11-23 for two workers (nova, ziti), with vega out.
 
 ## 11. Where Lee's approval is required
 
-### ▶ Next gate: hop 1 (1.27.3 → 1.28.15)
+### ▶ Next gate: hop 2 (1.28.15 → 1.29.15)
 
-Ask for these together as "go for hop 1". The readiness check and the exact procedure are in §4.6.
+Hop 1 is done (2026-11-23, Lee's go 17:13 UTC, cordon-only). The hop-2 prerequisites are done (§3). Ask for these together as "go for hop 2". The readiness check and the procedure are in §4.7.
 
 | Decision | Options | Recommendation |
 |---|---|---|
-| Agent mode (P12) | cordon-only, or drain plus temporary scale-down of Loki and Immich (+ speakr, *arr) | **cordon-only** |
-| Commit A0 (inert) | Exclude vega from the agent Plan, plus the agent-mode change | yes, before A |
-| Commit A (server) | `server.yaml` version and the Ansible pin → v1.28.15+k3s1 | – |
-| Commit B (agents) | `agent.yaml` version → v1.28.15+k3s1 (ziti, then nova) | can be batched with A as "hop 1 end-to-end" |
+| Agent mode | cordon-only (as hop 1) | **cordon-only** |
+| Commit A (server) | `server.yaml` version and the Ansible pin → v1.29.15+k3s1 | – |
+| Commit B1 (ziti) | `agent.yaml` version → v1.29.15+k3s1 with nova excluded | after the server gate |
+| Commit B2 (nova) | drop the nova exclusion | after ziti is verified; Lee can pre-approve B2 conditional on a clean ziti check, or batch A+B1+B2 as "hop 2 end-to-end" |
 | Window | Date and time, announced (P10) | – |
 
 ### Gate status
@@ -720,8 +783,8 @@ Ask for these together as "go for hop 1". The readiness check and the exact proc
 | 3 | P4 | Uncordoning vega | ✗ dropped. vega stays cordoned and is excluded (§7.2). |
 | 3b | P13 | Remove vega from the cluster (recommended) or upgrade it idle-only | ☐ open, **due before hop 4** |
 | 4 | P5 | kube-vip static-pod change on enterprise, and optional IPv6 RA change | ✅ done (vip_interface). IPv6 RA change not made; Lee's call. |
-| – | P3 / P6 / add-ons | Each Git PR to `main` touching SUC, Flux, Cilium, cert-manager, external-dns or ingress (infra tier: diff shown first) | ✅ P3, P3b (SUC v0.21.1), P6 done. Add-ons follow per hop. |
-| **per hop** | §4.3 / §4.6 | Go for hop N: server commit A, then agents commit B (Lee can batch them as "go for hop N end-to-end") | **▶ hop 1 is next** |
+| – | P3 / P6 / add-ons | Each Git PR to `main` touching SUC, Flux, Cilium, cert-manager, external-dns or ingress (infra tier: diff shown first) | ✅ P3, P3b (SUC v0.21.1), P6 done. ✅ Hop-2 prerequisites H1–H4 done (Lee 2026-11-23 18:09). Next add-on: Flux 2.4 at 1.29. |
+| **per hop** | §4.3 / §4.6 / §4.7 | Go for hop N: server commit A, then agents commit B (from hop 2: B1/B2 per node). Lee can batch them as "go for hop N end-to-end" | ✅ hop 1 done 2026-11-23. **▶ hop 2 is next** |
 | 5 | §5.3 | ingress-nginx: stop at 1.35, run unsupported on 1.36, or migrate first | ☐ needed before hop 9 |
 | 6 | §6.4 | Declaring a hop failed and restoring etcd from snapshot | as needed |
 | 7 | §7.3 | Any second control-plane / HA work (separate project) | later |
