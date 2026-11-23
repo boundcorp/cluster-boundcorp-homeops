@@ -9,6 +9,14 @@ spec:
   version: "v1.27.3+k3s1"
   serviceAccountName: system-upgrade
   concurrency: 1
+  # drain each worker before its k3s restart; SUC uncordons it after a successful
+  # job (intended for nova/ziti, and vega once it is back in service).
+  drain:
+    force: true                   # bare pods (none expected) would block otherwise
+    deleteEmptydirData: true      # emptyDir only; NFS PVC data is unaffected
+    ignoreDaemonSets: true
+    skipWaitForDeleteTimeout: 60
+    timeout: 900000000000         # 900s, in ns (int is required by the v0.11.0 CRD)
   nodeSelector:
     matchExpressions:
       - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
