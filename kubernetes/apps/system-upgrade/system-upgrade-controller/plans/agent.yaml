@@ -16,7 +16,9 @@ spec:
     deleteEmptydirData: true      # emptyDir only; NFS PVC data is unaffected
     ignoreDaemonSets: true
     skipWaitForDeleteTimeout: 60
-    timeout: 900000000000         # 900s, in ns (int is required by the v0.11.0 CRD)
+    # string only: suc >= v0.16.3 decodes an int into IntOrString int32, so 900s
+    # in ns (900000000000) overflows and the controller cannot list Plans.
+    timeout: "900s"
   nodeSelector:
     matchExpressions:
       - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
