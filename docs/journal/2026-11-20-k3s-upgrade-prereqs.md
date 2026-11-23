@@ -1,6 +1,6 @@
 # k3s upgrade prerequisites (2026-11-20)
 
-Status: done except P4 (vega uncordon), which was stopped on purpose; vega is now out of the campaign (hung under load 2026-11-21). The SUC controller bump was done on 2026-11-23 (`3d97f22`, `673b2b7`, see the last section).
+Status: done except P4 (vega uncordon), which was stopped on purpose; vega is now out of the campaign (hung under load 2026-11-21). The SUC controller bump was done on 2026-11-23 (`3d97f22`, `673b2b7`). The hop-2 prerequisites (2026-11-23, after hop 1) are in the last section.
 
 Plan: `docs/k3s-upgrade-plan.md` (draft PR #3). Go-ahead: Lee, 2026-11-20 18:31 UTC, prerequisites only. **No k3s version change was made and no Ansible playbook was run.** enterprise stayed cordoned the whole time.
 
@@ -338,3 +338,44 @@ Rollback is a single commit that:
 3. Restores the int `drain.timeout: 900000000000`, because the v0.11.0 Go type (`time.Duration`) cannot decode `"900s"`.
 
 Server-side dry-run it before pushing. Nothing else was touched by hand, so no manual restore is needed.
+
+## Hop-2 prerequisites (2026-11-23, after hop 1)
+
+Go-ahead: Lee, 2026-11-23 18:09 UTC, "Do the hop 2 prerequisites" (items 1-4 below only). Starting point: hop 1 done (`docs/journal/2026-11-23-k3s-hop1.md`), enterprise, ziti and nova on v1.28.15+k3s1, vega on v1.27.3+k3s1, enterprise and vega cordoned. **No k3s version change and no SUC Plan version change were made.**
+
+### Pre-change snapshot (18:14Z)
+
+- `ssh enterprise sudo k3s etcd-snapshot save --name pre-hop2-prereqs-20261123T1814Z` created `pre-hop2-prereqs-20261123T1814Z-enterprise-1795457679`, 47,058,976 bytes.
+- Offload job `pre-hop2-prereqs-20261123t1814z` copied it to titan: sha256 `cca496a36d28d830400bfd1609bb93637b19a5198c59ff144e9df91b8358d548`. `sudo sha256sum` on enterprise gives the same hash.
+- Baseline at 18:13Z: 44/44 ks, 34/34 hr, 51/51 Prometheus targets, DNS from a test pod ok, ingress 200, 0 SUC Jobs. The only non-Running pod was the Pending `helm-install-coredns-gpqnk` (item 1).
+
+### Item 1: stale k3s HelmChart `kube-system/coredns` removed (18:20-18:22Z)
+
+Read-only findings first:
+
+| Question | Answer |
+|---|---|
+| HelmChart | `coredns`, chart 1.24.1 from `https://coredns.github.io/helm`, `bootstrap: true`, `targetNamespace: kube-system`, finalizer `wrangler.cattle.io/on-helm-chart-remove`, created 2024-10-13 by Addon `custom-coredns-helmchart` |
+| Its Helm release | `coredns` in `kube-system` (helm-controller uses the HelmChart name; job env `NAME=coredns`, `TARGET_NAMESPACE=kube-system`, `FAILURE_POLICY=reinstall`) |
+| Flux's release | HelmRelease `kube-system/coredns`, no `releaseName`/`targetNamespace`/`storageNamespace`, so also release **`coredns` in `kube-system`**: chart 1.49.0, revision 8 deployed 2026-10-23 |
+| Release secrets | `sh.helm.release.v1.coredns.v7` (superseded) and `.v8` (deployed), kube-system only; none elsewhere |
+| Live objects | Deployment `coredns`, Service `kube-dns`, ConfigMap and SA `coredns` all carry `meta.helm.sh/release-name: coredns`, `managed-by: Helm`, `helm.sh/chart: coredns-1.49.0`; no ownerReferences |
+| Owned by the HelmChart | only helm-controller scaffolding: Job `helm-install-coredns`, SA `helm-coredns`, ConfigMap `chart-content-coredns`, Secret `chart-values-coredns` (ownerRef to the HelmChart) and CRB `helm-kube-system-coredns` (objectset annotations) |
+| Re-created by k3s? | No. `server/manifests/` holds only `kube-vip-rbac.yaml`, `rolebindings.yaml`, `runtimes.yaml`; the Addon `custom-coredns-helmchart` no longer exists; `config.yaml` has `disable: [coredns, …]` |
+
+So both controllers pointed at the **same** Helm release. A normal `kubectl delete` would have made helm-controller run `helm-delete-coredns` (`helm uninstall coredns -n kube-system`), and the Pending install job would have downgraded the release to 1.24.1 with `FAILURE_POLICY=reinstall` the moment enterprise was uncordoned. Either way cluster DNS would go down. Both jobs were bootstrap jobs pinned to the control plane without an unschedulable toleration, so the enterprise cordon was the only thing holding them back.
+
+Removal path (helm-controller v0.15.15, as shipped in k3s v1.28.15+k3s1; source read at that tag):
+- `shouldManage()` returns false when the HelmChart has the annotation `helmcharts.helm.cattle.io/unmanaged`. Then `OnChange` returns no objects and the scoped `on-helm-chart-remove` handler returns early: it neither runs `OnRemove` (the delete job) nor re-adds the finalizer.
+- This is the same sequence the repo's own bootstrap task uses (`ansible/playbooks/tasks/coredns.yaml`: annotate unmanaged, delete, clear finalizers).
+
+Done (UTC), with a 2 s watcher on kube-system jobs, the HelmChart, the CoreDNS Deployment and the release secrets:
+1. 18:20:41 `kubectl --context home -n kube-system annotate helmchart coredns helmcharts.helm.cattle.io/unmanaged=true`. The empty apply removed the install Job and its Pending pod, the SA, CM, Secret and CRB within ~5 s. The finalizer stayed.
+2. 18:21:17 `kubectl --context home -n kube-system patch helmchart coredns --type=json -p='[{"op":"remove","path":"/metadata/finalizers"}]'`. It was not re-added.
+3. 18:21:38 `kubectl --context home -n kube-system delete helmchart coredns`. Gone immediately.
+
+Result: **no `helm-delete-*` or `helm-install-*` job at any sample**, no HelmChart left (`kubectl get helmchart -A`: none). CoreDNS untouched: same Deployment UID `b2e67c8f…`, generation 5, pods `coredns-5c8f54946f-9qpmg` (nova) and `-hrqgb` (ziti) 0 restarts, release secrets still v7/v8, HelmRelease history still revision 8 (2026-10-23). DNS from a test pod resolved `kubernetes.default` and `github.com` before and after. Health at 18:22Z: 44/44 ks, 34/34 hr, 51/51 targets, no non-Running pods, ingress 200, cordons unchanged, 0 SUC Jobs.
+
+Rollback: none needed. The object was a dead duplicate of Flux's release, and re-creating it would bring the hazard back.
+
+Remaining caveat: `ansible/inventory/group_vars/kubernetes/main.yaml` still lists `custom-coredns-helmchart.yaml.j2` in `k3s_server_manifests_templates`. That is right for a fresh bootstrap (CoreDNS has to exist before Flux), but **running `cluster-installation.yaml` against the live cluster would re-create this HelmChart**. Its "wait for rollout" step would then time out on the cordoned enterprise before the unmanage step runs. Do not run that playbook against the live cluster. It is not part of the hop procedure.
