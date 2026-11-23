@@ -7,7 +7,7 @@
 # renovate: datasource=github-releases depName=k3s-io/k3s
 # pinned to the version actually running on the cluster (see docs/k3s-upgrade-plan.md P1).
 # bump one minor at a time, in the same commit as each SUC hop. never skip a minor.
-k3s_release_version: "v1.28.15+k3s1"
+k3s_release_version: "v1.29.15+k3s1"
 k3s_install_hard_links: true
 k3s_become: true
 k3s_etcd_datastore: true
