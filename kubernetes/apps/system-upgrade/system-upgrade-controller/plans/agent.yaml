@@ -6,7 +6,7 @@ metadata:
   namespace: system-upgrade
 spec:
   # renovate: datasource=github-releases depName=k3s-io/k3s
-  version: "v1.29.15+k3s1"
+  version: "v1.30.14+k3s2"
   serviceAccountName: system-upgrade
   concurrency: 1
   # cordon-only (Lee, 2026-11-23): no drain, pods keep running through the k3s
@@ -26,7 +26,7 @@ spec:
     matchExpressions:
       - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
       # vega is out of the upgrade campaign (hangs under load, stays cordoned)
-      - {key: kubernetes.io/hostname, operator: NotIn, values: ["vega"]}
+      - {key: kubernetes.io/hostname, operator: NotIn, values: ["vega", "nova"]}
   prepare:
     image: rancher/k3s-upgrade
     args: ["prepare", "server"]
