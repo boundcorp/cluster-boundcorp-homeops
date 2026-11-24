@@ -26,7 +26,7 @@ spec:
     matchExpressions:
       - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
       # Hop 4 gate: admit ziti first; vega next, nova (SQL primary) last.
-      - {key: kubernetes.io/hostname, operator: In, values: ["ziti"]}
+      - {key: kubernetes.io/hostname, operator: In, values: ["ziti", "vega"]}
   prepare:
     image: rancher/k3s-upgrade
     args: ["prepare", "server"]
