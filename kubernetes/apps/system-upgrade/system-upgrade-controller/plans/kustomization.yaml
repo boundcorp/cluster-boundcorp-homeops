@@ -4,4 +4,3 @@ kind: Kustomization
 resources:
   - ./server.yaml
   - ./agent.yaml
-  - ./vega-catchup.yaml
