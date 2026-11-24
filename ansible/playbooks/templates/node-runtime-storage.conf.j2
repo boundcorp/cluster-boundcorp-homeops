@@ -1,0 +1,9 @@
+[Unit]
+Requires={{ runtime_storage.unit }}
+After={{ runtime_storage.unit }}
+
+[Service]
+ExecStartPre=/usr/bin/mountpoint -q {{ runtime_storage.where }}
+{% if runtime_storage.check_source %}
+ExecStartPre=/bin/sh -c 'test "$(/usr/bin/findmnt -n -o SOURCE --target {{ runtime_storage.where }})" = "{{ runtime_storage.expected_source }}"'
+{% endif %}

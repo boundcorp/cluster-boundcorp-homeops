@@ -1,0 +1,20 @@
+---
+k3s_runtime_storage:
+  nova:
+    what: /srv/k3s
+    where: /var/lib/rancher/k3s
+    unit: var-lib-rancher-k3s.mount
+    dropin: storage.conf
+    description: K3s storage on nova srv filesystem
+    srv_source: /dev/nvme0n1p7
+    expected_source: /dev/nvme0n1p7[/k3s]
+    check_source: false  # Preserve nova's existing drop-in byte for byte.
+  ziti:
+    what: /srv/k3s/agent/containerd
+    where: /var/lib/rancher/k3s/agent/containerd
+    unit: var-lib-rancher-k3s-agent-containerd.mount
+    dropin: runtime-storage.conf
+    description: k3s containerd root on ziti /srv
+    srv_source: /dev/sda5
+    expected_source: /dev/sda5[/k3s/agent/containerd]
+    check_source: true

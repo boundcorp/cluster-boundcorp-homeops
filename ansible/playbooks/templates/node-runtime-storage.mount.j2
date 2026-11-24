@@ -1,0 +1,13 @@
+[Unit]
+Description={{ runtime_storage.description }}
+RequiresMountsFor={{ runtime_storage.what }}
+Before=k3s-agent.service
+
+[Mount]
+What={{ runtime_storage.what }}
+Where={{ runtime_storage.where }}
+Type=none
+Options=bind
+
+[Install]
+WantedBy=local-fs.target

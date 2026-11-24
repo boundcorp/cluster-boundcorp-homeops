@@ -1,0 +1,66 @@
+---
+# Standalone file ownership only; never included by cluster preparation/install.
+# From ansible/: ansible-playbook playbooks/node-runtime-storage.yaml --check --diff --limit nova
+# Requires verified SSH. No reload, enable, start, data copy or mount operations.
+- name: Own node runtime storage unit files
+  hosts: worker
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  vars:
+    ansible_ssh_common_args: -o StrictHostKeyChecking=yes -o UpdateHostKeys=no
+    runtime_storage: "{{ k3s_runtime_storage[inventory_hostname] }}"
+  pre_tasks:
+    - name: Require an explicit single supported host limit
+      ansible.builtin.assert:
+        that:
+          - ansible_limit | default('') | length > 0
+          - ansible_play_hosts_all | length == 1
+          - inventory_hostname in k3s_runtime_storage
+        fail_msg: Use an explicit --limit nova or --limit ziti.
+
+    - name: Read srv mount source even in check mode
+      ansible.builtin.command:
+        argv: [findmnt, -n, -o, SOURCE, --mountpoint, /srv]
+      check_mode: false
+      changed_when: false
+      register: runtime_srv_mount
+
+    - name: Read runtime mount source even in check mode
+      ansible.builtin.command:
+        argv: [findmnt, -n, -o, SOURCE, --mountpoint, "{{ runtime_storage.where }}"]
+      check_mode: false
+      changed_when: false
+      register: runtime_bind_mount
+
+    - name: Require the exact live sources before owning files
+      ansible.builtin.assert:
+        that:
+          - runtime_srv_mount.stdout == runtime_storage.srv_source
+          - runtime_bind_mount.stdout == runtime_storage.expected_source
+        fail_msg: Mounts must already match; this playbook never performs the migration.
+
+  tasks:
+    - name: Own runtime mount unit
+      ansible.builtin.template:
+        src: node-runtime-storage.mount.j2
+        dest: "/etc/systemd/system/{{ runtime_storage.unit }}"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Own k3s agent drop-in directory
+      ansible.builtin.file:
+        path: /etc/systemd/system/k3s-agent.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Own k3s agent storage drop-in
+      ansible.builtin.template:
+        src: node-runtime-storage.conf.j2
+        dest: "/etc/systemd/system/k3s-agent.service.d/{{ runtime_storage.dropin }}"
+        owner: root
+        group: root
+        mode: '0644'
