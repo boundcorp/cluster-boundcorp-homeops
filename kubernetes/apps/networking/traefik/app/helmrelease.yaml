@@ -1,6 +1,6 @@
 ---
 # Traefik replaces ingress-nginx (archived upstream, no Kubernetes 1.36 support).
-# Migration is staged; see docs/journal/2026-11-25-traefik-migration.md.
+# Migration notes: docs/journal/2026-11-25-traefik-migration.md.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -65,7 +65,7 @@ spec:
 
     ingressClass:
       enabled: true
-      isDefaultClass: false
+      isDefaultClass: true
       name: traefik
 
     providers:
@@ -106,6 +106,7 @@ spec:
       annotations:
         # The ingress VIP: *.home DNS and the router point here.
         io.cilium/lb-ipam-ips: "10.20.30.200"
+        external-dns.alpha.kubernetes.io/hostname: "ingress.${SECRET_PRIVATE_DOMAIN}"
       spec:
         externalTrafficPolicy: Cluster
 
@@ -136,34 +137,3 @@ spec:
           headers:
             stsSeconds: 31449600
             stsIncludeSubdomains: true
-
-      # Migration fallback: any host without a Traefik router is proxied to
-      # ingress-nginx, so Traefik can own 10.20.30.200 and the tunnel before
-      # the Ingresses move. Removed together with ingress-nginx.
-      - apiVersion: traefik.io/v1alpha1
-        kind: ServersTransport
-        metadata:
-          name: ingress-nginx-fallback
-          namespace: networking
-        spec:
-          # in-cluster hop to ingress-nginx's own wildcard/default cert
-          insecureSkipVerify: true
-      - apiVersion: traefik.io/v1alpha1
-        kind: IngressRoute
-        metadata:
-          name: ingress-nginx-fallback
-          namespace: networking
-        spec:
-          entryPoints:
-            - websecure
-          routes:
-            - kind: Rule
-              match: PathPrefix(`/`)
-              priority: 1
-              services:
-                - name: ingress-nginx-controller
-                  port: 443
-                  scheme: https
-                  passHostHeader: true
-                  serversTransport: ingress-nginx-fallback
-          tls: {}
