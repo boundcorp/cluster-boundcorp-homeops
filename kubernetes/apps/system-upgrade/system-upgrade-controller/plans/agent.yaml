@@ -6,7 +6,7 @@ metadata:
   namespace: system-upgrade
 spec:
   # renovate: datasource=github-releases depName=k3s-io/k3s
-  version: "v1.32.13+k3s1"
+  version: "v1.33.13+k3s2"
   serviceAccountName: system-upgrade
   concurrency: 1
   # cordon-only (Lee, 2026-11-23): no drain, pods keep running through the k3s
@@ -25,7 +25,8 @@ spec:
   nodeSelector:
     matchExpressions:
       - {key: node-role.kubernetes.io/control-plane, operator: DoesNotExist}
-      # All agents admitted after sequential hop-5 health gates (ziti, vega, nova last).
+      # Hop 6 gate: admit ziti first; vega next, nova (SQL primary) last.
+      - {key: kubernetes.io/hostname, operator: In, values: ["ziti"]}
   prepare:
     image: rancher/k3s-upgrade
     args: ["prepare", "server"]
