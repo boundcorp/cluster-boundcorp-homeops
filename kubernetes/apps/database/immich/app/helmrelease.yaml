@@ -88,13 +88,16 @@ spec:
       ingress:
         main:
           enabled: true
-          className: nginx
+          className: traefik
           annotations:
             cert-manager.io/cluster-issuer: letsencrypt-production
             external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_PRIVATE_DOMAIN}"
-            nginx.ingress.kubernetes.io/proxy-body-size: "0"
-            nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
-            nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+            # Was nginx proxy-body-size 0 and proxy-read/send-timeout 600 (idle
+            # time between reads). Traefik has no body limit without a buffering
+            # middleware and no backend response timeout by default; its router
+            # timeouts cap the whole request, so pin them off for large uploads.
+            traefik.ingress.kubernetes.io/router.respondingtimeouts.readtimeout: "0"
+            traefik.ingress.kubernetes.io/router.respondingtimeouts.writetimeout: "0"
           hosts:
             - host: &host "photos.${SECRET_PUBLIC_DOMAIN}"
               paths:

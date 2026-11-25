@@ -131,10 +131,12 @@ spec:
     ingress:
       main:
         enabled: true
-        className: nginx
+        className: traefik
         annotations:
           external-dns.alpha.kubernetes.io/target: "ingress.${SECRET_PRIVATE_DOMAIN}"
-          nginx.ingress.kubernetes.io/proxy-body-size: "0"
+          # Was nginx proxy-body-size 0. Traefik has no body limit without a
+          # buffering middleware; pin the router read timeout off for uploads.
+          traefik.ingress.kubernetes.io/router.respondingtimeouts.readtimeout: "0"
           hajimari.io/icon: mdi:microphone-message
         hosts:
           - host: &public-host "speakr.${SECRET_PUBLIC_DOMAIN}"
