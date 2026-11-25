@@ -1,6 +1,6 @@
 # Traefik migration (phase 1 a–b) — 2026-11-25
 
-Status: **Phase 1 a and b COMPLETE. Step c (remove ingress-nginx) and hop 9 are ON HOLD for Lee.**
+Status: **Phase 1 a, b and c COMPLETE. ingress-nginx is retired; Traefik is the only ingress controller and the default IngressClass.** Hop 9 continues in [its own journal](2026-11-25-k3s-hop9.md).
 
 Traefik serves all 18 Git-managed Ingresses and owns the ingress VIP `10.20.30.200` and the Cloudflare tunnel. ingress-nginx is still running on `10.20.30.207`. Only two Ingresses are still on class `nginx`, and neither is in Git. Removing ingress-nginx would make both unreachable, so the coordinator is holding the removal until Lee approves (details below).
 
@@ -85,7 +85,37 @@ Hosts were checked over HTTPS with certificates verified (`ssl_verify_result=0`)
 - **Cilium agent roll on the hubble-ui move.** Changing only `hubble.ui.ingress.className` caused Helm to compute a new `cilium.io/cilium-configmap-checksum`, even though `cilium-config` data did not change (its last managed write is 18:37:24). `rollOutCiliumPods` then rolled all 4 agents, one at a time, between 21:34:26 and 21:35:07. There was no traffic impact. Any future edit to Cilium values, including the 1.20.5 stage, should be expected to roll the agents.
 - **Local render printed generated TLS material.** A `helm template` diff of the Cilium chart printed Hubble CA/server key material to the worker terminal. That material was generated at random by the offline render; it was never applied and isn't the cluster's. The saved `helm get manifest` (which holds the live Hubble secrets) was deleted unread, and later diffs left out Secret objects. No live certificate, key or query string was printed or committed.
 
-## Held: step c (remove ingress-nginx)
+## Step c: ingress-nginx retired
+
+Lee approved at 22:05 UTC ("Yes, retire nginx and do hop 9"). Brief `nginx-retire-hop9-1125-v1`, task `task_70bb47c7b4ca`. Lee accepted that the two class-`nginx` Ingresses not in Git become unreachable. They and their apps were **not** changed or deleted:
+
+- `devbox/hatchet-ingress` (`hatchet.devbox.local`, unmanaged): now an unrouted host (Traefik 404).
+- `media/filebrowser` (`filebrowser.home`, the orphan HelmRelease left from 87a6f54): `filebrowser.home` now returns Traefik's 404 on the LAN. The HelmRelease, pod and PVC are still running.
+
+| Stage | Commit | Result |
+|---|---|---|
+| c1: Traefik drops the fallback IngressRoute/ServersTransport, becomes the default IngressClass, gets the inert external-dns hostname annotation | `fddec77` | Render diff was exactly those 3 changes (no Deployment change, no Secret objects rendered). Server dry-run passed. traefik rev 2→3. Only `filebrowser.home` changed (200→404). Gate PASS 22:10:44. |
+| Snapshot | – | `pre-nginx-removal-20261125T2210Z-enterprise-1795644661`, 78,299,168 bytes, SHA-256 `1c39841862b6758a2471867d22ace0a51b1c804d9c3f402651f7f9b3137a39cf`, matched titan. |
+| c2: `ingress-nginx/app` emptied (HelmRelease file removed), grafana and kube-prometheus-stack `dependsOn` moved to traefik | `c6584cd` | Flux pruned the HelmRelease and helm-controller uninstalled the release: Deployment, Services, IngressClass `nginx`, `ingress-nginx-admission` ValidatingWebhookConfiguration, RBAC, PDB and ServiceMonitor are gone. `.207` is free. grafana (3) and kube-prometheus-stack (11) did not get a new revision. 34 HR, 52/52 targets. Gate and certificate/webhook/Cilium/DNS checks PASS 22:14:18. |
+| c3: `ingress-nginx` HelmRepository removed | `d063a23` | Pruned by the `cluster` Kustomization. Hosts unchanged. |
+
+Kept on purpose:
+- `cluster-apps-ingress-nginx-certificates` owns `boundcorp-net-production-tls`, the default cert Traefik uses.
+- `cluster-apps-ingress-nginx` is now a no-op. `cluster-apps` has `prune: false`, so deleting it from Git would leave an orphan.
+
+Leftover, not deleted: Secret `networking/ingress-nginx-admission`. The chart's certgen Job created it, so Helm doesn't own it and the uninstall left it. Nothing uses it any more. It can only be removed with a manual `kubectl delete`, so that is left for Lee.
+
+The DNS check in the gate scripts now runs `getent hosts` in the four vector-agent pods (one per node) instead of the ingress-nginx controllers.
+
+**Clean watch: 22:15:34–22:27:50 UTC (12 min 16 s).**
+- 5/5 full gates passed: 45 ks, 34 HR, 52/52 targets, 29/29 PVCs, 9/9 DaemonSets, same primary `false/off`.
+- 25 watcher samples with zero alerts, no restart deltas and no bad events.
+- Host sweeps matched the new baseline on LAN, tunnel-style and public. Websockets: esphome 200, frigate/zwave/hass 101, jellyfin 403, all unchanged, and hass 101 publicly.
+- adguard 502 is still the pre-existing issue described above.
+
+Side note: the snapshot offload Job pruned 14 old on-demand titan copies (`pre-hop1` through `post-vega-catchup`) under its existing `KEEP_OTHER=20` retention. The enterprise copies remain (39 files).
+
+## Previously held: step c (as written at 22:01 UTC, before approval)
 
 Two Ingresses are still on class `nginx`. Neither is in Git, and both are left untouched:
 
@@ -103,7 +133,7 @@ The prepared plan for step c, once approved:
 
 ## Not done
 
-- No ingress-nginx removal, no change to the default IngressClass, no hop 9, and no Cilium, cert-manager or Flux upgrade.
+- (Phase 1 a–b) No ingress-nginx removal, no change to the default IngressClass, no hop 9, and no Cilium, cert-manager or Flux upgrade. Step c and hop 9 followed under the later brief.
 - No change to the filebrowser or hatchet Ingresses or their apps.
 - No DB, credential, Octo/devbox or Vaultwarden action.
 
