@@ -104,8 +104,8 @@ spec:
 
     service:
       annotations:
-        # Temporary LB IP while ingress-nginx still owns 10.20.30.200.
-        io.cilium/lb-ipam-ips: "10.20.30.206"
+        # The ingress VIP: *.home DNS and the router point here.
+        io.cilium/lb-ipam-ips: "10.20.30.200"
       spec:
         externalTrafficPolicy: Cluster
 
