@@ -1,0 +1,169 @@
+---
+# Traefik replaces ingress-nginx (archived upstream, no Kubernetes 1.36 support).
+# Migration is staged; see docs/journal/2026-11-25-traefik-migration.md.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: networking
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: traefik
+      version: 43.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      retries: 3
+  uninstall:
+    keepHistory: false
+  values:
+    global:
+      checkNewVersion: false
+      sendAnonymousUsage: false
+
+    # 2 replicas on different workers, so a cordoned or restarting agent
+    # doesn't take ingress down.
+    deployment:
+      replicas: 2
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+        nodeTaintsPolicy: Honor
+        matchLabelKeys:
+          - pod-template-hash
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: traefik
+            app.kubernetes.io/instance: traefik-networking
+    resources:
+      requests:
+        cpu: 50m
+        memory: 100Mi
+      limits:
+        memory: 512Mi
+
+    env:
+      - name: TZ
+        value: "${TIMEZONE}"
+
+    ingressClass:
+      enabled: true
+      isDefaultClass: false
+      name: traefik
+
+    providers:
+      kubernetesCRD:
+        enabled: true
+      kubernetesIngress:
+        enabled: true
+        # adguard's backend is an ExternalName service
+        allowExternalNameServices: true
+        publishedService:
+          enabled: true
+
+    ports:
+      web:
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
+      websecure:
+        http:
+          # every router on websecure is TLS, using the default cert unless
+          # the Ingress names its own secret (matches ingress-nginx's 443).
+          tls:
+            enabled: true
+          middlewares:
+            - networking-hsts@kubernetescrd
+        transport:
+          respondingTimeouts:
+            # Traefik v3 defaults readTimeout to 60s for the whole request,
+            # which breaks large uploads (immich). ingress-nginx had no total
+            # cap, only 120s between reads.
+            readTimeout: 0
+            idleTimeout: 180s
+
+    service:
+      annotations:
+        # Temporary LB IP while ingress-nginx still owns 10.20.30.200.
+        io.cilium/lb-ipam-ips: "10.20.30.206"
+      spec:
+        externalTrafficPolicy: Cluster
+
+    tlsStore:
+      default:
+        defaultCertificate:
+          secretName: "${SECRET_PUBLIC_DOMAIN/./-}-production-tls"
+
+    tlsOptions:
+      default:
+        minVersion: VersionTLS12
+
+    metrics:
+      prometheus:
+        service:
+          enabled: true
+        serviceMonitor:
+          enabled: true
+
+    extraObjects:
+      # ingress-nginx sent HSTS (max-age 31449600, includeSubDomains) on TLS hosts
+      - apiVersion: traefik.io/v1alpha1
+        kind: Middleware
+        metadata:
+          name: hsts
+          namespace: networking
+        spec:
+          headers:
+            stsSeconds: 31449600
+            stsIncludeSubdomains: true
+
+      # Migration fallback: any host without a Traefik router is proxied to
+      # ingress-nginx, so Traefik can own 10.20.30.200 and the tunnel before
+      # the Ingresses move. Removed together with ingress-nginx.
+      - apiVersion: traefik.io/v1alpha1
+        kind: ServersTransport
+        metadata:
+          name: ingress-nginx-fallback
+          namespace: networking
+        spec:
+          # in-cluster hop to ingress-nginx's own wildcard/default cert
+          insecureSkipVerify: true
+      - apiVersion: traefik.io/v1alpha1
+        kind: IngressRoute
+        metadata:
+          name: ingress-nginx-fallback
+          namespace: networking
+        spec:
+          entryPoints:
+            - websecure
+          routes:
+            - kind: Rule
+              match: PathPrefix(`/`)
+              priority: 1
+              services:
+                - name: ingress-nginx-controller
+                  port: 443
+                  scheme: https
+                  passHostHeader: true
+                  serversTransport: ingress-nginx-fallback
+          tls: {}
