@@ -176,3 +176,32 @@ Nothing was installed, nothing was copied outside `agent/containerd`, and no cre
 4. Hop 3 is still not authorized. The ziti imagefs headroom gate (≥5 GB available) is now met for imagefs: 414 GB.
 
 Evidence (metadata only, outside Git): `/home/dev/orca/artifacts/ziti-srv-migration-20261124/`.
+
+## Approved rollback-copy cleanup — 2026-11-25
+
+**COMPLETE.** Lee's Nov 24 02:15 UTC approval, “Also remove the old ziti copy after 24h”, was dispatched for exactly `/var/lib/rancher/k3s/agent/containerd.pre-srv-20261124` on ziti. This supersedes the pending-approval statements above for that directory only. The migration runtime started Nov 24 00:47 UTC; cleanup ran Nov 25 **00:53:44–00:53:45 UTC**, over 24 hours later. The planned hop 3 and hop 4 restarts were expected interruptions, reviewed against their completed journals rather than treated as storage instability. No further upgrade or cleanup was authorized.
+
+Read environment map, migration journal `aca24ca`, hop 4 journal `e1f9c4d`, hop 3 recovery evidence, and draft PR #5 §10. Fetched origin/main before work and before the journal commit; baseline `e1f9c4d`. Used explicit home kubeconfig/context and strict SSH to ziti with the existing trusted key; no known_hosts change. `envcheck` needed its documented `/home/dev/bin/envcheck` path and explicit cluster configs; then home and octo readyz both passed. No service was stopped or restarted.
+
+Pre-cleanup checks:
+
+- Four nodes Ready at v1.31.14+k3s1 / containerd 2.1.5-k3s1.32, only enterprise cordoned, all pressure False. API readyz ok, VIP/direct livez 200, etcd healthy. Both upgrade Plans Complete, zero upgrade Jobs.
+- 44/44 Kustomizations, 34/34 HelmReleases, 52/52 targets, 9/9 DaemonSets full, 29/29 PVCs Bound, no unhealthy active pods; four historical Failed records retained. Same Postgres primary UID `e5480b37-7547-4e63-8566-ca709218f0a4`, 5/5 on nova; SQL `false/off`, PgBouncer Ready.
+- Past-24h Prometheus storage minima: `/var` available **2,310,950,912 B**, `/srv` available **411,365,986,304 B**; ziti DiskPressure true maximum **0**, 2,879 filesystem samples. K3s journal showed only the documented single startup capacity warning at each approved hop start (16:58:32Z and 20:17:31Z), no repeated GC failure or storage-pressure eviction; kernel review found no matching disk/filesystem errors.
+- Live original containerd path was an exact mount with SOURCE **`/dev/sda5[/k3s/agent/containerd]`**. k3s-agent active, CRI RuntimeReady/NetworkReady true, fail-closed mount dependency present.
+- Old path was an actual directory (device **2051**, inode **141721**) on **`/dev/sda3`**, mounted at `/var`; all path ancestors checked against symlinks. No mount at/below old path, including process mount namespaces; no runtime/systemd/fstab reference, process command/maps/fd/cwd/root/exe reference, or `lsof +D` result. Reference contents and secrets were not printed.
+
+Immediately before removal, the guarded script repeated directory identity, ancestor, filesystem, exact live-bind and all-process mount checks. It then ran exactly one removal: `rm -rf --one-file-system -- /var/lib/rancher/k3s/agent/containerd.pre-srv-20261124` (no glob or symlink traversal).
+
+| Measurement | Bytes |
+|---|---:|
+| Old tree allocated (`du -sxB1`) | 7,892,434,944 |
+| `/var` available immediately before | 2,349,060,096 |
+| `/var` available immediately after | 10,241,437,696 |
+| Observed available-space increase | **7,892,377,600** |
+
+The 57,344-byte difference between tree allocation and observed gain includes concurrent filesystem activity/accounting. Verified old path absent, original live bind unchanged, k3s-agent active and CRI ready; `/srv` available remained **412,285,452,288 B**. Fresh post-cleanup health passed every preflight cluster/SQL/Flux/target/PVC/DaemonSet gate above; **zero workload restart deltas**, Helm revisions unchanged, primary UID unchanged. Ordinary `/var` writes continued after the measurement.
+
+Only the approved old tree was removed. `/root/ctrd-manifest.py`, the old temporary trace, live `/srv`, PVCs, credentials and all other host files were left in place. Draft PR #5 remains a historical draft; no plan change was required to execute the narrower dispatched scope. Rollback-copy retention is now ended: rollback would require image re-pulls as described in §10, with the original `/var` capacity risk. No hop 5 or other maintenance was performed.
+
+Sanitized evidence and exact guarded removal script: `/home/dev/orca/artifacts/ziti-old-copy-cleanup-20261125/` (`pre-health.json`, `post-health.json`, `storage-prometheus.json`, `storage-journal.txt`, `deletion.jsonl`, `cleanup.py`, `envcheck.txt`). Task `task_86113024e483`, dispatch `ctx_ef31c123f0e8`.
