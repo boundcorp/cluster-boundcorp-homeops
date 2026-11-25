@@ -60,7 +60,7 @@ spec:
     ingress:
       main:
         enabled: true
-        ingressClassName: nginx
+        ingressClassName: traefik
         hosts:
           - host: &host "zwave.${SECRET_PRIVATE_DOMAIN}"
             paths:
