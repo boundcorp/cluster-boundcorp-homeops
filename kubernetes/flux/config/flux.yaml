@@ -1,9 +1,12 @@
 ---
-apiVersion: source.toolkit.fluxcd.io/v1beta2
+apiVersion: source.toolkit.fluxcd.io/v1
 kind: OCIRepository
 metadata:
   name: flux-manifests
   namespace: flux-system
+  annotations:
+    # Flux 2.6 API upgrade: forces a re-apply so the object is stored as v1
+    api.fluxcd.io/upgrade: "v2.6.0"
 spec:
   interval: 10m
   url: oci://ghcr.io/fluxcd/flux-manifests
