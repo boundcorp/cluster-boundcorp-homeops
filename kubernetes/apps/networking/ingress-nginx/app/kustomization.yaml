@@ -1,6 +1,9 @@
 ---
+# ingress-nginx is retired; Traefik serves every Ingress (see
+# docs/journal/2026-11-25-traefik-migration.md). Emptying this app makes Flux
+# prune the HelmRelease and helm-controller uninstall it. The certificates
+# Kustomization next door stays: it owns the wildcard cert Traefik uses.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: networking
-resources:
-  - ./helmrelease.yaml
+resources: []
