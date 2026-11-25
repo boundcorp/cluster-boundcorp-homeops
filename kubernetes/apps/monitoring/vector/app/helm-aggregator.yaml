@@ -103,7 +103,9 @@ spec:
     service:
       enabled: true
       type: LoadBalancer
-      loadBalancerIP: "${SVC_VECTOR_ADDR}"
+      # SVC_VECTOR_ADDR was never defined, so this has always rendered empty (Cilium
+      # LB-IPAM picks the IP). The empty default keeps that under Flux 2.9 strict substitution.
+      loadBalancerIP: "${SVC_VECTOR_ADDR:=}"
       annotations:
         metallb.universe.tf/allow-shared-ip: vector
     podMonitor:
