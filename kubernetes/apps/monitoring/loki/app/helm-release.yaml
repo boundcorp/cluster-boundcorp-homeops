@@ -95,7 +95,7 @@ spec:
       replicas: 1
       ingress:
         enabled: true
-        ingressClassName: "nginx"
+        ingressClassName: "traefik"
         annotations:
           hajimari.io/enable: "false"
         hosts:

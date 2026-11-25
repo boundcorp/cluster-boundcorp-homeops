@@ -8,7 +8,7 @@ metadata:
     hajimari.io/enable: "true"
     hajimari.io/group: "home"
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
     - host: adguard.${SECRET_PRIVATE_DOMAIN}
       http:
