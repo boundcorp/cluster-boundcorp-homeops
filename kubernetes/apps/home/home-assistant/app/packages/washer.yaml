@@ -1,0 +1,165 @@
+# Washer -> dryer reminder flow.
+# Source of truth is git (ConfigMap `ha-packages` mounted at /config/packages).
+# Loaded via `homeassistant: packages: !include_dir_named packages` in configuration.yaml.
+#
+# Flow: binary_sensor.washing_machine_running (ESPHome, 1-min mean hysteresis, 10 min off delay)
+#   on->off after a real run  => needs_dryer ON + finished_at stamped
+#   reminders at 1/2/4/8/12 h computed from finished_at (restart-safe, counter in input_number)
+#   flag cleared (ESP button A / HA UI / notification action) => notification cleared, counter reset
+
+input_boolean:
+  needs_dryer:
+    name: Needs Dryer
+    icon: mdi:tumble-dryer
+
+input_datetime:
+  washer_finished_at:
+    name: Washer Finished At
+    has_date: true
+    has_time: true
+    icon: mdi:washing-machine
+
+input_number:
+  washer_reminders_sent:
+    name: Washer Reminders Sent
+    min: 0
+    max: 5
+    step: 1
+    mode: box
+    icon: mdi:bell-badge
+
+script:
+  # Single place that knows Lee's phone: Pixel 9 Pro XL (mobile_app "Leeward Pixel 9 Pro XL")
+  washer_notify:
+    alias: Washer notify phone
+    mode: queued
+    fields:
+      message: {}
+      tag: {}
+    sequence:
+      - action: notify.mobile_app_leeward_pixel_9_pro_xl
+        data:
+          title: "Laundry waiting"
+          message: "{{ message }}"
+          data:
+            tag: "{{ tag }}"
+            group: washer
+            channel: Laundry
+            importance: high
+            actions:
+              - action: WASHER_MOVED_TO_DRYER
+                title: Moved to dryer
+
+  washer_test_notification:
+    alias: Washer test notification
+    sequence:
+      - action: script.washer_notify
+        data:
+          message: "TEST: washer reminder. Tap 'Moved to dryer' to dismiss."
+          tag: washer_needs_dryer_test
+
+automation:
+  - id: washer_finished
+    alias: Washer finished -> needs dryer
+    description: A real run (>= 10 min) ended; stamp finish time (off delay already elapsed) and set flag.
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.washing_machine_running
+        from: "on"
+        to: "off"
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ (now() - trigger.from_state.last_changed).total_seconds() >= 600 }}
+    actions:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.washer_reminders_sent
+        data:
+          value: 0
+      # the sensor only turns off after 10 quiet minutes, so the load really ended ~10 min ago
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.washer_finished_at
+        data:
+          timestamp: "{{ (now().timestamp() - 600) | int }}"
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.needs_dryer
+
+  - id: washer_reminders
+    alias: Washer needs-dryer reminders (1, 2, 4, 8, 12 h)
+    description: >-
+      Computed from washer_finished_at every minute, so it survives HA restarts. After an outage
+      at most one (the current) stage is sent, and only within 30 min of its due time.
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: "/1"
+      - trigger: homeassistant
+        event: start
+    conditions:
+      - condition: state
+        entity_id: input_boolean.needs_dryer
+        state: "on"
+    actions:
+      - variables:
+          stages: [1, 2, 4, 8, 12]
+          fin: "{{ state_attr('input_datetime.washer_finished_at', 'timestamp') | float(0) }}"
+          hrs: "{{ (now().timestamp() - fin) / 3600 if fin > 0 else 0 }}"
+          stage: "{{ stages | select('le', hrs) | list | length }}"
+          sent: "{{ states('input_number.washer_reminders_sent') | int(0) }}"
+      - condition: template
+        value_template: "{{ stage > sent }}"
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.washer_reminders_sent
+        data:
+          value: "{{ stage }}"
+      - condition: template
+        value_template: "{{ hrs < stages[stage - 1] + 0.5 }}"
+      - action: script.washer_notify
+        data:
+          message: >-
+            Washer finished {{ stages[stage - 1] }} h ago, clothes still need to go in the dryer.
+          tag: washer_needs_dryer
+
+  - id: washer_cleared
+    alias: Washer needs-dryer cleared
+    description: Flag cleared from any source (ESP button A, HA UI, notification action).
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.needs_dryer
+        from: "on"
+        to: "off"
+    actions:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.washer_reminders_sent
+        data:
+          value: 0
+      - action: notify.mobile_app_leeward_pixel_9_pro_xl
+        data:
+          message: clear_notification
+          data:
+            tag: washer_needs_dryer
+
+  - id: washer_notification_action
+    alias: Washer notification action (Moved to dryer)
+    mode: single
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: WASHER_MOVED_TO_DRYER
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.needs_dryer
+      - action: notify.mobile_app_leeward_pixel_9_pro_xl
+        data:
+          message: clear_notification
+          data:
+            tag: washer_needs_dryer_test

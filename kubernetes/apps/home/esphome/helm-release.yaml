@@ -56,6 +56,16 @@ spec:
       config:
         enabled: true
         existingClaim: esphome-config-v1
+      # washermonitor.yaml is owned by git (config/washermonitor.yaml); mounted over the PVC copy
+      washermonitor:
+        enabled: true
+        type: configMap
+        name: esphome-washermonitor
+        mountPath: /config/washermonitor.yaml
+        subPath: washermonitor.yaml
+        readOnly: true
+    podAnnotations:
+      configmap.reloader.stakater.com/reload: "esphome-washermonitor"
     resources:
       requests:
         cpu: 100m

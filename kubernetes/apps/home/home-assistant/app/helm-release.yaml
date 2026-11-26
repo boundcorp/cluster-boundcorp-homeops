@@ -76,8 +76,17 @@ spec:
         enabled: true
         existingClaim: birdweather-media
         mountPath: /media/birdweather
+      # HA packages are owned by git (app/packages/*.yaml); configuration.yaml on the PVC has
+      # `homeassistant: packages: !include_dir_named packages`
+      packages:
+        enabled: true
+        type: configMap
+        name: ha-packages
+        mountPath: /config/packages
+        readOnly: true
     podAnnotations:
       secret.reloader.stakater.com/reload: "home-assistant"
+      configmap.reloader.stakater.com/reload: "ha-packages"
     resources:
       requests:
         cpu: 100m
