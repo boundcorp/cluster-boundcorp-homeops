@@ -29,13 +29,14 @@ input_number:
     icon: mdi:bell-badge
 
 script:
-  # Single place that knows Lee's phone: Pixel 9 Pro XL (mobile_app "Leeward Pixel 9 Pro XL")
+  # Early reminders go to Lee; later reminders also go to Audrey.
   washer_notify:
     alias: Washer notify phone
     mode: queued
     fields:
       message: {}
       tag: {}
+      include_audrey: {}
     sequence:
       - action: notify.mobile_app_leeward_pixel_9_pro_xl
         data:
@@ -49,6 +50,23 @@ script:
             actions:
               - action: WASHER_MOVED_TO_DRYER
                 title: Moved to dryer
+
+      - if:
+          - condition: template
+            value_template: "{{ include_audrey | default(false) }}"
+        then:
+          - action: notify.mobile_app_aud_pixel
+            data:
+              title: "Laundry waiting"
+              message: "{{ message }}"
+              data:
+                tag: "{{ tag }}"
+                group: washer
+                channel: Laundry
+                importance: high
+                actions:
+                  - action: WASHER_MOVED_TO_DRYER
+                    title: Moved to dryer
 
   washer_test_notification:
     alias: Washer test notification
@@ -124,6 +142,7 @@ automation:
           message: >-
             Washer finished {{ stages[stage - 1] }} h ago, clothes still need to go in the dryer.
           tag: washer_needs_dryer
+          include_audrey: "{{ stage >= 3 }}"
 
   - id: washer_cleared
     alias: Washer needs-dryer cleared
@@ -145,6 +164,11 @@ automation:
           message: clear_notification
           data:
             tag: washer_needs_dryer
+      - action: notify.mobile_app_aud_pixel
+        data:
+          message: clear_notification
+          data:
+            tag: washer_needs_dryer
 
   - id: washer_notification_action
     alias: Washer notification action (Moved to dryer)
@@ -159,6 +183,11 @@ automation:
         target:
           entity_id: input_boolean.needs_dryer
       - action: notify.mobile_app_leeward_pixel_9_pro_xl
+        data:
+          message: clear_notification
+          data:
+            tag: washer_needs_dryer_test
+      - action: notify.mobile_app_aud_pixel
         data:
           message: clear_notification
           data:
