@@ -218,6 +218,8 @@ binary_sensor:
       - delayed_on: !lambda |-
           return id(washer_test_mode).state ? 30000 : 600000;
       - delayed_off: !lambda |-
+          // Publish the initial idle state immediately after boot.
+          if (!id(washing_machine_running).has_state()) return 0;
           return id(test_used) ? 20000 : 600000;
     on_press:
       - lambda: |-
