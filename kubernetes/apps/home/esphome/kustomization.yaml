@@ -6,6 +6,7 @@ resources:
   - helm-release.yaml
 configMapGenerator:
   - name: esphome-washermonitor
+    namespace: home
     files:
       - washermonitor.yaml=config/washermonitor.yaml
 generatorOptions:

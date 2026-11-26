@@ -9,15 +9,11 @@
 # The screen only mirrors it, and button A clears it through a HA action.
 # Previous YAML (flashed Jan 2025): washermonitor.yaml.bak-20261125 next to this file.
 
-substitutions:
-  devicename: washermonitor
-  start_threshold: "0.25"
-  continue_threshold: "0.20"
-  off_delay_ms: "600000" # 10 min
-  test_off_delay_ms: "20000"
+# NOTE: no dollar-brace substitutions on purpose: Flux post-build envsubst runs over this ConfigMap.
+# Thresholds: start 0.25 g, continue 0.20 g; off delay 600000 ms (10 min); test off delay 20000 ms.
 
 esphome:
-  name: ${devicename}
+  name: washermonitor
   on_boot:
     priority: -100
     then:
@@ -34,7 +30,7 @@ wifi:
   password: !secret wifi_password
 
   ap:
-    ssid: ${devicename} Fallback Hotspot
+    ssid: washermonitor Fallback Hotspot
     password: !secret wifi_password
 
 ota:
@@ -212,13 +208,13 @@ binary_sensor:
       if (id(washer_test_mode).state) return true;
       float m = id(washing_machine_vibration_1m).state;
       if (std::isnan(m)) return {};
-      if (m > ${start_threshold}) return true;
-      if (m < ${continue_threshold}) return false;
+      if (m > 0.25) return true;
+      if (m < 0.20) return false;
       return {};  // between the thresholds: hold current state
     filters:
       - delayed_on: 30s
       - delayed_off: !lambda |-
-          return id(test_used) ? ${test_off_delay_ms} : ${off_delay_ms};
+          return id(test_used) ? 20000 : 600000;
     on_press:
       - lambda: |-
           id(washing_since) = id(ha_time).now().is_valid() ? id(ha_time).now().timestamp : 0;
