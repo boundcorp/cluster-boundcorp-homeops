@@ -53,6 +53,10 @@ class WasherRecipients(unittest.TestCase):
                     self.assertEqual(call.args[1]['data']['tag'], 'washer_needs_dryer')
                     self.assertEqual(call.args[1]['data']['actions'][0]['action'], 'WASHER_MOVED_TO_DRYER')
 
+    def test_pending_load_cannot_be_restamped_by_another_run(self):
+        conditions = self.automations['washer_finished']['conditions']
+        self.assertIn({'condition': 'state', 'entity_id': 'input_boolean.needs_dryer', 'state': 'off'}, conditions)
+
     def test_clearing_both_tags_on_both_phones(self):
         for automation, tag in [('washer_cleared', 'washer_needs_dryer'), ('washer_notification_action', 'washer_needs_dryer_test')]:
             with self.subTest(automation=automation):

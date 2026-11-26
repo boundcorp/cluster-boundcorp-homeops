@@ -87,6 +87,10 @@ automation:
         from: "on"
         to: "off"
     conditions:
+      # A pending load must not be reset by handling or a second detected run.
+      - condition: state
+        entity_id: input_boolean.needs_dryer
+        state: "off"
       - condition: template
         value_template: >-
           {{ (now() - trigger.from_state.last_changed).total_seconds() >= 600 }}
