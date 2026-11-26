@@ -1,0 +1,417 @@
+# Washermonitor: M5Stick-C(Plus) vibration sensor on the washing machine.
+#
+# One load = one cycle. Detection runs on-device:
+#   - 1-minute mean of the vibration magnitude (sliding window of 60 x 1 s samples)
+#   - start threshold 0.25 g, continue threshold 0.20 g (hysteresis, in between = hold)
+#   - off delay 10 min (pauses inside a real load are 6-8 min)
+# Persistent "needs dryer" state is owned by Home Assistant (input_boolean.needs_dryer,
+# input_datetime.washer_finished_at; see home-assistant/config/packages/washer.yaml).
+# The screen only mirrors it, and button A clears it through a HA action.
+# Previous YAML (flashed Jan 2025): washermonitor.yaml.bak-20261125 next to this file.
+
+substitutions:
+  devicename: washermonitor
+  start_threshold: "0.25"
+  continue_threshold: "0.20"
+  off_delay_ms: "600000" # 10 min
+  test_off_delay_ms: "20000"
+
+esphome:
+  name: ${devicename}
+  on_boot:
+    priority: -100
+    then:
+      - lambda: |-
+          id(wake_until) = millis() + 20000;
+
+esp32:
+  board: m5stick-c
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: ${devicename} Fallback Hotspot
+    password: !secret wifi_password
+
+ota:
+  - platform: esphome
+
+web_server:
+
+captive_portal:
+
+logger:
+
+api:
+
+external_components:
+  - source: github://martydingo/esphome-axp192
+    components: [axp192]
+
+time:
+  - platform: homeassistant
+    id: ha_time
+
+globals:
+  - id: wake_until
+    type: uint32_t
+    initial_value: "0"
+  - id: washing_since
+    type: time_t
+    initial_value: "0"
+  - id: test_used
+    type: bool
+    initial_value: "false"
+  - id: ui_state # 0 idle, 1 washing, 2 needs dryer
+    type: int
+    initial_value: "0"
+  - id: ui_elapsed
+    type: std::string
+    initial_value: '""'
+
+i2c:
+  - id: bus_a
+    sda: GPIO21
+    scl: GPIO22
+    scan: true
+
+spi:
+  clk_pin: GPIO13
+  mosi_pin: GPIO15
+
+sensor:
+  # --- Power management for TFT display + battery ---
+  - platform: axp192
+    id: axp
+    address: 0x34
+    model: M5STICKC
+    i2c_id: bus_a
+    update_interval: 5s
+    brightness: 100%
+    battery_level:
+      name: "M5Stick Battery Level"
+      id: m5stick_batterylevel
+      filters:
+        - throttle: 60s
+
+  # --- Raw accelerometer from MPU6886 ---
+  - platform: mpu6886
+    address: 0x68
+    i2c_id: bus_a
+    update_interval: 1s
+    accel_x:
+      id: raw_accel_x
+      internal: true
+    accel_y:
+      id: raw_accel_y
+      internal: true
+    accel_z:
+      id: raw_accel_z
+      internal: true
+
+  # 1) Low-pass filters estimate the gravity vector
+  - platform: template
+    name: "Accel X Low-Pass"
+    id: accel_x_lp
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return id(raw_accel_x).state;
+    filters:
+      - exponential_moving_average:
+          alpha: 0.01
+          send_every: 30
+
+  - platform: template
+    name: "Accel Y Low-Pass"
+    id: accel_y_lp
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return id(raw_accel_y).state;
+    filters:
+      - exponential_moving_average:
+          alpha: 0.01
+          send_every: 30
+
+  - platform: template
+    name: "Accel Z Low-Pass"
+    id: accel_z_lp
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return id(raw_accel_z).state;
+    filters:
+      - exponential_moving_average:
+          alpha: 0.01
+          send_every: 30
+
+  # 2) High-pass = raw - gravity
+  - platform: template
+    name: "Accel X Dynamic"
+    id: accel_x_dynamic
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return id(raw_accel_x).state - id(accel_x_lp).state;
+
+  - platform: template
+    name: "Accel Y Dynamic"
+    id: accel_y_dynamic
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return id(raw_accel_y).state - id(accel_y_lp).state;
+
+  - platform: template
+    name: "Accel Z Dynamic"
+    id: accel_z_dynamic
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return id(raw_accel_z).state - id(accel_z_lp).state;
+
+  # 3) Single vibration magnitude (1 Hz, unchanged entity)
+  - platform: template
+    name: "Washing Machine Vibration"
+    id: washing_machine_vibration
+    unit_of_measurement: "g"
+    update_interval: 1s
+    lambda: |-
+      float dx = id(accel_x_dynamic).state;
+      float dy = id(accel_y_dynamic).state;
+      float dz = id(accel_z_dynamic).state;
+      return sqrtf(dx*dx + dy*dy + dz*dz);
+
+  # 4) 1-minute mean of the vibration: what the cycle detector looks at
+  - platform: template
+    name: "Washing Machine Vibration 1m Mean"
+    id: washing_machine_vibration_1m
+    unit_of_measurement: "g"
+    accuracy_decimals: 3
+    update_interval: 1s
+    lambda: |-
+      return id(washing_machine_vibration).state;
+    filters:
+      - sliding_window_moving_average:
+          window_size: 60
+          send_every: 5
+
+binary_sensor:
+  # Washer running: hysteresis on the 1-minute mean + 10 min off delay.
+  # The entity name/id is unchanged so history and HA references keep working.
+  - platform: template
+    name: "Washing Machine Running"
+    id: washing_machine_running
+    device_class: motion
+    lambda: |-
+      if (id(washer_test_mode).state) return true;
+      float m = id(washing_machine_vibration_1m).state;
+      if (std::isnan(m)) return {};
+      if (m > ${start_threshold}) return true;
+      if (m < ${continue_threshold}) return false;
+      return {};  // between the thresholds: hold current state
+    filters:
+      - delayed_on: 30s
+      - delayed_off: !lambda |-
+          return id(test_used) ? ${test_off_delay_ms} : ${off_delay_ms};
+    on_press:
+      - lambda: |-
+          id(washing_since) = id(ha_time).now().is_valid() ? id(ha_time).now().timestamp : 0;
+          id(wake_until) = millis() + 15000;
+    on_release:
+      - lambda: |-
+          id(test_used) = false;
+          id(wake_until) = millis() + 15000;
+
+  # HA-owned state, mirrored here (survives ESP restarts because HA owns it)
+  - platform: homeassistant
+    id: ha_needs_dryer
+    entity_id: input_boolean.needs_dryer
+    internal: true
+
+  # Buttons (M5Stick-C: A = GPIO37 front, B = GPIO39 side; input only, external pull-up)
+  - platform: gpio
+    id: button_a
+    internal: true
+    pin:
+      number: GPIO37
+      inverted: true
+      mode:
+        input: true
+    filters:
+      - delayed_on: 30ms
+    on_press:
+      - lambda: |-
+          id(wake_until) = millis() + 15000;
+      - script.execute: clear_needs_dryer
+
+  - platform: gpio
+    id: button_b
+    internal: true
+    pin:
+      number: GPIO39
+      inverted: true
+      mode:
+        input: true
+    filters:
+      - delayed_on: 30ms
+    on_press:
+      - lambda: |-
+          id(wake_until) = millis() + 15000;
+
+text_sensor:
+  - platform: homeassistant
+    id: ha_finished_ts
+    entity_id: input_datetime.washer_finished_at
+    attribute: timestamp
+    internal: true
+
+  # What the screen is showing (also for verification without looking at it)
+  - platform: template
+    name: "Washer Display State"
+    id: washer_display_state
+    entity_category: diagnostic
+    icon: mdi:tumble-dryer
+
+switch:
+  # TEST: forces "running" on; after switching off the shortened (20 s) off delay applies once.
+  - platform: template
+    name: "Washer Test Mode"
+    id: washer_test_mode
+    icon: mdi:flask
+    entity_category: config
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    turn_on_action:
+      - lambda: |-
+          id(test_used) = true;
+
+button:
+  # TEST: runs exactly the same script as physical button A
+  - platform: template
+    name: "Washer Test Button A"
+    entity_category: config
+    icon: mdi:gesture-tap-button
+    on_press:
+      - script.execute: clear_needs_dryer
+
+  # TEST: HA script that sends one notification (with the "Moved to dryer" action)
+  - platform: template
+    name: "Washer Test Notification"
+    entity_category: config
+    icon: mdi:bell-ring
+    on_press:
+      - homeassistant.action:
+          action: script.washer_test_notification
+
+script:
+  - id: clear_needs_dryer
+    then:
+      - logger.log: "Button A: clearing input_boolean.needs_dryer"
+      - homeassistant.action:
+          action: input_boolean.turn_off
+          data:
+            entity_id: input_boolean.needs_dryer
+
+  # Decide what to show, once per second
+  - id: update_ui
+    then:
+      - lambda: |-
+          auto now = id(ha_time).now();
+          auto fmt = [](long s) -> std::string {
+            if (s < 0) s = 0;
+            char b[24];
+            if (s >= 3600) snprintf(b, sizeof b, "%ldh %02ldm", s / 3600, (s % 3600) / 60);
+            else snprintf(b, sizeof b, "%ldm", s / 60);
+            return std::string(b);
+          };
+          int st = 0;
+          std::string el = "";
+          if (id(washing_machine_running).state) {
+            st = 1;
+            // time may not have been synced when the cycle started (or the ESP rebooted mid-cycle)
+            if (now.is_valid() && id(washing_since) <= 0) id(washing_since) = now.timestamp;
+            if (now.is_valid() && id(washing_since) > 0) el = fmt(now.timestamp - id(washing_since));
+          } else if (id(ha_needs_dryer).has_state() && id(ha_needs_dryer).state) {
+            st = 2;
+            std::string ts = id(ha_finished_ts).state;
+            if (now.is_valid() && !ts.empty() && ts != "unknown" && ts != "unavailable") {
+              double fin = atof(ts.c_str());
+              if (fin > 1e9) el = fmt((long) (now.timestamp - fin));
+            }
+          }
+          id(ui_state) = st;
+          id(ui_elapsed) = el;
+          const char *names[] = {"IDLE", "WASHING", "NEEDS DRYER"};
+          std::string desc = names[st];
+          if (!el.empty()) desc += " " + el;
+          if (id(washer_display_state).state != desc) id(washer_display_state).publish_state(desc);
+          // dim when idle and nothing recently pressed
+          bool awake = st != 0 || (int32_t)(id(wake_until) - millis()) > 0;
+          id(axp).set_brightness(awake ? 1.0f : 0.0f);
+
+interval:
+  - interval: 1s
+    then:
+      - script.execute: update_ui
+
+font:
+  - file: "gfonts://Roboto@700"
+    id: font_big
+    size: 34
+  - file: "gfonts://Roboto"
+    id: font_mid
+    size: 28
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 16
+
+color:
+  - id: c_black
+    hex: "000000"
+  - id: c_white
+    hex: "FFFFFF"
+  - id: c_grey
+    hex: "707070"
+  - id: c_blue
+    hex: "0A4FD1"
+  - id: c_orange
+    hex: "E65100"
+
+# Display config unchanged from the flashed firmware (ST7789V, 135x240, landscape).
+display:
+  - platform: st7789v
+    id: tft
+    model: TTGO TDisplay 135x240
+    cs_pin: GPIO5
+    dc_pin: GPIO23
+    reset_pin: GPIO18
+    rotation: 270
+    update_interval: 1s
+    lambda: |-
+      // 240 x 135 landscape
+      bool details = (int32_t)(id(wake_until) - millis()) > 0;
+      if (id(ui_state) == 1) {
+        it.fill(id(c_blue));
+        it.print(120, 38, id(font_big), id(c_white), TextAlign::CENTER, "WASHING");
+        if (!id(ui_elapsed).empty())
+          it.printf(120, 85, id(font_mid), id(c_white), TextAlign::CENTER, "%s", id(ui_elapsed).c_str());
+      } else if (id(ui_state) == 2) {
+        it.fill(id(c_orange));
+        it.print(120, 34, id(font_big), id(c_white), TextAlign::CENTER, "NEEDS DRYER");
+        if (!id(ui_elapsed).empty())
+          it.printf(120, 80, id(font_mid), id(c_white), TextAlign::CENTER, "%s ago", id(ui_elapsed).c_str());
+        it.print(120, 117, id(font_small), id(c_white), TextAlign::CENTER, "A = moved to dryer");
+      } else {
+        it.fill(id(c_black));
+        it.print(120, 50, id(font_mid), id(c_grey), TextAlign::CENTER, "IDLE");
+        if (details) {
+          it.printf(120, 95, id(font_small), id(c_grey), TextAlign::CENTER, "Vib %.2f g   Batt %.0f%%",
+                    id(washing_machine_vibration_1m).state, id(m5stick_batterylevel).state);
+        }
+      }

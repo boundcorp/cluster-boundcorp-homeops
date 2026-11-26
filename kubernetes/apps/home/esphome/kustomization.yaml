@@ -4,3 +4,9 @@ kind: Kustomization
 resources:
   - config-pvc.yaml
   - helm-release.yaml
+configMapGenerator:
+  - name: esphome-washermonitor
+    files:
+      - washermonitor.yaml=config/washermonitor.yaml
+generatorOptions:
+  disableNameSuffixHash: true

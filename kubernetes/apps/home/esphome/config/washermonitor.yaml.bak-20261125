@@ -1,0 +1,211 @@
+substitutions:
+  devicename: washermonitor
+  upper_devicename: WasherMonitor
+
+esphome:
+  name: ${devicename}
+  platform: ESP32
+  board: m5stick-c
+  platformio_options:
+    upload_speed: 115200
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  ap:
+    ssid: ${devicename} Fallback Hotspot
+    password: !secret wifi_password
+
+ota:
+  platform: esphome
+
+web_server:
+
+captive_portal:
+
+logger:
+
+api:
+
+external_components:
+  - source: github://martydingo/esphome-axp192
+    components: [axp192]
+
+# --- Power Management for TFT Display ---
+sensor:
+  - platform: axp192
+    address: 0x34
+    model: M5STICKC
+    i2c_id: bus_a
+    update_interval: 30s
+    battery_level:
+      name: "M5Stick Battery Level"
+      id: m5stick_batterylevel
+
+  # --- Raw accelerometer from MPU6886 (example) ---
+  - platform: mpu6886
+    address: 0x68
+    i2c_id: bus_a
+    update_interval: 1s
+    accel_x:
+      id: raw_accel_x
+      internal: true
+    accel_y:
+      id: raw_accel_y
+      internal: true
+    accel_z:
+      id: raw_accel_z
+      internal: true
+
+  # ============================================
+  # 1) LOW-PASS FILTERS: Estimate gravity vector
+  # ============================================
+  # Each axis has its own low-pass sensor. The idea is to track
+  # the slow changes that represent gravity (plus drift).
+  - platform: template
+    name: "Accel X Low-Pass"
+    id: accel_x_lp
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return id(raw_accel_x).state;
+    filters:
+      - exponential_moving_average:
+          alpha: 0.01      # Lower alpha => slower response, smoother tracking
+          send_every: 30   # Update sensor value every X readings
+
+  - platform: template
+    name: "Accel Y Low-Pass"
+    id: accel_y_lp
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return id(raw_accel_y).state;
+    filters:
+      - exponential_moving_average:
+          alpha: 0.01
+          send_every: 30
+
+  - platform: template
+    name: "Accel Z Low-Pass"
+    id: accel_z_lp
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      return id(raw_accel_z).state;
+    filters:
+      - exponential_moving_average:
+          alpha: 0.01
+          send_every: 30
+
+  # ============================================
+  # 2) HIGH-PASS FILTERS: Subtract gravity from raw data
+  # ============================================
+  # We'll create "dynamic" axes that represent only rapid changes
+  - platform: template
+    name: "Accel X Dynamic"
+    id: accel_x_dynamic
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      float raw_x = id(raw_accel_x).state;
+      float lp_x  = id(accel_x_lp).state;
+      return raw_x - lp_x;  // high-pass = raw - low-pass
+
+  - platform: template
+    name: "Accel Y Dynamic"
+    id: accel_y_dynamic
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      float raw_y = id(raw_accel_y).state;
+      float lp_y  = id(accel_y_lp).state;
+      return raw_y - lp_y;
+
+  - platform: template
+    name: "Accel Z Dynamic"
+    id: accel_z_dynamic
+    internal: true
+    update_interval: 1s
+    lambda: |-
+      float raw_z = id(raw_accel_z).state;
+      float lp_z  = id(accel_z_lp).state;
+      return raw_z - lp_z;
+
+  # ============================================
+  # 3) COMBINE INTO A SINGLE VIBRATION MAGNITUDE
+  # ============================================
+  - platform: template
+    name: "Washing Machine Vibration"
+    id: washing_machine_vibration
+    # If your MPU6886 is reporting in 'g' units, you might use "g" here.
+    unit_of_measurement: "g"
+    update_interval: 1s
+    lambda: |-
+      float dx = id(accel_x_dynamic).state;
+      float dy = id(accel_y_dynamic).state;
+      float dz = id(accel_z_dynamic).state;
+      // sqrt(x^2 + y^2 + z^2)
+      float vib = sqrtf(dx*dx + dy*dy + dz*dz);
+      return vib;
+
+binary_sensor:
+  # Binary sensor to indicate if the washer is running (exceeds threshold).
+  - platform: template
+    name: "Washing Machine Running"
+    id: washing_machine_running
+    lambda: |-
+      // Example threshold - adjust to suit your machine's vibration levels
+      if (id(washing_machine_vibration).state > 0.3) {
+        return true;
+      } else {
+        return false;
+      }
+    filters:
+      # Avoid flashing ON/OFF too quickly; tweak these for your environment
+      - delayed_on: 5s
+      - delayed_off: 300s
+    device_class: motion
+
+spi:
+  clk_pin: GPIO13
+  mosi_pin: GPIO15
+
+i2c:
+  - id: bus_a
+    sda: GPIO21
+    scl: GPIO22
+    scan: true
+
+font:
+  - file: "gfonts://Roboto"
+    id: roboto
+    size: 12
+
+# 1.14 inch, 135x240 TFT LCD, ST7789v2
+display:
+  - platform: st7789v
+    model: TTGO TDisplay 135x240
+    cs_pin: GPIO5
+    dc_pin: GPIO23
+    reset_pin: GPIO18
+    rotation: 270
+    lambda: |-
+      const Color MY_WHITE = Color(0xFFFF);
+
+      // Title
+      it.print(80, 0, id(roboto), MY_WHITE, TextAlign::TOP_CENTER, "Washer Sensor");
+      
+      // Show battery level
+      it.printf(0, 30, id(roboto), MY_WHITE, "Battery: %.1f%%", id(m5stick_batterylevel).state);
+
+      // Show current vibration magnitude
+      it.printf(0, 50, id(roboto), MY_WHITE, "Vib: %.2f g", id(washing_machine_vibration).state);
+
+      // Show washer status
+      if (id(washing_machine_running).state) {
+        it.print(80, 70, id(roboto), MY_WHITE, TextAlign::TOP_CENTER, "Status: RUNNING");
+      } else {
+        it.print(80, 70, id(roboto), MY_WHITE, TextAlign::TOP_CENTER, "Status: IDLE");
+      }
