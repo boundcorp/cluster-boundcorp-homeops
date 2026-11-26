@@ -1,0 +1,23 @@
+name: Washer reminder tests
+on:
+  pull_request:
+    paths:
+      - 'kubernetes/apps/home/home-assistant/app/packages/washer.yaml'
+      - 'tests/test_washer_recipients.py'
+      - '.github/workflows/washer-tests.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'kubernetes/apps/home/home-assistant/app/packages/washer.yaml'
+      - 'tests/test_washer_recipients.py'
+      - '.github/workflows/washer-tests.yaml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install PyYAML Jinja2
+      - run: python -m unittest discover -s tests -v

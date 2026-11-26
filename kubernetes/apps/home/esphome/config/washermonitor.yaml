@@ -1,8 +1,9 @@
-# Washermonitor: M5Stick-C(Plus) vibration sensor on the washing machine.
+# Washermonitor: M5Stick-C vibration sensor on the washing machine.
 #
 # One load = one cycle. Detection runs on-device:
 #   - 1-minute mean of the vibration magnitude (sliding window of 60 x 1 s samples)
-#   - start threshold 0.25 g, continue threshold 0.20 g (hysteresis, in between = hold)
+#   - start: 1-minute mean above 0.25 g for 10 minutes; continue at 0.20 g
+#   - high start delay rejects the observed long decay after the stick is handled
 #   - off delay 10 min (pauses inside a real load are 6-8 min)
 # Persistent "needs dryer" state is owned by Home Assistant (input_boolean.needs_dryer,
 # input_datetime.washer_finished_at; see home-assistant/config/packages/washer.yaml).
@@ -198,7 +199,7 @@ sensor:
           send_every: 5
 
 binary_sensor:
-  # Washer running: hysteresis on the 1-minute mean + 10 min off delay.
+  # Washer running: sustained start and hysteresis on the 1-minute mean + 10 min off delay.
   # The entity name/id is unchanged so history and HA references keep working.
   - platform: template
     name: "Washing Machine Running"
@@ -208,11 +209,14 @@ binary_sensor:
       if (id(washer_test_mode).state) return true;
       float m = id(washing_machine_vibration_1m).state;
       if (std::isnan(m)) return {};
+      // Before latching, require the start threshold continuously.
+      if (!id(washing_machine_running).state) return m > 0.25;
       if (m > 0.25) return true;
       if (m < 0.20) return false;
       return {};  // between the thresholds: hold current state
     filters:
-      - delayed_on: 30s
+      - delayed_on: !lambda |-
+          return id(washer_test_mode).state ? 30000 : 600000;
       - delayed_off: !lambda |-
           return id(test_used) ? 20000 : 600000;
     on_press:
@@ -359,13 +363,13 @@ interval:
 font:
   - file: "gfonts://Roboto@700"
     id: font_big
-    size: 34
+    size: 22
   - file: "gfonts://Roboto"
     id: font_mid
-    size: 28
+    size: 18
   - file: "gfonts://Roboto"
     id: font_small
-    size: 16
+    size: 12
 
 color:
   - id: c_black
@@ -379,35 +383,41 @@ color:
   - id: c_orange
     hex: "E65100"
 
-# Display config unchanged from the flashed firmware (ST7789V, 135x240, landscape).
+# Original M5Stick-C: ST7735S 80x160, landscape. AXP192 LDO2/LDO3 power LCD.
 display:
-  - platform: st7789v
+  - platform: st7735
     id: tft
-    model: TTGO TDisplay 135x240
+    model: INITR_MINI160X80
+    device_width: 80
+    device_height: 160
+    col_start: 26
+    row_start: 1
+    invert_colors: true
+    use_bgr: true
     cs_pin: GPIO5
     dc_pin: GPIO23
     reset_pin: GPIO18
     rotation: 270
-    update_interval: 1s
+    update_interval: 2s
     lambda: |-
-      // 240 x 135 landscape
+      // 160 x 80 landscape
       bool details = (int32_t)(id(wake_until) - millis()) > 0;
       if (id(ui_state) == 1) {
         it.fill(id(c_blue));
-        it.print(120, 38, id(font_big), id(c_white), TextAlign::CENTER, "WASHING");
+        it.print(80, 24, id(font_big), id(c_white), TextAlign::CENTER, "WASHING");
         if (!id(ui_elapsed).empty())
-          it.printf(120, 85, id(font_mid), id(c_white), TextAlign::CENTER, "%s", id(ui_elapsed).c_str());
+          it.printf(80, 55, id(font_mid), id(c_white), TextAlign::CENTER, "%s", id(ui_elapsed).c_str());
       } else if (id(ui_state) == 2) {
         it.fill(id(c_orange));
-        it.print(120, 34, id(font_big), id(c_white), TextAlign::CENTER, "NEEDS DRYER");
+        it.print(80, 18, id(font_big), id(c_white), TextAlign::CENTER, "NEEDS DRYER");
         if (!id(ui_elapsed).empty())
-          it.printf(120, 80, id(font_mid), id(c_white), TextAlign::CENTER, "%s ago", id(ui_elapsed).c_str());
-        it.print(120, 117, id(font_small), id(c_white), TextAlign::CENTER, "A = moved to dryer");
+          it.printf(80, 45, id(font_mid), id(c_white), TextAlign::CENTER, "%s ago", id(ui_elapsed).c_str());
+        it.print(80, 69, id(font_small), id(c_white), TextAlign::CENTER, "A = moved to dryer");
       } else {
         it.fill(id(c_black));
-        it.print(120, 50, id(font_mid), id(c_grey), TextAlign::CENTER, "IDLE");
+        it.print(80, 30, id(font_mid), id(c_grey), TextAlign::CENTER, "IDLE");
         if (details) {
-          it.printf(120, 95, id(font_small), id(c_grey), TextAlign::CENTER, "Vib %.2f g   Batt %.0f%%",
+          it.printf(80, 60, id(font_small), id(c_grey), TextAlign::CENTER, "Vib %.2f g   Batt %.0f%%",
                     id(washing_machine_vibration_1m).state, id(m5stick_batterylevel).state);
         }
       }
