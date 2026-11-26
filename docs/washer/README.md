@@ -19,7 +19,8 @@ One-time manual steps that are NOT in git (live only on the HA PVC `.storage`/co
 minutes above 0.25 g, hold between 0.20 and 0.25, OFF below 0.20 g, then a 10 min off delay. The start
 delay rejects the prolonged signal decay observed after the stick was handled. The 10 min off delay
 covers the 6-8 min pauses seen inside a load; the longest in-load gap in the recorder data is 8 min.
-The HA automation only flags a run that lasted >= 10 min and leaves any existing `needs_dryer`
+The HA automation requires at least 10 minutes after the start latch plus the 10-minute off delay,
+and leaves any existing `needs_dryer`
 finish timestamp unchanged until that pending load is cleared. The device is an original M5StickC
 with an 80x160 ST7735S display, powered by the AXP192 LCD rails.
 

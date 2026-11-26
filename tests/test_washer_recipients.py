@@ -3,6 +3,8 @@
 Run with PyYAML and Jinja2 installed: python -m unittest discover -s tests
 """
 import pathlib
+from datetime import datetime, timedelta
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
@@ -56,6 +58,14 @@ class WasherRecipients(unittest.TestCase):
     def test_pending_load_cannot_be_restamped_by_another_run(self):
         conditions = self.automations['washer_finished']['conditions']
         self.assertIn({'condition': 'state', 'entity_id': 'input_boolean.needs_dryer', 'state': 'off'}, conditions)
+
+    def test_short_running_period_does_not_count_the_off_delay_as_a_wash(self):
+        condition = self.automations['washer_finished']['conditions'][1]['value_template']
+        now = datetime(2026, 1, 1, 12)
+        for minutes, expected in [(19, False), (20, True)]:
+            trigger = SimpleNamespace(from_state=SimpleNamespace(last_changed=now - timedelta(minutes=minutes)))
+            with self.subTest(minutes=minutes):
+                self.assertEqual(self.render(condition, {'now': lambda: now, 'trigger': trigger}), expected)
 
     def test_clearing_both_tags_on_both_phones(self):
         for automation, tag in [('washer_cleared', 'washer_needs_dryer'), ('washer_notification_action', 'washer_needs_dryer_test')]:

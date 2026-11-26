@@ -79,7 +79,7 @@ script:
 automation:
   - id: washer_finished
     alias: Washer finished -> needs dryer
-    description: A real run (>= 10 min) ended; stamp finish time (off delay already elapsed) and set flag.
+    description: A real run (>= 10 min plus the 10 min off delay) ended; stamp finish time and set flag.
     mode: single
     triggers:
       - trigger: state
@@ -93,7 +93,7 @@ automation:
         state: "off"
       - condition: template
         value_template: >-
-          {{ (now() - trigger.from_state.last_changed).total_seconds() >= 600 }}
+          {{ (now() - trigger.from_state.last_changed).total_seconds() >= 1200 }}
     actions:
       - action: input_number.set_value
         target:
